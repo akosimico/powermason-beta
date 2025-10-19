@@ -643,7 +643,7 @@ def review_pending_project(request, project_id):
         except Client.DoesNotExist:
             print(f"DEBUG: Client with ID {client_id} not found")
 
-    # --- Get document URLs ---
+    # --- Get document URLs from old system ---
     contract_url = None
     permit_url = None
 
@@ -702,31 +702,31 @@ def review_pending_project(request, project_id):
                 # --- Get approved budget from form ---
                 approved_budget = request.POST.get("approved_budget")
                 if not approved_budget:
-                    messages.error(request, "Please enter an approved budget amount.")
+                    set_toast_message(request, "Please enter an approved budget amount.", "error")
                     return render(request, "project_profiling/review_pending_project.html", context)
 
                 try:
                     approved_budget = float(approved_budget)
                     print(f"DEBUG: Approved budget: {approved_budget}")
                 except ValueError:
-                    messages.error(request, "Please enter a valid budget amount.")
+                    set_toast_message(request, "Please enter a valid budget amount.", "error")
                     return render(request, "project_profiling/review_pending_project.html", context)
 
                 # --- Get contract file from form ---
                 contract_file = request.FILES.get("contract_file")
                 if not contract_file:
-                    messages.error(request, "Please upload a contract document.")
+                    set_toast_message(request, "Please upload a contract document.", "error")
                     return render(request, "project_profiling/review_pending_project.html", context)
 
                 # --- Validate contract file ---
                 allowed_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
                 if contract_file.content_type not in allowed_types:
-                    messages.error(request, "Please upload a PDF, DOC, or DOCX file.")
+                    set_toast_message(request, "Please upload a PDF, DOC, or DOCX file.", "error")
                     return render(request, "project_profiling/review_pending_project.html", context)
 
                 # Check file size (10MB limit)
                 if contract_file.size > 10 * 1024 * 1024:
-                    messages.error(request, "File size must be less than 10MB.")
+                    set_toast_message(request, "File size must be less than 10MB.", "error")
                     return render(request, "project_profiling/review_pending_project.html", context)
 
                 # --- Get approval notes ---
@@ -746,20 +746,22 @@ def review_pending_project(request, project_id):
                     print(f"DEBUG: Budget validation - Estimated: {estimated_cost}, Min: {min_budget}, Max: {max_budget}, Approved: {approved_budget}")
                     
                     if approved_budget < min_budget:
-                        messages.error(
+                        set_toast_message(
                             request, 
                             f"❌ Approved budget (₱{approved_budget:,.2f}) is too low. "
                             f"Minimum allowed is ₱{min_budget:,.2f} (40% of estimated cost ₱{estimated_cost:,.2f}). "
-                            f"Please increase the budget amount."
+                            f"Please increase the budget amount.",
+                            "error"
                         )
                         return render(request, "project_profiling/review_pending_project.html", context)
                     
                     if approved_budget > max_budget:
-                        messages.warning(
+                        set_toast_message(
                             request, 
                             f"⚠️ Approved budget (₱{approved_budget:,.2f}) is significantly higher than estimated cost. "
                             f"Maximum recommended is ₱{max_budget:,.2f} (150% of estimated cost ₱{estimated_cost:,.2f}). "
-                            f"Please confirm this is correct before proceeding."
+                            f"Please confirm this is correct before proceeding.",
+                            "warning"
                         )
                         # Don't return here - allow override with warning
 
@@ -904,15 +906,26 @@ def review_pending_project(request, project_id):
                     new_profile.contract_agreement.save(filename, contract_file, save=True)
                     print(f"DEBUG: Saved contract file: {filename}")
 
+                # --- Copy permit file from staging project ---
+                permits_licenses = project.project_data.get("permits_licenses")
+                if permits_licenses:
+                    try:
+                        # Copy the permit file from staging to approved project
+                        new_profile.permits_licenses = permits_licenses
+                        new_profile.save()
+                        print(f"DEBUG: Copied permit file from staging project")
+                    except Exception as e:
+                        print(f"DEBUG: Error copying permit file: {e}")
+
                 # --- Save approval notes if provided ---
                 if approval_notes:
-                    # Store approval notes in project data or create a separate field
-                    project_data = new_profile.project_data or {}
-                    project_data['approval_notes'] = approval_notes
-                    project_data['approved_by'] = request.user.userprofile.full_name
-                    project_data['approved_at'] = timezone.now().isoformat()
-                    new_profile.project_data = project_data
-                    new_profile.save()
+                    # Store approval notes in a new field (we'll add this to the model)
+                    # For now, we'll store it in the description or create a separate notes field
+                    # Since ProjectProfile doesn't have project_data, we'll skip this for now
+                    # TODO: Add approval_notes field to ProjectProfile model
+                    print(f"DEBUG: Approval notes received: {approval_notes}")
+                    print(f"DEBUG: Approved by: {request.user.userprofile.full_name}")
+                    print(f"DEBUG: Approved at: {timezone.now().isoformat()}")
 
                 # --- Migrate documents from staging project to approved project ---
                 documents_to_migrate = ProjectDocument.objects.filter(project_staging=project)
@@ -923,6 +936,63 @@ def review_pending_project(request, project_id):
                     doc.save()
                     migrated_count += 1
                 print(f"DEBUG: Migrated {migrated_count} document(s) from staging to approved project")
+
+                # --- Create ProjectDocument entries for old system files ---
+                # Create document entry for contract agreement if it exists
+                if new_profile.contract_agreement:
+                    try:
+                        # Check if document entry already exists
+                        existing_contract_doc = ProjectDocument.objects.filter(
+                            project=new_profile,
+                            document_type='CONTRACT'
+                        ).first()
+                        
+                        if not existing_contract_doc:
+                            # Create new document entry for contract
+                            contract_doc = ProjectDocument.objects.create(
+                                title='Contract Agreement',
+                                description=f'Contract agreement for {new_profile.project_name}',
+                                document_type='CONTRACT',
+                                project_stage='INIT',
+                                version='1.0',
+                                file=new_profile.contract_agreement,
+                                file_size=new_profile.contract_agreement.size,
+                                uploaded_by=request.user.userprofile,
+                                project=new_profile
+                            )
+                            print(f"DEBUG: Created ProjectDocument entry for contract: {contract_doc.id}")
+                        else:
+                            print(f"DEBUG: Contract document entry already exists: {existing_contract_doc.id}")
+                    except Exception as e:
+                        print(f"DEBUG: Error creating contract document entry: {e}")
+
+                # Create document entry for permits if they exist
+                if new_profile.permits_licenses:
+                    try:
+                        # Check if document entry already exists
+                        existing_permit_doc = ProjectDocument.objects.filter(
+                            project=new_profile,
+                            document_type='PERMIT'
+                        ).first()
+                        
+                        if not existing_permit_doc:
+                            # Create new document entry for permits
+                            permit_doc = ProjectDocument.objects.create(
+                                title='Permits & Licenses',
+                                description=f'Permits and licenses for {new_profile.project_name}',
+                                document_type='PERMIT',
+                                project_stage='INIT',
+                                version='1.0',
+                                file=new_profile.permits_licenses,
+                                file_size=new_profile.permits_licenses.size,
+                                uploaded_by=request.user.userprofile,
+                                project=new_profile
+                            )
+                            print(f"DEBUG: Created ProjectDocument entry for permits: {permit_doc.id}")
+                        else:
+                            print(f"DEBUG: Permit document entry already exists: {existing_permit_doc.id}")
+                    except Exception as e:
+                        print(f"DEBUG: Error creating permit document entry: {e}")
 
                 # --- Handle BOQ data and create budget entries ---
                 boq_items = project.project_data.get('boq_items', [])
@@ -951,7 +1021,7 @@ def review_pending_project(request, project_id):
                         
                     except Exception as e:
                         print(f"DEBUG: Error handling BOQ data for approved project: {e}")
-                        messages.warning(request, f"⚠️ Project approved successfully, but there was an issue processing BOQ data: {str(e)}")
+                        set_toast_message(request, f"⚠️ Project approved successfully, but there was an issue processing BOQ data: {str(e)}", "warning")
 
                 # --- Handle contract file ---
                 contract_path = project.project_data.get("contract_agreement")
@@ -997,19 +1067,10 @@ def review_pending_project(request, project_id):
                 project.delete()
                 print("DEBUG: Deleted staging project after approval")
 
-                # Enhanced success message with more details
-                success_msg = f"🎉 Project approved successfully: '{new_profile.project_name}'!"
-                success_msg += f" Project ID: {new_profile.project_id}"
-                success_msg += f" | Approved Budget: ₱{approved_budget:,.2f}"
-                success_msg += f" | Status: Approved & Active"
-                if contract_file:
-                    success_msg += f" | 📄 Contract uploaded"
-                if migrated_count > 0:
-                    success_msg += f" | 📁 {migrated_count} document(s) migrated"
-                if boq_items_processed:
-                    success_msg += f" | ✅ BOQ Data Processed"
+                # Short success message
+                success_msg = f"🎉 Project '{new_profile.project_name}' approved successfully!"
                 
-                messages.success(request, success_msg)
+                set_toast_message(request, success_msg, "success")
                 
                 # Redirect to appropriate project list based on project source
                 if new_profile.project_source == "GC":
@@ -1021,7 +1082,7 @@ def review_pending_project(request, project_id):
                 print(f"ERROR during approve flow -> {e}")
                 import traceback
                 traceback.print_exc()
-                messages.error(request, f"❌ Critical error occurred while approving the project: {str(e)}. Please try again or contact support.")
+                set_toast_message(request, f"❌ Critical error occurred while approving the project: {str(e)}. Please try again or contact support.", "error")
 
         elif action == "reject":
             print("DEBUG: Reject action triggered")
@@ -1030,7 +1091,7 @@ def review_pending_project(request, project_id):
             project_source = project.project_source
             project.delete()
             print("DEBUG: Deleted staging project after rejection")
-            messages.warning(request, f"⚠️ Project '{project_name}' (ID: {project_id}) has been rejected and removed from the system.")
+            set_toast_message(request, f"⚠️ Project '{project_name}' (ID: {project_id}) has been rejected and removed from the system.", "warning")
             
             # Redirect to appropriate project list based on project source
             if project_source == "GC":
@@ -1871,14 +1932,15 @@ def approve_budget(request, project_id):
                 except Exception as e:
                     print(f"DEBUG: Error contributing to cost learning: {e}")
 
-                messages.success(
+                set_toast_message(
                     request,
                     f'Budget of ₱{float(approved_budget):,.2f} approved successfully! '
-                    f'You can now proceed with budget planning.'
+                    f'You can now proceed with budget planning.',
+                    "success"
                 )
                 return redirect('budget_planning', project_id=project_id)
             except ValueError:
-                messages.error(request, 'Invalid budget amount entered.')
+                set_toast_message(request, 'Invalid budget amount entered.', "error")
 
     return redirect('project_detail', project_id=project_id)
 
@@ -1896,7 +1958,7 @@ def budget_planning(request, project_id):
     
     # Check if budget is approved
     if not project.approved_budget:
-        messages.warning(request, "Budget must be approved before planning can begin.")
+        set_toast_message(request, "Budget must be approved before planning can begin.", "warning")
         return redirect('project_detail', project_id=project_id)
     
     # Get all budget categories for this project - INCLUDE category_other field
@@ -2492,6 +2554,33 @@ def api_document_stats(request):
             total=Sum('file_size')
         )['total'] or 0
 
+        # Add old system documents to stats
+        from .models import ProjectProfile
+        
+        # Get old system documents based on user role
+        if user_profile.role in ['EG', 'OM']:
+            old_projects = ProjectProfile.objects.filter(
+                Q(contract_agreement__isnull=False) | Q(permits_licenses__isnull=False)
+            ).exclude(
+                Q(contract_agreement='') | Q(permits_licenses='')
+            )
+        elif user_profile.role == 'PM':
+            old_projects = ProjectProfile.objects.filter(
+                Q(contract_agreement__isnull=False) | Q(permits_licenses__isnull=False)
+            ).exclude(
+                Q(contract_agreement='') | Q(permits_licenses='')
+            ).filter(project_manager=user_profile)
+        else:
+            old_projects = ProjectProfile.objects.none()
+
+        # Count old system documents
+        old_contracts = old_projects.filter(contract_agreement__isnull=False).exclude(contract_agreement='').count()
+        old_permits = old_projects.filter(permits_licenses__isnull=False).exclude(permits_licenses='').count()
+        
+        # Update totals
+        total_documents += old_contracts + old_permits
+        contracts += old_contracts
+
         # Convert to MB
         total_size_mb = total_size_bytes / (1024 * 1024)
         if total_size_mb >= 1000:
@@ -2609,6 +2698,96 @@ def api_documents_list(request):
                 'tags': doc.tags or '',
                 'is_archived': doc.is_archived
             })
+
+        # Add old system documents (contracts and permits stored directly on projects)
+        # Get projects that have contracts or permits
+        from .models import ProjectProfile
+        
+        # Base queryset for projects based on user role
+        if user_profile.role in ['EG', 'OM']:
+            projects_with_docs = ProjectProfile.objects.filter(
+                Q(contract_agreement__isnull=False) | Q(permits_licenses__isnull=False)
+            ).exclude(
+                Q(contract_agreement='') | Q(permits_licenses='')
+            )
+        elif user_profile.role == 'PM':
+            projects_with_docs = ProjectProfile.objects.filter(
+                Q(contract_agreement__isnull=False) | Q(permits_licenses__isnull=False)
+            ).exclude(
+                Q(contract_agreement='') | Q(permits_licenses='')
+            ).filter(project_manager=user_profile)
+        else:
+            projects_with_docs = ProjectProfile.objects.none()
+
+        # Apply project filter if specified
+        if project_id and not project_id.startswith('pending_'):
+            projects_with_docs = projects_with_docs.filter(id=project_id)
+
+        # Add old system documents to the data
+        for project in projects_with_docs:
+            # Add contract agreement if exists
+            if project.contract_agreement:
+                file_size = project.contract_agreement.size if hasattr(project.contract_agreement, 'size') else 0
+                if file_size >= 1024 * 1024:
+                    file_size_str = f"{file_size / (1024 * 1024):.1f} MB"
+                elif file_size >= 1024:
+                    file_size_str = f"{file_size / 1024:.1f} KB"
+                else:
+                    file_size_str = f"{file_size} Bytes"
+
+                file_extension = project.contract_agreement.name.split('.')[-1] if '.' in project.contract_agreement.name else ''
+
+                data.append({
+                    'id': f"old_contract_{project.id}",
+                    'title': 'Contract Agreement',
+                    'description': f'Contract agreement for {project.project_name}',
+                    'document_type': 'CONTRACT',
+                    'document_type_display': 'Contract',
+                    'project_stage': 'INIT',
+                    'project_stage_display': 'Initiation',
+                    'project_name': project.project_name,
+                    'version': '1.0',
+                    'file_size': file_size_str,
+                    'file_extension': file_extension,
+                    'uploaded_by': project.project_manager.full_name if project.project_manager else 'System',
+                    'uploaded_at': localtime(project.created_at).strftime('%b %d, %Y %I:%M %p'),
+                    'tags': 'contract, agreement',
+                    'is_archived': False,
+                    'old_system': True,
+                    'download_url': project.contract_agreement.url
+                })
+
+            # Add permits and licenses if exists
+            if project.permits_licenses:
+                file_size = project.permits_licenses.size if hasattr(project.permits_licenses, 'size') else 0
+                if file_size >= 1024 * 1024:
+                    file_size_str = f"{file_size / (1024 * 1024):.1f} MB"
+                elif file_size >= 1024:
+                    file_size_str = f"{file_size / 1024:.1f} KB"
+                else:
+                    file_size_str = f"{file_size} Bytes"
+
+                file_extension = project.permits_licenses.name.split('.')[-1] if '.' in project.permits_licenses.name else ''
+
+                data.append({
+                    'id': f"old_permit_{project.id}",
+                    'title': 'Permits & Licenses',
+                    'description': f'Permits and licenses for {project.project_name}',
+                    'document_type': 'PERMIT',
+                    'document_type_display': 'Permit',
+                    'project_stage': 'INIT',
+                    'project_stage_display': 'Initiation',
+                    'project_name': project.project_name,
+                    'version': '1.0',
+                    'file_size': file_size_str,
+                    'file_extension': file_extension,
+                    'uploaded_by': project.project_manager.full_name if project.project_manager else 'System',
+                    'uploaded_at': localtime(project.created_at).strftime('%b %d, %Y %I:%M %p'),
+                    'tags': 'permit, license',
+                    'is_archived': False,
+                    'old_system': True,
+                    'download_url': project.permits_licenses.url
+                })
 
         return JsonResponse({
             'documents': data,

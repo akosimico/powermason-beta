@@ -1458,7 +1458,7 @@ function createDocumentCard(doc) {
     const docTypeInfo = getDocumentTypeInfo(doc.document_type);
 
     return `
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group" ${doc.download_url ? `data-download-url="${doc.download_url}"` : ''}>
             <!-- Card Header -->
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start gap-3">
@@ -1519,7 +1519,8 @@ function createDocumentCard(doc) {
                 <div class="flex gap-1">
                     <button onclick="downloadDocument(${doc.id}, event)"
                             class="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
-                            title="Download">
+                            title="Download"
+                            ${doc.download_url ? `data-download-url="${doc.download_url}"` : ''}>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                         </svg>
@@ -2161,7 +2162,27 @@ function downloadDocument(docId, event) {
     if (event) {
         event.stopPropagation();
     }
-    window.location.href = `/projects/api/documents/${docId}/download/`;
+    
+    // Check if this is an old system document
+    if (docId.toString().startsWith('old_')) {
+        // For old system documents, get the download URL from the button's data attribute
+        const button = event ? event.target.closest('button') : null;
+        if (button && button.dataset.downloadUrl) {
+            window.location.href = button.dataset.downloadUrl;
+        } else {
+            // Fallback: try to construct the URL
+            if (docId.includes('contract_')) {
+                const projectId = docId.replace('old_contract_', '');
+                window.location.href = `/media/contract_agreement/${projectId}/`;
+            } else if (docId.includes('permit_')) {
+                const projectId = docId.replace('old_permit_', '');
+                window.location.href = `/media/permits_licenses/${projectId}/`;
+            }
+        }
+    } else {
+        // New system document
+        window.location.href = `/projects/api/documents/${docId}/download/`;
+    }
 }
 
 // Show version history
