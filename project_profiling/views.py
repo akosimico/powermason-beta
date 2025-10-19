@@ -520,34 +520,19 @@ def edit_draft_project(request, draft_id):
         # Initialize form with draft data
         form = ProjectProfileForm(initial=form_data, pre_selected_client_id=client.id)
 
-    # Use the project_form.html template for both create and edit modes
-    # Extract BOQ data from draft
-    boq_data = []
-    if 'boq_files' in draft_project.project_data:
-        boq_files = draft_project.project_data['boq_files']
-        if isinstance(boq_files, list):
-            boq_data = boq_files
-        elif isinstance(boq_files, str):
-            # If it's a single file path, convert to list
-            boq_data = [{'name': boq_files.split('/')[-1], 'path': boq_files}]
-    
+    # Use the existing project_edit.html template
     context = {
         'form': form,
         'client': client,
         'project': draft_project,  # Pass the draft as project
         'is_edit': True,
         'is_draft': True,
-        'edit_mode': True,  # Add this flag for template
         'source_label': SOURCE_LABELS.get(draft_project.project_source, draft_project.project_source),
         'project_type': draft_project.project_source,
         'next_id': draft_project.project_data.get('project_id'),
-        'auto_fill_mode': False,
-        'pre_selected_client': client,
-        'show_client_selection': False,  # Don't show client selection in edit mode
-        'boq_data': boq_data,  # Add BOQ data for edit mode
     }
 
-    return render(request, "project_profiling/project_form.html", context)
+    return render(request, "project_profiling/project_edit.html", context)
 
 @login_required
 @verified_email_required

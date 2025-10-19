@@ -1122,6 +1122,20 @@ def add_client_ajax(request):
         if Client.objects.filter(email=email).exists():
             return JsonResponse({'success': False, 'message': 'A client with this email already exists'})
         
+        # Handle contract file upload
+        contract_file = request.FILES.get('contract')
+        
+        # Validate contract file if provided
+        if contract_file:
+            # Check file size (10MB limit)
+            if contract_file.size > 10 * 1024 * 1024:  # 10MB
+                return JsonResponse({'success': False, 'message': 'Contract file size must be less than 10MB'})
+            
+            # Check file type
+            allowed_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+            if contract_file.content_type not in allowed_types:
+                return JsonResponse({'success': False, 'message': 'Contract file must be PDF, DOC, or DOCX format'})
+        
         # Create new client
         client = Client.objects.create(
             company_name=company_name,
@@ -1133,6 +1147,7 @@ def add_client_ajax(request):
             state=state or '',
             zip_code=zip_code or '',
             client_type=client_type,
+            contract=contract_file,  # Add contract file if provided
             is_active=True
         )
         
