@@ -694,6 +694,5 @@ def scope_budget_allocation(request, project_id):
         'total_allocated': total_allocated,
         'remaining_budget': remaining_budget,
         'budget_utilization': (total_allocated / project.approved_budget * 100) if project.approved_budget > 0 else 0,
-        'token': token,
-        'role': role,
+        'role': verified_profile.role,
     })

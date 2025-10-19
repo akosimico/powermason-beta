@@ -520,19 +520,34 @@ def edit_draft_project(request, draft_id):
         # Initialize form with draft data
         form = ProjectProfileForm(initial=form_data, pre_selected_client_id=client.id)
 
-    # Use the existing project_edit.html template
+    # Use the project_form.html template for both create and edit modes
+    # Extract BOQ data from draft
+    boq_data = []
+    if 'boq_files' in draft_project.project_data:
+        boq_files = draft_project.project_data['boq_files']
+        if isinstance(boq_files, list):
+            boq_data = boq_files
+        elif isinstance(boq_files, str):
+            # If it's a single file path, convert to list
+            boq_data = [{'name': boq_files.split('/')[-1], 'path': boq_files}]
+    
     context = {
         'form': form,
         'client': client,
         'project': draft_project,  # Pass the draft as project
         'is_edit': True,
         'is_draft': True,
+        'edit_mode': True,  # Add this flag for template
         'source_label': SOURCE_LABELS.get(draft_project.project_source, draft_project.project_source),
         'project_type': draft_project.project_source,
         'next_id': draft_project.project_data.get('project_id'),
+        'auto_fill_mode': False,
+        'pre_selected_client': client,
+        'show_client_selection': False,  # Don't show client selection in edit mode
+        'boq_data': boq_data,  # Add BOQ data for edit mode
     }
 
-    return render(request, "project_profiling/project_edit.html", context)
+    return render(request, "project_profiling/project_form.html", context)
 
 @login_required
 @verified_email_required
@@ -1445,24 +1460,34 @@ def project_create(request, project_type, client_id):
         # Check if this is a draft save
         is_draft_save = request.POST.get('save_as_draft') == 'true'
         is_ajax = (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 
-                  request.content_type == 'application/json' or
                   'application/json' in request.headers.get('Accept', ''))
         
         print(f"DEBUG: is_draft_save = {is_draft_save}")
         print(f"DEBUG: is_ajax = {is_ajax}")
         print(f"DEBUG: X-Requested-With header = {request.headers.get('X-Requested-With')}")
         print(f"DEBUG: Accept header = {request.headers.get('Accept')}")
-        print(f"DEBUG: Content-Type header = {request.content_type}")
-        print(f"DEBUG: All headers = {dict(request.headers)}")
+        print(f"DEBUG: POST data keys = {list(request.POST.keys())}")
+        print(f"DEBUG: save_as_draft value = {request.POST.get('save_as_draft')}")
         
         # Create form first - use the actual client ID, not the URL parameter
+        # Handle case where client might not be set yet (for 'new' flow)
+        if client_id == 'new' and 'client' in request.POST:
+            # Get client from form data
+            selected_client_id = request.POST.get('client')
+            if selected_client_id:
+                client = get_object_or_404(Client, id=selected_client_id)
+                print(f"DEBUG: Client set from form data: {client.company_name} (ID: {client.id})")
+        
         actual_client_id = client.id if hasattr(client, 'id') else client_id
         print(f"DEBUG: Using client_id for form: {actual_client_id}")
         form = FormClass(request.POST, request.FILES, pre_selected_client_id=actual_client_id)
         
-        # For AJAX draft saves, handle differently - BEFORE form validation
-        # Also handle draft saves with save_as_draft flag regardless of AJAX detection
-        if (is_ajax and is_draft_save) or (is_draft_save and request.POST.get('save_as_draft') == 'true'):
+        # For draft saves, handle differently - BEFORE form validation
+        if is_draft_save:
+            print(f"DEBUG: Processing draft save for project_type={project_type}, client_id={client_id}")
+            print(f"DEBUG: About to process draft save...")
+            print(f"DEBUG: Client object: {client}")
+            print(f"DEBUG: Client ID: {client.id if hasattr(client, 'id') else 'No ID'}")
             try:
                 # Save as draft even with incomplete data
                 cleaned_data = {}
@@ -1773,6 +1798,18 @@ def project_create(request, project_type, client_id):
                 initial_data["project_type"] = client_project_types.first()
 
         form = FormClass(initial=initial_data, pre_selected_client_id=client_id)
+
+    # Fallback: If this is a draft save request but we haven't handled it yet, return JSON error
+    if request.method == 'POST' and request.POST.get('save_as_draft') == 'true':
+        print("DEBUG: Fallback - Draft save not handled properly, returning JSON error")
+        return JsonResponse({
+            'success': False,
+            'error': '❌ Draft save failed: Request not processed correctly',
+            'details': {
+                'error_type': 'ProcessingError',
+                'timestamp': timezone.now().isoformat()
+            }
+        }, status=500)
 
     return render(request, "project_profiling/project_form.html", {
         "form": form,

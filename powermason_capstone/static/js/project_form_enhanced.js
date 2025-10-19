@@ -2,84 +2,16 @@
 // Enhanced JavaScript for production-ready project form
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize form functionality
-    initTabNavigation();
+    console.log('Enhanced form script loaded - Navigation conflicts removed v2.1');
+    console.log('Cache bust timestamp: 2024-12-19-15:30');
+    // Initialize form functionality (navigation removed to avoid conflicts)
     initFormValidation();
     initAutoComplete();
     initProgressTracking();
     initAutoSave();
     initFileUploads();
     
-    // Tab navigation system
-    function initTabNavigation() {
-        const tabs = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const prevButton = document.getElementById('prev-tab');
-        const nextButton = document.getElementById('next-tab');
-        let currentTab = 0;
-        
-        tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => switchToTab(index));
-        });
-        
-        prevButton.addEventListener('click', () => {
-            if (currentTab > 0) switchToTab(currentTab - 1);
-        });
-        
-        nextButton.addEventListener('click', () => {
-    if (validateCurrentTab() && currentTab < tabs.length - 1) {
-        switchToTab(currentTab + 1);
-    } else if (currentTab === tabs.length - 1) {
-        // Last tab - use unified submission handler
-        window.submitForm();
-    }
-});
-        
-        function switchToTab(index) {
-            // Update tab buttons
-            tabs.forEach((tab, i) => {
-                tab.classList.toggle('active', i === index);
-                tab.classList.toggle('border-blue-500', i === index);
-                tab.classList.toggle('text-blue-600', i === index);
-                tab.classList.toggle('border-transparent', i !== index);
-                tab.classList.toggle('text-gray-500', i !== index);
-            });
-            
-            // Update tab content
-            tabContents.forEach((content, i) => {
-                content.classList.toggle('hidden', i !== index);
-            });
-            
-            // Update navigation buttons
-            prevButton.disabled = index === 0;
-            nextButton.textContent = index === tabs.length - 1 ? 'Create Project' : 'Next';
-            
-            // Update progress bar
-            updateProgressBar(index);
-            
-            currentTab = index;
-            
-            // Scroll to top of form
-            document.querySelector('.max-w-6xl').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function validateCurrentTab() {
-            const currentTabContent = tabContents[currentTab];
-            const requiredFields = currentTabContent.querySelectorAll('[required]');
-            let isValid = true;
-            
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    showFieldError(field, 'This field is required');
-                    isValid = false;
-                } else {
-                    clearFieldError(field);
-                }
-            });
-            
-            return isValid;
-        }
-    }
+    // Tab navigation system removed to prevent conflicts with new step navigation
     
     // Form validation system
 function initFormValidation() {

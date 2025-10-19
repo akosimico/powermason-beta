@@ -42,7 +42,7 @@
 {% block content %}
 <!-- Messages - Now handled by toast system -->
 {% if messages %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div class="max-w-7xl mx-auto px-8 pt-4">
         {% for message in messages %}
             <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 border border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-100 border border-red-200 text-red-800{% elif message.tags == 'warning' %}bg-yellow-100 border border-yellow-200 text-yellow-800{% else %}bg-blue-100 border border-blue-200 text-blue-800{% endif %}">
                 <div class="flex items-center">
@@ -72,7 +72,7 @@
 
 <!-- Form Validation Errors Display -->
 {% if form.errors %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div class="max-w-7xl mx-auto px-8 pt-4">
         <div class="bg-red-50 border-l-4 border-red-400 rounded-r-lg p-4 mb-6">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
@@ -133,32 +133,45 @@
     "autoFillMode": {{ auto_fill_mode|yesno:"true,false" }},
     "preSelectedClientId": {% if pre_selected_client.id %}"{{ pre_selected_client.id }}"{% else %}null{% endif %},
     "preSelectedClientName": {% if pre_selected_client.company_name %}"{{ pre_selected_client.company_name|escapejs }}"{% else %}null{% endif %},
-    "preSelectedClientCompany": {% if pre_selected_client.company_name %}"{{ pre_selected_client.company_name|escapejs }}"{% else %}null{% endif %}
+    "preSelectedClientCompany": {% if pre_selected_client.company_name %}"{{ pre_selected_client.company_name|escapejs }}"{% else %}null{% endif %},
+    "editMode": {{ edit_mode|yesno:"true,false" }},
+    "isDraft": {{ is_draft|yesno:"true,false" }},
+    "boqData": {{ boq_data|safe }}
 }
 </script>
 
-<!-- Progress indicator -->
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+<!-- Progress Indicator -->
+<div class="max-w-4xl mx-auto px-8 py-6">
     <div class="mb-8">
-        <div class="hidden sm:flex items-center justify-between text-sm font-medium text-gray-500 mb-4">
-            <span class="text-blue-600">Step 1</span>
-            <span>Step 2</span>
-            <span>Step 3</span>
-            <span>Complete</span>
+        <div class="flex items-center justify-between text-sm font-medium text-gray-500 mb-4">
+            <span class="text-blue-600" id="step-1">Step 1</span>
+            <span class="text-gray-400" id="step-2">Step 2</span>
+            <span class="text-gray-400" id="step-3">Step 3</span>
+            <span class="text-gray-400" id="step-4">Step 4</span>
+            <span class="text-gray-400" id="step-5">Step 5</span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 25%"></div>
+            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+        </div>
         </div>
     </div>
 
+<!-- Main Content Container -->
+<div class="max-w-4xl mx-auto px-8 pb-6">
     <!-- Header Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-8 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Create New Project</h1>
-                    <p class="text-gray-600 max-w-2xl">Fill out the form below to create a new project. Required fields are marked with an asterisk.</p>                </div>
-                <div class="hidden lg:block">
+                    {% if edit_mode %}
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Draft Project</h1>
+                        <p class="text-gray-600 max-w-2xl">Update your draft project information below. You can save as draft or submit for approval.</p>
+                    {% else %}
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Create New Project</h1>
+                        <p class="text-gray-600 max-w-2xl">Fill out the form below to create a new project. Required fields are marked with an asterisk.</p>
+                    {% endif %}                </div>
+                <div class="block">
                     <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600" id="project-id-display">{{ next_id }}</div>
@@ -203,11 +216,49 @@
         </div>
         {% endif %}
 
+        <!-- Client Information Display (only show in edit mode) -->
+        {% if edit_mode and client %}
+        <div class="mx-6 mt-6">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                <h4 class="text-base font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    Client Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-700">Company:</span>
+                        <span class="text-gray-900">{{ client.company_name }}</span>
+                    </div>
+                    {% if client.contact_name %}
+                    <div>
+                        <span class="font-medium text-gray-700">Contact Person:</span>
+                        <span class="text-gray-900">{{ client.contact_name }}</span>
+                    </div>
+                    {% endif %}
+                    {% if client.email %}
+                    <div>
+                        <span class="font-medium text-gray-700">Email:</span>
+                        <span class="text-gray-900">{{ client.email }}</span>
+                    </div>
+                    {% endif %}
+                    {% if client.phone %}
+                    <div>
+                        <span class="font-medium text-gray-700">Phone:</span>
+                        <span class="text-gray-900">{{ client.phone }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Client Selection Section (shown when show_client_selection is True) -->
-        {% if show_client_selection %}
-        <div class="mx-4 sm:mx-6 mt-4 sm:mt-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                <h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3 flex items-center">
+        {% if show_client_selection and not edit_mode %}
+        <div class="mx-6 mt-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center">
                     <svg class="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                     </svg>
@@ -216,44 +267,9 @@
                 
                 <!-- Client Search and Selection -->
                 <div class="space-y-3">
-                    <!-- Mobile Layout (Stacked) -->
-                    <div class="flex flex-col space-y-2 sm:hidden">
-                        <div class="relative">
-                            <select id="clientSelectMobile" 
-                                    name="client" 
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">--- Select a Client ---</option>
-                                {% for client in clients %}
-                                <option value="{{ client.id }}" 
-                                        data-client-name="{{ client.company_name }}"
-                                        data-client-contact="{{ client.contact_name }}"
-                                        data-client-email="{{ client.email }}"
-                                        data-client-phone="{{ client.phone }}"
-                                        data-client-address="{{ client.address }}"
-                                        data-client-city="{{ client.city }}"
-                                        data-client-state="{{ client.state }}"
-                                        data-client-zip="{{ client.zip_code }}"
-                                        data-client-type="{{ client.client_type }}">
-                                    {{ client.company_name }} ({{ client.contact_name }}) - {{ client.email }}
-                                </option>
-                                {% empty %}
-                                <option value="" disabled>No {{ source_label }} clients available</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button type="button" 
-                                onclick="openAddClientModal()"
-                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            <span class="hidden sm:inline">Add Client</span>
-                            <span class="sm:hidden">+</span>
-                        </button>
-                    </div>
 
                     <!-- Desktop Layout (Side by Side) -->
-                    <div class="hidden sm:flex space-x-3">
+                    <div class="flex space-x-3">
                         <div class="flex-1 relative">
                             <select id="clientSelect" 
                                     name="client" 
@@ -292,57 +308,11 @@
         {% endif %}
 
         <!-- Selected Client Details Banner (shown when client is selected) -->
-        <div id="clientDetailsBanner" class="hidden mx-4 sm:mx-6 mt-4">
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 sm:p-6 shadow-sm">
-                <!-- Mobile Layout -->
-                <div class="block sm:hidden">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-semibold text-green-900" id="bannerClientNameMobile">Selected Client</h3>
-                                <p class="text-xs text-green-600" id="bannerClientTypeMobile">Client Type</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Selected
-                        </span>
-                    </div>
-                    <div class="space-y-2 text-xs mb-3">
-                        <div class="flex justify-between">
-                            <span class="text-green-600 font-medium">Contact:</span>
-                            <span class="text-green-800" id="bannerClientContactMobile"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-green-600 font-medium">Email:</span>
-                            <span class="text-green-800 truncate ml-2" id="bannerClientEmailMobile"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-green-600 font-medium">Phone:</span>
-                            <span class="text-green-800" id="bannerClientPhoneMobile"></span>
-                        </div>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="button" 
-                                class="inline-flex items-center px-3 py-2 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                                onclick="clearClientSelection()">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                            Change Client
-                        </button>
-                    </div>
-                </div>
+        <div id="clientDetailsBanner" class="hidden mx-6 mt-4">
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 shadow-sm">
 
                 <!-- Desktop Layout -->
-                <div class="hidden sm:flex items-center justify-between">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <div class="flex-shrink-0">
                             <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -361,7 +331,7 @@
                                     Selected
                                 </span>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div class="grid grid-cols-3 gap-4 text-sm">
                                 <div>
                                     <span class="text-green-600 font-medium">Contact Person:</span>
                                     <p class="text-green-800" id="bannerClientContact"></p>
@@ -395,50 +365,21 @@
             </div>
         </div>
 
-        <!-- Mobile Top Action Buttons -->
-        <div class="fixed top-16 left-2 right-2 z-40 bg-white rounded-lg shadow-lg border border-gray-200 px-2 py-1 sm:hidden">
-            <div class="flex space-x-1">
-                <button type="button" id="prev-tab-mobile-top" class="flex-1 inline-flex items-center justify-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    Prev
-                </button>
-                <button type="button" id="next-tab-mobile-top" class="flex-1 inline-flex items-center justify-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:ring-1 focus:ring-blue-500 transition-colors duration-200">
-                    Next
-                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
-                <button type="button" id="save-draft-btn-mobile-top" onclick="saveProjectAsDraft()" class="flex-1 inline-flex items-center justify-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-500 transition-colors duration-200">
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                    Draft
-                </button>
-                <button type="button" id="create-project-btn-mobile-top" onclick="window.submitForm()" class="flex-1 inline-flex items-center justify-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:ring-1 focus:ring-green-500 focus:ring-offset-1 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    Create
-                </button>
-            </div>
-        </div>
 
-        <form method="post" class="px-4 sm:px-6 py-6 sm:py-8 pb-24 pt-20 sm:pt-6" enctype="multipart/form-data" novalidate>
+        <form method="post" class="px-6 py-8 pt-6" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
             <!-- Project Source -->
-            <div class="mb-4 sm:mb-6">
-                <div class="bg-gray-50 rounded-lg p-2 sm:p-4 border border-gray-200">
+            <div class="mb-6">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <div class="flex items-center justify-between">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Project Source</label>
-                            <p class="text-base sm:text-lg font-semibold text-gray-900">{{ source_label }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ source_label }}</p>
                         </div>
                         <div class="text-right">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
-                            <p class="text-base sm:text-lg font-semibold text-blue-600">{{ next_id }}</p>
+                            <p class="text-lg font-semibold text-blue-600">{{ next_id }}</p>
                         </div>
                     </div>
                     <input type="hidden" name="project_source" value="{{ project_type }}">
@@ -450,26 +391,150 @@
             <div class="space-y-8">
                 <div class="border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8">
-                        <button type="button" class="tab-button active border-b-2 border-blue-500 py-2 px-1 text-sm font-medium text-blue-600" data-tab="basic">
-                            Basic Information
-                        </button>
-                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="location">
-                            Location & Timeline
-                        </button>
-                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="team">
-                            Team & Resources
-                        </button>
-                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="financial">
-                            Financial & Legal
-                        </button>
-                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="documents">
-                            Documents & Data
-                        </button>
+                        {% if edit_mode %}
+                            <!-- Edit mode: All tabs unlocked and clickable -->
+                            <button type="button" class="tab-button active border-b-2 border-blue-500 py-2 px-1 text-sm font-medium text-blue-600" data-tab="documents">
+                                Documents & Data
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="basic">
+                                Basic Information
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="location">
+                                Location & Timeline
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="team">
+                                Team & Resources
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="financial">
+                                Financial & Legal
+                            </button>
+                        {% else %}
+                            <!-- Create mode: Progressive unlocking -->
+                            <button type="button" class="tab-button active border-b-2 border-blue-500 py-2 px-1 text-sm font-medium text-blue-600" data-tab="documents">
+                                Documents & Data
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-400 cursor-not-allowed" data-tab="basic" disabled>
+                                Basic Information
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-400 cursor-not-allowed" data-tab="location" disabled>
+                                Location & Timeline
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-400 cursor-not-allowed" data-tab="team" disabled>
+                                Team & Resources
+                            </button>
+                            <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-400 cursor-not-allowed" data-tab="financial" disabled>
+                                Financial & Legal
+                            </button>
+                        {% endif %}
                     </nav>
                 </div>
 
+                <!-- Documents & Data Tab -->
+                <div class="tab-content" id="documents-tab">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                            </svg>
+                            Documents & Data Import
+                        </h3>
+
+                        <!-- Cost Estimate Preview (shown when project type has data) -->
+                        <div id="boqCostEstimatePreview" class="hidden mb-4">
+                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+                                <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Estimated Costs from Similar Projects
+                                </h4>
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Based on historical data from similar projects of this type.
+                                </p>
+                                <div id="costEstimateContent" class="grid grid-cols-3 gap-4">
+                                    <!-- Cost estimate content will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOQ Upload Section -->
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+                            <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                </svg>
+                                {% if edit_mode %}BOQ Files{% else %}Upload BOQ (Bill of Quantities){% endif %}
+                            </h4>
+                            <p class="text-sm text-gray-600 mb-6">
+                                {% if edit_mode %}
+                                    Manage BOQ files for this project. You can view existing files or replace them with new ones.
+                                {% else %}
+                                    Upload detailed BOQ files to automatically extract project tasks, costs, materials, and dependencies. Use the standard template for best results.
+                                {% endif %}
+                            </p>
+
+                            {% if edit_mode %}
+                                <!-- Edit Mode: Show existing BOQ files -->
+                                <div id="existingBOQSection">
+                                    <div id="existingBOQFiles" class="space-y-3">
+                                        <!-- Existing BOQ files will be populated here by JavaScript -->
+                                    </div>
+                                    
+                                    <!-- Replace BOQ Button -->
+                                    <div class="mt-4">
+                                        <button type="button" id="replaceBOQBtn" class="inline-flex items-center px-4 py-2 border border-purple-300 text-sm font-medium rounded-lg text-purple-700 bg-white hover:bg-purple-50 focus:ring-2 focus:ring-purple-500 transition-colors duration-200">
+                                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Replace BOQ Files
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Replace BOQ Upload Zone (hidden by default) -->
+                                <div id="replaceBOQSection" class="hidden">
+                                    <div class="border-2 border-dashed border-purple-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer" onclick="document.getElementById('boqFileInput').click()">
+                                        <svg class="w-16 h-16 mx-auto text-purple-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <p class="text-lg font-semibold text-purple-700 mb-1">Click to upload new BOQ files</p>
+                                        <p class="text-sm text-purple-500">PDF, XLS, XLSX files (Max 10MB)</p>
+                                        <p class="text-xs text-purple-400 mt-2">This will replace the existing BOQ files</p>
+                                    </div>
+                                    
+                                    <div class="mt-4 flex space-x-3">
+                                        <button type="button" id="cancelReplaceBOQBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 transition-colors duration-200">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Create Mode: Normal upload interface -->
+                                <div id="boqUploadZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer" onclick="document.getElementById('boqFileInput').click()">
+                                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-lg font-semibold text-gray-700 mb-1">Click to upload BOQ files</p>
+                                    <p class="text-sm text-gray-500">PDF, XLS, XLSX files (Max 10MB)</p>
+                                    <p class="text-xs text-gray-400 mt-2">Use the standard BOQ template for automatic data extraction</p>
+                                </div>
+                            {% endif %}
+
+                            <!-- Hidden BOQ file input -->
+                            <input type="file" id="boqFileInput" name="boq_files" class="hidden" accept=".pdf,.xls,.xlsx" multiple onchange="handleBOQUpload(event)">
+
+                            <!-- Uploaded BOQ Files List -->
+                            <div id="uploadedBOQList" class="mt-6 space-y-3 hidden">
+                                <h5 class="text-sm font-medium text-gray-700">Uploaded BOQ Files:</h5>
+                                <div id="boqFilesList" class="space-y-2"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
                 <!-- Basic Information Tab -->
-                <div class="tab-content" id="basic-tab">
+                <div class="tab-content hidden" id="basic-tab">
                     <div class="space-y-6">
                         <h3 class="text-lg font-medium text-gray-900 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -478,7 +543,7 @@
                             Basic Information
                         </h3>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-2 gap-6">
                             <!-- Project Name -->
                             <div class="form-group">
                                 <label for="id_project_name" class="block text-sm font-medium text-gray-700 mb-2">
@@ -503,7 +568,18 @@
                                     <span class="text-red-500 ml-1" aria-label="required">*</span>
                                     <span class="auto-fill-indicator text-xs text-blue-600 ml-1 hidden">auto-filled</span>
                                 </label>
-                                {{ form.project_type|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                <select id="id_project_type" name="project_type" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-100" disabled>
+                                    <option value="">--- Select Project Type ---</option>
+                                    {% for choice in form.project_type.field.choices %}
+                                        <option value="{{ choice.0 }}" {% if form.project_type.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p id="projectTypeHelpText" class="mt-1 text-sm text-gray-500 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Please select a client first to enable project type selection
+                                </p>
                                 {% if form.project_type.errors %}
                                     <p class="mt-1 text-sm text-red-600 flex items-center">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -560,7 +636,7 @@
                                     </svg>
                                     Client Information
                                 </h4>
-                                <div id="client-details-content" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div id="client-details-content" class="grid grid-cols-2 gap-4 text-sm">
                                     <!-- Client details will be populated here via JavaScript -->
                                 </div>
                             </div>
@@ -578,7 +654,7 @@
                             Location & Timeline
                         </h3>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-2 gap-6">
                             <!-- Location -->
                             <div class="form-group">
                                 <label for="id_location" class="block text-sm font-medium text-gray-700 mb-2">
@@ -632,7 +708,7 @@
                                 <div class="relative">
                                     {{ form.lot_size|add_class:"block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">m²</span>
+                                        <span class="text-gray-500 text-sm">m²</span>
                                     </div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-500">Enter the lot size in square meters for automatic cost estimation</p>
@@ -712,14 +788,14 @@
                         </h3>
 
                         <!-- Employee Assignments Section -->
-                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-                            <h4 class="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-6">
+                            <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
                                 <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 Employee Assignments
                             </h4>
-                            <p class="text-xs sm:text-sm text-gray-600 mb-4">Assign employees to key project roles. Only active employees with the corresponding roles will be shown in the dropdowns.</p>
+                            <p class="text-sm text-gray-600 mb-4">Assign employees to key project roles. Only active employees with the corresponding roles will be shown in the dropdowns.</p>
 
                             <!-- Project Manager -->
                             <div class="form-group mb-4" id="pm_container">
@@ -801,7 +877,7 @@
                             </div>
 
                             <!-- Employee Role Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="grid grid-cols-3 gap-6">
                                 <!-- Project In Charge -->
                                 <div class="form-group">
                                     <label for="id_project_in_charge" class="block text-sm font-medium text-gray-700 mb-2">
@@ -938,7 +1014,7 @@
                         </div>
 
                         <!-- Other Team Fields -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-2 gap-6">
                             <!-- Project Status -->
                             <div class="form-group">
                                 <label for="id_status" class="block text-sm font-medium text-gray-700 mb-2">
@@ -968,7 +1044,7 @@
                             Financial & Legal Information
                         </h3>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-2 gap-6">
                             <!-- Estimated Cost -->
                             <div class="form-group">
                                 <label for="id_estimated_cost" class="block text-sm font-medium text-gray-700 mb-2">
@@ -977,7 +1053,7 @@
                                 </label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">₱</span>
+                                        <span class="text-gray-500 text-sm">₱</span>
                                     </div>
                                     <input type="number" 
                                            id="id_estimated_cost" 
@@ -1002,7 +1078,6 @@
                             <div class="form-group">
                                 <label for="id_payment_terms" class="block text-sm font-medium text-gray-700 mb-2">
                                     Payment Terms 
-                                    <span class="auto-fill-indicator text-xs text-blue-600 ml-1 hidden">auto-filled</span>
                                 </label>
                                 {{ form.payment_terms|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
                                 {% if form.payment_terms.errors %}
@@ -1055,188 +1130,79 @@
                     </div>
                 </div>
 
-                <!-- Documents & Data Tab -->
-                <div class="tab-content hidden" id="documents-tab">
-                    <div class="space-y-6">
-                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                            </svg>
-                            Documents & Data Import
-                        </h3>
+                        </div>
 
-                        <!-- Cost Estimate Preview (shown when project type has data) -->
-                        <div id="boqCostEstimatePreview" class="hidden mb-4">
-                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-                                <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
-                                    <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    Estimated Costs from Similar Projects
-                                </h4>
-                                <p class="text-sm text-gray-600 mb-4">
-                                    Based on historical data from similar projects of this type.
-                                </p>
-                                <div id="costEstimateContent" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <!-- Cost estimate content will be populated here -->
-                                </div>
+                            </div>
                             </div>
                         </div>
 
-                        <!-- BOQ Upload Section -->
-                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
-                            <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                </svg>
-                                Upload BOQ (Bill of Quantities)
-                            </h4>
-                            <p class="text-sm text-gray-600 mb-6">
-                                Upload detailed BOQ files to automatically extract project tasks, costs, materials, and dependencies. Use the standard template for best results.
-                            </p>
-
-                            <!-- BOQ File Upload Zone -->
-                            <div id="boqUploadZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer" onclick="document.getElementById('boqFileInput').click()">
-                                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                <p class="text-lg font-semibold text-gray-700 mb-1">Click to upload BOQ files</p>
-                                <p class="text-sm text-gray-500">PDF, XLS, XLSX files (Max 10MB)</p>
-                                <p class="text-xs text-gray-400 mt-2">Use the standard BOQ template for automatic data extraction</p>
-                            </div>
-
-                            <!-- Hidden BOQ file input -->
-                            <input type="file" id="boqFileInput" class="hidden" accept=".pdf,.xls,.xlsx" multiple onchange="handleBOQUpload(event)">
-
-                            <!-- Uploaded BOQ Files List -->
-                            <div id="uploadedBOQList" class="mt-6 space-y-3 hidden">
-                                <h5 class="text-sm font-medium text-gray-700">Uploaded BOQ Files:</h5>
-                                <div id="boqFilesList" class="space-y-2"></div>
-                            </div>
-                        </div>
-
-                        <!-- Cost Estimation Section -->
-                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-                            <h4 class="text-base font-semibold text-gray-900 mb-4 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                </svg>
-                                Automatic Cost Estimation
-                            </h4>
-                            <p class="text-sm text-gray-600 mb-4">
-                                Get automatic cost estimates based on your project type and lot size.
-                            </p>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Project Complexity</label>
-                                    <select id="complexityLevel" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="low_end">Low End (Basic)</option>
-                                        <option value="mid_range" selected>Mid Range (Standard)</option>
-                                        <option value="high_end">High End (Premium)</option>
-                                    </select>
-                                </div>
-                                <div class="flex items-end">
-                                    <button type="button" onclick="estimateProjectCost()" class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500">
-                                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Estimate Cost
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Cost Estimation Results -->
-                            <div id="costEstimationResults" class="mt-6 hidden">
-                                <div class="bg-white border border-green-200 rounded-lg p-4">
-                                    <h5 class="text-sm font-medium text-gray-900 mb-3">Estimated Project Cost</h5>
-                                    <div id="costBreakdown" class="space-y-2"></div>
-                                    <div class="mt-4 pt-4 border-t border-gray-200">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-lg font-semibold text-gray-900">Total Estimated Cost:</span>
-                                            <span id="totalEstimatedCost" class="text-xl font-bold text-green-600"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        </form>
                     </div>
                 </div>
             </div>
 
-                    </div>
-                </div>
-            </div>
-
-            <!-- Floating Action Buttons at Bottom -->
-            <div class="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-40 bg-white rounded-lg shadow-lg border border-gray-200 px-2 py-1 sm:px-4 sm:py-3">
-                <!-- Mobile Layout (Bottom) -->
-                <div class="flex space-x-1 sm:hidden">
-                    <button type="button" id="prev-tab-mobile" class="flex-1 inline-flex items-center justify-center px-1 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 20 20">
+<!-- Floating Navigation Bar -->
+<div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 bg-white rounded-lg shadow-lg border border-gray-200 px-6 py-4">
+    <div class="flex items-center space-x-6">
+        {% if not edit_mode %}
+        <!-- Previous/Next Navigation (only in create mode) -->
+        <div class="flex items-center space-x-3">
+            <button type="button" id="prev-step-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
                         Prev
                     </button>
-                    <button type="button" id="next-tab-mobile" class="flex-1 inline-flex items-center justify-center px-1 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:ring-1 focus:ring-blue-500 transition-colors duration-200">
-                        Next
-                        <svg class="w-2 h-2 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </button>
-                    <button type="button" id="save-draft-btn-mobile" onclick="saveProjectAsDraft()" class="flex-1 inline-flex items-center justify-center px-1 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-500 transition-colors duration-200">
-                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                        </svg>
-                        Draft
-                    </button>
-                    <button type="button" id="create-project-btn-mobile" onclick="window.submitForm()" class="flex-1 inline-flex items-center justify-center px-1 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:ring-1 focus:ring-green-500 focus:ring-offset-1 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        Create
-                    </button>
-                </div>
-
-                <!-- Desktop Layout (Horizontal) -->
-                <div class="hidden sm:flex items-center space-x-3">
-                    <!-- Previous/Next Navigation -->
-                    <div class="flex space-x-2">
-                        <button type="button" id="prev-tab" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Previous
-                        </button>
-                        <button type="button" id="next-tab" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-                            Next
-                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+            <button type="button" id="next-step-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                Next
+                <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                             </svg>
                         </button>
                     </div>
 
                     <!-- Divider -->
-                    <div class="w-px h-6 bg-gray-300"></div>
+        <div class="w-px h-8 bg-gray-300"></div>
+        {% endif %}
 
                     <!-- Action Buttons -->
-                    <div class="flex items-center space-x-2">
-                        <button type="button" id="save-draft-btn" onclick="saveProjectAsDraft()" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+        <div class="flex items-center space-x-3">
+            {% if edit_mode %}
+                <!-- Edit mode buttons -->
+                <a href="{% url 'draft_projects_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                    Cancel
+                </a>
+                <button type="submit" name="save_as_draft" value="true" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                    Save as Draft
+                </button>
+                <button type="submit" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    Submit for Approval
+                </button>
+            {% else %}
+                <!-- Create mode buttons -->
+                <button type="button" id="save-draft-btn" onclick="saveProjectAsDraft()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                             </svg>
                             Save as Draft
                         </button>
                         <button type="button" id="create-project-btn" onclick="window.submitForm()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
                             Create Project
                         </button>
+            {% endif %}
                     </div>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -1252,7 +1218,7 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span class="text-gray-700 font-medium">Creating project...</span>
+                <span class="text-gray-700 font-medium">{% if edit_mode %}Updating project...{% else %}Creating project...{% endif %}</span>
             </div>
         </div>
     </div>
@@ -1292,7 +1258,7 @@
 
 <!-- Add New Client Modal -->
 <div id="addClientModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-5 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
         <!-- Header -->
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-gray-900">Add New Client</h2>
@@ -1317,7 +1283,7 @@
             </div>
 
             <!-- Company & Contact -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="addCompanyName" class="block text-sm font-medium text-gray-700">Company Name *</label>
                     <input type="text" id="addCompanyName" name="company_name"
@@ -1333,7 +1299,7 @@
             </div>
 
             <!-- Email & Phone -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="addEmail" class="block text-sm font-medium text-gray-700">Email *</label>
                     <input type="email" id="addEmail" name="email"
@@ -1357,7 +1323,7 @@
             </div>
 
             <!-- City, State, Zip -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label for="addCity" class="block text-sm font-medium text-gray-700">City</label>
                     <input type="text" id="addCity" name="city"
@@ -1802,7 +1768,7 @@ function selectClientFromDropdownWithData(select2Data) {
     
     if (select2Data && select2Data.id) {
         // Get the option element to extract data attributes - check both selects
-        const select = document.getElementById('clientSelect') || document.getElementById('clientSelectMobile');
+        const select = document.getElementById('clientSelect');
         const selectedOption = select.querySelector(`option[value="${select2Data.id}"]`);
         
         if (selectedOption) {
@@ -1830,6 +1796,11 @@ function selectClientFromDropdownWithData(select2Data) {
             
             // Load client-specific project types
             loadClientProjectTypes(select2Data.id);
+            
+            // Trigger validation when client is selected
+            if (typeof validateCurrentStep === 'function') {
+                validateCurrentStep();
+            }
         }
     } else {
         console.log('No client selected, clearing selection');
@@ -1839,7 +1810,7 @@ function selectClientFromDropdownWithData(select2Data) {
 
 function selectClientFromDropdown() {
     console.log('selectClientFromDropdown called');
-    const select = document.getElementById('clientSelect') || document.getElementById('clientSelectMobile');
+    const select = document.getElementById('clientSelect');
     if (!select) {
         console.log('Client select element not found');
         return;
@@ -1879,6 +1850,11 @@ function selectClientFromDropdown() {
             
             // Load client-specific project types
             loadClientProjectTypes(selectedValue);
+            
+            // Trigger validation when client is selected
+            if (typeof validateCurrentStep === 'function') {
+                validateCurrentStep();
+            }
         }
     } else {
         console.log('No client selected, clearing selection');
@@ -1927,35 +1903,6 @@ function showClientDetailsBanner() {
     const fullAddress = addressParts.join(', ') || 'N/A';
     if (bannerClientAddress) bannerClientAddress.textContent = fullAddress;
     
-    // Populate mobile version
-    const bannerClientNameMobile = document.getElementById('bannerClientNameMobile');
-    const bannerClientContactMobile = document.getElementById('bannerClientContactMobile');
-    const bannerClientEmailMobile = document.getElementById('bannerClientEmailMobile');
-    const bannerClientPhoneMobile = document.getElementById('bannerClientPhoneMobile');
-    const bannerClientAddressMobile = document.getElementById('bannerClientAddressMobile');
-    
-    console.log('Mobile banner elements found:', {
-        bannerClientNameMobile: !!bannerClientNameMobile,
-        bannerClientContactMobile: !!bannerClientContactMobile,
-        bannerClientEmailMobile: !!bannerClientEmailMobile,
-        bannerClientPhoneMobile: !!bannerClientPhoneMobile,
-        bannerClientAddressMobile: !!bannerClientAddressMobile
-    });
-    
-    if (bannerClientNameMobile) bannerClientNameMobile.textContent = selectedClient.name;
-    if (bannerClientContactMobile) bannerClientContactMobile.textContent = selectedClient.contact;
-    if (bannerClientEmailMobile) bannerClientEmailMobile.textContent = selectedClient.email;
-    if (bannerClientPhoneMobile) bannerClientPhoneMobile.textContent = selectedClient.phone || 'N/A';
-    
-    // Update client type for mobile
-    const bannerClientTypeMobile = document.getElementById('bannerClientTypeMobile');
-    if (bannerClientTypeMobile) {
-        console.log('Mobile client type value:', selectedClient.type);
-        const clientTypeText = selectedClient.type === 'DC' ? 'Direct Client' : selectedClient.type === 'GC' ? 'General Contractor' : selectedClient.type || 'N/A';
-        bannerClientTypeMobile.textContent = clientTypeText;
-        console.log('Set mobile client type text to:', clientTypeText);
-    }
-    if (bannerClientAddressMobile) bannerClientAddressMobile.textContent = fullAddress;
     
     // Show the banner
     const banner = document.getElementById('clientDetailsBanner');
@@ -1971,7 +1918,7 @@ function showClientDetailsBanner() {
 function clearClientSelection() {
     selectedClient = null;
     window.selectedClient = null;
-    const select = document.getElementById('clientSelect') || document.getElementById('clientSelectMobile');
+    const select = document.getElementById('clientSelect');
     if (select) {
         // Clear Select2 selection
         $(select).val('').trigger('change');
@@ -1979,6 +1926,21 @@ function clearClientSelection() {
         select.value = '';
     }
     document.getElementById('clientDetailsBanner').classList.add('hidden');
+    
+    // Disable project type dropdown and reset it
+    const projectTypeSelect = document.getElementById('id_project_type');
+    if (projectTypeSelect) {
+        projectTypeSelect.disabled = true;
+        projectTypeSelect.classList.remove('bg-white');
+        projectTypeSelect.classList.add('bg-gray-100');
+        projectTypeSelect.innerHTML = '<option value="">--- Select Project Type ---</option>';
+    }
+    
+    // Show the help text again
+    const helpText = document.getElementById('projectTypeHelpText');
+    if (helpText) {
+        helpText.style.display = 'block';
+    }
 }
 
 function closeClientModal() {
@@ -2078,6 +2040,17 @@ function updateProjectTypeDropdown(projectTypes) {
         option.textContent = pt.name;
         projectTypeSelect.appendChild(option);
     });
+    
+    // Enable the dropdown and remove disabled styling
+    projectTypeSelect.disabled = false;
+    projectTypeSelect.classList.remove('bg-gray-100');
+    projectTypeSelect.classList.add('bg-white');
+    
+    // Hide the help text
+    const helpText = document.getElementById('projectTypeHelpText');
+    if (helpText) {
+        helpText.style.display = 'none';
+    }
 }
 
 function updateAddClientProjectTypes(projectTypes) {
@@ -2558,7 +2531,7 @@ function addNewClient() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Add new client to ALL dropdowns (mobile and desktop)
+            // Add new client to dropdown
             const selects = document.querySelectorAll('#clientSelect');
             selects.forEach(select => {
                 const newOption = document.createElement('option');
@@ -2740,6 +2713,11 @@ function selectClientFromModal() {
         
         // Close modal
         closeClientModal();
+        
+        // Trigger validation when client is selected
+        if (typeof validateCurrentStep === 'function') {
+            validateCurrentStep();
+        }
     }
 }
 
@@ -2778,10 +2756,271 @@ window.getCurrentLocation = function() {
 // Note: uploadContract and uploadPermits functions removed
 // Documents are now managed through the centralized Document Library
 
+// Main initialization - handles both create and edit modes
+document.addEventListener('DOMContentLoaded', function() {
+    // Get mode information from Django data
+    const djangoData = JSON.parse(document.getElementById('django-data').textContent);
+    const isEditMode = djangoData.editMode || false;
+    const isDraft = djangoData.isDraft || false;
+    
+    console.log('Initializing project form:', { isEditMode, isDraft });
+    
+    // Initialize based on mode
+    if (isEditMode) {
+        initializeEditMode();
+    } else {
+        initializeCreateMode();
+    }
+});
+
+function initializeEditMode() {
+    console.log('Initializing edit mode');
+    
+    // Enable all tabs in edit mode (don't hide navigation)
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.disabled = false;
+        button.classList.remove('cursor-not-allowed', 'text-gray-400');
+        button.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+    });
+    
+    // Initialize tab navigation for edit mode
+    initializeTabNavigation();
+    
+    // Pre-fill client details if available
+    const djangoData = JSON.parse(document.getElementById('django-data').textContent);
+    const clientId = djangoData.preSelectedClientId;
+    if (clientId) {
+        showClientDetails(clientId);
+    }
+    
+    // Initialize project manager if available
+    const pmInput = document.getElementById('project_manager_input');
+    const pmHidden = document.getElementById('project_manager_id');
+    if (pmInput && pmHidden && pmHidden.value) {
+        // PM is already set, show the assigned display
+        updatePMDisplay();
+    }
+    
+    // Initialize BOQ display for edit mode
+    initializeBOQEditMode();
+}
+
+function initializeCreateMode() {
+    console.log('Initializing create mode');
+    
+    // Initialize client filtering
+    initializeClientFiltering();
+    
+    // Initialize tab navigation
+    initializeTabNavigation();
+}
+
+function showClientDetails(clientId) {
+    console.log('showClientDetails called with clientId:', clientId);
+    
+    if (!clientId) {
+        console.log('No client ID provided');
+        return;
+    }
+    
+    const detailsBox = document.getElementById('client-details-box');
+    const detailsContent = document.getElementById('client-details-content');
+    
+    if (!detailsBox || !detailsContent) {
+        console.error('Client details elements not found');
+        return;
+    }
+    
+    // Show loading state
+    detailsContent.innerHTML = '<div class="text-gray-500">Loading client details...</div>';
+    detailsBox.classList.remove('hidden');
+    
+    fetch(`/manage-client/api/clients/${clientId}/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Client data received:', data);
+            
+            const clientTypeMap = {
+                'DC': 'Direct Client',
+                'GC': 'General Contractor'
+            };
+            
+            let detailsHTML = `
+                <div>
+                    <span class="font-medium text-gray-700">Company:</span>
+                    <span class="text-gray-900">${data.company_name || 'N/A'}</span>
+                </div>
+                <div>
+                    <span class="font-medium text-gray-700">Type:</span>
+                    <span class="text-gray-900">${clientTypeMap[data.client_type] || data.client_type}</span>
+                </div>
+            `;
+            
+            if (data.contact_name) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Contact Person:</span>
+                        <span class="text-gray-900">${data.contact_name}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.email) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Email:</span>
+                        <span class="text-gray-900">${data.email}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.phone) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Phone:</span>
+                        <span class="text-gray-900">${data.phone}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.address) {
+                detailsHTML += `
+                    <div class="md:col-span-2">
+                        <span class="font-medium text-gray-700">Address:</span>
+                        <span class="text-gray-900">${data.address}`;
+                if (data.city || data.state) {
+                    detailsHTML += `, ${data.city || ''} ${data.state || ''}`.replace(/,\s*$/, '');
+                }
+                if (data.zip_code) {
+                    detailsHTML += ` ${data.zip_code}`;
+                }
+                detailsHTML += `</span>
+                    </div>
+                `;
+            }
+            
+            detailsContent.innerHTML = detailsHTML;
+        })
+        .catch(error => {
+            console.error('Error fetching client details:', error);
+            detailsContent.innerHTML = '<div class="text-red-500">Error loading client details</div>';
+        });
+}
+
+function updatePMDisplay() {
+    const pmInput = document.getElementById('project_manager_input');
+    const pmHidden = document.getElementById('project_manager_id');
+    const pmDisplay = document.getElementById('assigned_pm_display');
+    
+    if (pmInput && pmHidden && pmDisplay && pmHidden.value) {
+        const pmName = pmInput.value;
+        pmDisplay.innerHTML = `
+            <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">
+                        Assigned to: ${pmName}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function initializeBOQEditMode() {
+    console.log('Initializing BOQ edit mode');
+    
+    // Get BOQ data from the draft (this would come from the backend)
+    const djangoData = JSON.parse(document.getElementById('django-data').textContent);
+    const boqData = djangoData.boqData || [];
+    
+    // Display existing BOQ files
+    displayExistingBOQFiles(boqData);
+    
+    // Set up replace BOQ functionality
+    setupReplaceBOQFunctionality();
+}
+
+function displayExistingBOQFiles(boqFiles) {
+    const existingBOQFiles = document.getElementById('existingBOQFiles');
+    if (!existingBOQFiles) return;
+    
+    if (boqFiles && boqFiles.length > 0) {
+        existingBOQFiles.innerHTML = boqFiles.map(file => `
+            <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-8 h-8 text-purple-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">${file.name || 'BOQ File'}</p>
+                        <p class="text-xs text-gray-500">${file.size ? formatFileSize(file.size) : 'Unknown size'}</p>
+                        <p class="text-xs text-green-600">✓ Processed and ready</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="previewBOQData('${file.name || 'file'}')" class="text-purple-500 hover:text-purple-700" title="Preview extracted data">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        existingBOQFiles.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-sm">No BOQ files found in this draft</p>
+                <p class="text-xs text-gray-400 mt-1">Click "Replace BOQ Files" to add new ones</p>
+            </div>
+        `;
+    }
+}
+
+function setupReplaceBOQFunctionality() {
+    const replaceBOQBtn = document.getElementById('replaceBOQBtn');
+    const cancelReplaceBOQBtn = document.getElementById('cancelReplaceBOQBtn');
+    const existingBOQSection = document.getElementById('existingBOQSection');
+    const replaceBOQSection = document.getElementById('replaceBOQSection');
+    
+    if (replaceBOQBtn) {
+        replaceBOQBtn.addEventListener('click', function() {
+            existingBOQSection.classList.add('hidden');
+            replaceBOQSection.classList.remove('hidden');
+        });
+    }
+    
+    if (cancelReplaceBOQBtn) {
+        cancelReplaceBOQBtn.addEventListener('click', function() {
+            existingBOQSection.classList.remove('hidden');
+            replaceBOQSection.classList.add('hidden');
+            // Clear any selected files
+            const boqFileInput = document.getElementById('boqFileInput');
+            if (boqFileInput) {
+                boqFileInput.value = '';
+            }
+        });
+    }
+}
+
 // Client selection functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Client dropdown functionality (only if client selection is shown)
-    const clientSelects = document.querySelectorAll('#clientSelect, #clientSelectMobile');
+    const clientSelects = document.querySelectorAll('#clientSelect');
     clientSelects.forEach(clientSelect => {
         if (clientSelect) {
             // Initialize Select2 for searchable dropdown
@@ -2851,19 +3090,132 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Simple tab navigation functionality
+// Step Navigation System
 document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
-    const prevButton = document.getElementById('prev-tab');
-    const nextButton = document.getElementById('next-tab');
-    const prevButtonMobile = document.getElementById('prev-tab-mobile');
-    const nextButtonMobile = document.getElementById('next-tab-mobile');
+    const prevButton = document.getElementById('prev-step-btn');
+    const nextButton = document.getElementById('next-step-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const stepElements = document.querySelectorAll('[id^="step-"]');
     
-    let currentTab = 0;
-    const tabs = ['basic', 'location', 'team', 'financial', 'documents'];
+    let currentStep = 0;
+    const steps = ['documents', 'basic', 'location', 'team', 'financial'];
+    const completedSteps = new Set();
     
-    function showTab(index) {
+    // Step validation functions
+    const stepValidators = {
+        documents: () => {
+            // Check if client is selected AND file was successfully processed
+            const clientSelect = document.getElementById('clientSelect');
+            const uploadedBOQList = document.getElementById('uploadedBOQList');
+            const boqFilesList = document.getElementById('boqFilesList');
+            
+            // Check both the select element value and the global selectedClient variable
+            const hasClientFromSelect = clientSelect && clientSelect.value !== '';
+            const hasClientFromGlobal = window.selectedClient && window.selectedClient.id;
+            const hasClient = hasClientFromSelect || hasClientFromGlobal;
+            
+            // Check if files are uploaded and processed successfully
+            let hasProcessedFile = false;
+            if (uploadedBOQList && !uploadedBOQList.classList.contains('hidden') && boqFilesList) {
+                const fileItems = boqFilesList.children;
+                hasProcessedFile = fileItems.length > 0;
+                
+                // Additional check: look for success indicators in file items
+                for (let i = 0; i < fileItems.length; i++) {
+                    const fileItem = fileItems[i];
+                    // Check if file has success class or no error indicators
+                    if (fileItem.classList.contains('success') || 
+                        !fileItem.classList.contains('error') ||
+                        fileItem.querySelector('.text-green-600') ||
+                        !fileItem.querySelector('.text-red-600')) {
+                        hasProcessedFile = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Documents validation check logging removed for cleaner console
+            
+            return hasClient && hasProcessedFile;
+        },
+        basic: () => {
+            // Check if project name is filled
+            const projectName = document.getElementById('id_project_name');
+            return projectName && projectName.value.trim() !== '';
+        },
+        location: () => {
+            // Check if location is filled (check both location and city/province fields)
+            const location = document.getElementById('id_location');
+            const cityProvince = document.getElementById('id_city_province');
+            
+            const hasLocation = location && location.value.trim() !== '';
+            const hasCityProvince = cityProvince && cityProvince.value.trim() !== '';
+            
+            const isValid = hasLocation || hasCityProvince;
+            
+            console.log('Location validation debug:', {
+                location: location ? location.value : 'null',
+                cityProvince: cityProvince ? cityProvince.value : 'null',
+                hasLocation: hasLocation,
+                hasCityProvince: hasCityProvince,
+                isValid: isValid
+            });
+            
+            return isValid;
+        },
+        team: () => {
+            // Check if at least one team member is assigned
+            const projectInCharge = document.getElementById('id_project_in_charge');
+            return projectInCharge && projectInCharge.value !== '';
+        },
+        financial: () => {
+            // Financial step is always valid (optional)
+            return true;
+        }
+    };
+    
+    function updateProgressIndicator(step) {
+        const progressPercentage = ((step + 1) / steps.length) * 100;
+        progressBar.style.width = progressPercentage + '%';
+        
+        // Update step indicators
+        stepElements.forEach((stepEl, i) => {
+            if (i <= step) {
+                if (completedSteps.has(i)) {
+                    stepEl.classList.remove('text-gray-400', 'text-blue-600');
+                    stepEl.classList.add('text-green-600');
+                } else if (i === step) {
+                    stepEl.classList.remove('text-gray-400', 'text-green-600');
+                    stepEl.classList.add('text-blue-600');
+                } else {
+                    stepEl.classList.remove('text-gray-400', 'text-green-600');
+                    stepEl.classList.add('text-blue-600');
+                }
+            } else {
+                stepEl.classList.remove('text-blue-600', 'text-green-600');
+                stepEl.classList.add('text-gray-400');
+            }
+        });
+    }
+    
+    function updateNextButtonState() {
+        const nextButton = document.getElementById('next-step-btn');
+        if (nextButton) {
+            if (completedSteps.has(currentStep)) {
+                nextButton.disabled = false;
+                nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                console.log('Enabled next button for step:', currentStep);
+            } else {
+                nextButton.disabled = true;
+                nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+                console.log('Disabled next button for step:', currentStep);
+            }
+        }
+    }
+    
+    function showStep(step) {
         // Hide all tab contents
         tabContents.forEach(content => content.classList.add('hidden'));
         
@@ -2873,89 +3225,353 @@ document.addEventListener('DOMContentLoaded', function() {
             button.classList.add('text-gray-500', 'border-transparent');
         });
         
-        // Show current tab content
-        const currentContent = document.getElementById(tabs[index] + '-tab');
+        // Show current step content
+        const currentContent = document.getElementById(steps[step] + '-tab');
         if (currentContent) {
             currentContent.classList.remove('hidden');
         }
         
         // Activate current button
-        const currentButton = document.querySelector(`[data-tab="${tabs[index]}"]`);
+        const currentButton = document.querySelector(`[data-tab="${steps[step]}"]`);
         if (currentButton) {
             currentButton.classList.add('active', 'text-blue-600', 'border-blue-500');
             currentButton.classList.remove('text-gray-500', 'border-transparent');
         }
         
-        // Update navigation buttons (both desktop and mobile)
-        const isFirstTab = index === 0;
-        const isLastTab = index === tabs.length - 1;
+        // Update navigation buttons
+        const isFirstStep = step === 0;
+        const isLastStep = step === steps.length - 1;
         
-        // Desktop buttons
-        if (prevButton) prevButton.disabled = isFirstTab;
+        // Previous button
+        if (prevButton) {
+            prevButton.disabled = isFirstStep;
+            prevButton.style.display = isFirstStep ? 'none' : 'inline-flex';
+        }
+        
+        // Next button
         if (nextButton) {
-            if (isLastTab) {
+            if (isLastStep) {
                 nextButton.style.display = 'none';
             } else {
                 nextButton.style.display = 'inline-flex';
-                nextButton.innerHTML = 'Next <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>';
+                // Update button state based on completion
+                updateNextButtonState();
             }
         }
         
-        // Mobile buttons
-        if (prevButtonMobile) prevButtonMobile.disabled = isFirstTab;
-        if (nextButtonMobile) {
-            if (isLastTab) {
-                nextButtonMobile.style.display = 'none';
+        // Update progress indicator
+        updateProgressIndicator(step);
+        
+        // Validate current step to update button states
+        validateCurrentStep();
+        
+        currentStep = step;
+    }
+    
+    function validateCurrentStep() {
+        const validator = stepValidators[steps[currentStep]];
+        
+        // Validation step logging removed for cleaner console
+        
+        // Skip validation if already completed, but still update button states
+        if (completedSteps.has(currentStep)) {
+            updateNextButtonState();
+            return;
+        }
+        
+        // Special logic: If basic step is completed, all subsequent steps are automatically valid
+        const isBasicCompleted = completedSteps.has(1); // Basic is step 1
+        const isAfterBasic = currentStep > 1; // Location, team, financial are steps 2, 3, 4
+        
+        if (isBasicCompleted && isAfterBasic) {
+            completedSteps.add(currentStep);
+            updateProgressIndicator(currentStep);
+            updateNextButtonState();
+            return;
+        }
+        
+        if (validator && validator()) {
+            completedSteps.add(currentStep);
+            updateProgressIndicator(currentStep);
+            
+            // Normal behavior: Enable next step if not the last step
+            if (currentStep < steps.length - 1) {
+                const nextTabButton = document.querySelector(`[data-tab="${steps[currentStep + 1]}"]`);
+                if (nextTabButton) {
+                    nextTabButton.disabled = false;
+                    nextTabButton.classList.remove('text-gray-400', 'cursor-not-allowed');
+                    nextTabButton.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                }
+            }
+            
+            // Special logic: If basic step is completed, unlock all remaining tabs
+            if (steps[currentStep] === 'basic') {
+                unlockAllRemainingTabs();
+            }
+            
+            // Update next button state
+            updateNextButtonState();
             } else {
-                nextButtonMobile.style.display = 'inline-flex';
-            }
+            // Update next button state
+            updateNextButtonState();
         }
+    }
+    
+    function unlockAllRemainingTabs() {
+        // Unlock all tabs after basic (location, team, financial)
+        const tabsToUnlock = ['location', 'team', 'financial'];
         
-        currentTab = index;
+        tabsToUnlock.forEach(tabName => {
+            const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+            if (tabButton) {
+                tabButton.disabled = false;
+                tabButton.classList.remove('text-gray-400', 'cursor-not-allowed');
+                tabButton.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            }
+        });
     }
     
     // Tab button click handlers
     tabButtons.forEach((button, index) => {
         button.addEventListener('click', () => {
-            showTab(index);
+            if (!button.disabled) {
+                showStep(index);
+            }
         });
     });
     
-    // Previous button
+    // Navigation button handlers
+    if (prevButton) {
     prevButton.addEventListener('click', () => {
-        if (currentTab > 0) {
-            showTab(currentTab - 1);
+            if (currentStep > 0) {
+                showStep(currentStep - 1);
         }
     });
+    }
     
-    // Next button
+    if (nextButton) {
     nextButton.addEventListener('click', () => {
-        if (currentTab < tabs.length - 1) {
-            showTab(currentTab + 1);
+            // Always validate current step first
+            validateCurrentStep();
+            
+            if (currentStep < steps.length - 1 && completedSteps.has(currentStep)) {
+                showStep(currentStep + 1);
+            } else {
+                // Show appropriate toast message based on current step
+                // Don't show toast for steps that are auto-valid after basic completion
+                const isBasicCompleted = completedSteps.has(1);
+                const isAfterBasic = currentStep > 1;
+                
+                if (isBasicCompleted && isAfterBasic) {
+                    // Auto-validate the step
+                    completedSteps.add(currentStep);
+                    updateProgressIndicator(currentStep);
+                    updateNextButtonState();
+                    // Proceed to next step
+                    if (currentStep < steps.length - 1) {
+                        showStep(currentStep + 1);
+                    }
+                } else if (currentStep === 0) {
+                    showProjectToast('Please select a client and upload files before proceeding', 'warning');
+                } else if (currentStep === 1) {
+                    showProjectToast('Please fill in the project name before proceeding', 'warning');
+                } else {
+                    showProjectToast('Please complete the current step before proceeding', 'warning');
+                }
+            }
+        });
+    }
+    
+    // Add validation listeners for form fields
+    const clientSelect = document.getElementById('clientSelect');
+    if (clientSelect) {
+        clientSelect.addEventListener('change', validateCurrentStep);
+    }
+    
+    // Initialize draft button state
+    updateDraftButtonState();
+    
+    // Add project name listener for draft button state
+    const projectNameField = document.getElementById('id_project_name');
+    if (projectNameField) {
+        projectNameField.addEventListener('input', updateDraftButtonState);
+    }
+    
+    // Listen for file upload success events
+    const boqFileInput = document.getElementById('boqFileInput');
+    if (boqFileInput) {
+        boqFileInput.addEventListener('change', function() {
+            // Add a small delay to allow file processing
+            setTimeout(validateCurrentStep, 1000);
+        });
+    }
+    
+    // Listen for BOQ file list updates (when files are successfully processed)
+    const uploadedBOQList = document.getElementById('uploadedBOQList');
+    if (uploadedBOQList) {
+        // Use MutationObserver to watch for changes in the BOQ files list
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.target.id === 'boqFilesList') {
+                    validateCurrentStep();
+                }
+            });
+        });
+        
+        const boqFilesList = document.getElementById('boqFilesList');
+        if (boqFilesList) {
+            observer.observe(boqFilesList, { childList: true, subtree: true });
         }
-    });
+    }
     
-    // Mobile Previous button
-    if (prevButtonMobile) {
-        prevButtonMobile.addEventListener('click', () => {
-            if (currentTab > 0) {
-                showTab(currentTab - 1);
-            }
+    const projectName = document.getElementById('id_project_name');
+    if (projectName) {
+        projectName.addEventListener('input', validateCurrentStep);
+    }
+    
+    const location = document.getElementById('id_location');
+    if (location) {
+        location.addEventListener('input', function() {
+            console.log('Location field changed, validating...');
+            validateCurrentStep();
         });
     }
     
-    // Mobile Next button
-    if (nextButtonMobile) {
-        nextButtonMobile.addEventListener('click', () => {
-            if (currentTab < tabs.length - 1) {
-                showTab(currentTab + 1);
-            }
+    const cityProvince = document.getElementById('id_city_province');
+    if (cityProvince) {
+        cityProvince.addEventListener('input', function() {
+            console.log('City/Province field changed, validating...');
+            validateCurrentStep();
         });
     }
     
-    // Initialize first tab
-    showTab(0);
+    const projectInCharge = document.getElementById('id_project_in_charge');
+    if (projectInCharge) {
+        projectInCharge.addEventListener('change', validateCurrentStep);
+    }
+    
+    // Global function to trigger step validation (can be called from file processing)
+    window.validateCurrentStep = validateCurrentStep;
+    
+    // Global function to validate all steps and update UI
+    window.validateAllStepsAndUpdate = validateAllStepsAndUpdate;
+    
+    // Global function to manually unlock all tabs
+    window.unlockAllTabs = unlockAllRemainingTabs;
+    
+    // Global function to clear client selection for testing
+    window.clearClientSelection = function() {
+        const clientSelect = document.getElementById('clientSelect');
+        if (clientSelect) {
+            clientSelect.value = '';
+            // Clear Select2 selection
+            if (clientSelect.nextElementSibling && clientSelect.nextElementSibling.classList.contains('select2-container')) {
+                $(clientSelect).val(null).trigger('change');
+            }
+        }
+        // Clear selected client variable
+        window.selectedClient = null;
+        // Clear completed steps to force re-validation
+        completedSteps.clear();
+        // Reset current step to documents
+        currentStep = 0;
+        showStep(0);
+        console.log('Client selection cleared, completed steps reset, back to step 0');
+    };
+    
+    // Global function to test toast without client
+    window.testToastWithoutClient = function() {
+        clearClientSelection();
+        // Force validation to fail
+        setTimeout(() => {
+            validateCurrentStep();
+            console.log('Now try clicking Next button to see toast message');
+        }, 500);
+    };
+    
+    // Global function to test location step
+    window.testLocationStep = function() {
+        console.log('Testing location step validation...');
+        const location = document.getElementById('id_location');
+        const cityProvince = document.getElementById('id_city_province');
+        
+        console.log('Location fields:', {
+            location: location ? location.value : 'null',
+            cityProvince: cityProvince ? cityProvince.value : 'null'
+        });
+        
+        validateCurrentStep();
+    };
+    
+    // Global function to force location validation
+    window.forceLocationValidation = function() {
+        console.log('Forcing location validation...');
+        const location = document.getElementById('id_location');
+        const cityProvince = document.getElementById('id_city_province');
+        
+        if (location) {
+            location.value = 'Test Location';
+            location.dispatchEvent(new Event('input'));
+        }
+        if (cityProvince) {
+            cityProvince.value = 'Test City';
+            cityProvince.dispatchEvent(new Event('input'));
+        }
+        
+        setTimeout(() => {
+            validateCurrentStep();
+        }, 100);
+    };
+    
+    // Global function to manually check current step validation
+    window.checkCurrentStep = function() {
+        console.log('Manual step check - Current step:', currentStep, 'Step name:', steps[currentStep]);
+        validateCurrentStep();
+    };
+    
+    // Global function to force validation of all steps
+    window.validateAllSteps = function() {
+        console.log('Validating all steps...');
+        for (let i = 0; i < steps.length; i++) {
+            console.log(`Validating step ${i}: ${steps[i]}`);
+            const validator = stepValidators[steps[i]];
+            if (validator) {
+                const isValid = validator();
+                console.log(`Step ${i} (${steps[i]}) is valid:`, isValid);
+                if (isValid) {
+                    completedSteps.add(i);
+                }
+            }
+        }
+        updateProgressIndicator(currentStep);
+        console.log('Completed steps:', Array.from(completedSteps));
+    };
+    
+    // Function to validate all steps and update UI
+    function validateAllStepsAndUpdate() {
+        console.log('Validating all steps and updating UI...');
+        for (let i = 0; i < steps.length; i++) {
+            const validator = stepValidators[steps[i]];
+            if (validator && validator()) {
+                completedSteps.add(i);
+                // Enable next tab if this step is completed
+                if (i < steps.length - 1) {
+                    const nextTabButton = document.querySelector(`[data-tab="${steps[i + 1]}"]`);
+                    if (nextTabButton) {
+                        nextTabButton.disabled = false;
+                        nextTabButton.classList.remove('text-gray-400', 'cursor-not-allowed');
+                        nextTabButton.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    }
+                }
+            }
+        }
+        updateProgressIndicator(currentStep);
+    }
+    
+    // Initialize first step
+    showStep(0);
 });
+
 </script>
 
 <!-- Leaflet JavaScript -->
@@ -3348,7 +3964,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- External Scripts -->
 <script src="{% static 'js/project_form_autofill.js' %}"></script>
 <script src="{% static 'js/assigned_to.js' %}"></script>
-<script src="{% static 'js/project_form_enhanced.js' %}"></script>
+<!-- <script src="{% static 'js/project_form_enhanced.js' %}"></script> -->
 <script src="{% static 'js/file_preview.js' %}"></script>
 
 <!-- File Upload and Cost Estimation Functions -->
@@ -3377,6 +3993,8 @@ const extractedBOQData = new Map();
             } else {
                 console.log('No cost data available, hiding preview');
                 document.getElementById('boqCostEstimatePreview').classList.add('hidden');
+                // Show toast message for no cost data
+                showProjectToast('No cost data available for this project type', 'info');
             }
         } catch (error) {
             console.error('Error checking project type cost data:', error);
@@ -3680,13 +4298,13 @@ function showUploadedBOQFile(file) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 Processing...
             </span>
-            <button onclick="previewBOQData('${file.name}')" class="text-purple-500 hover:text-purple-700" title="Preview extracted data">
+            <button type="button" onclick="previewBOQData('${file.name}')" class="text-purple-500 hover:text-purple-700" title="Preview extracted data">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                     <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
                 </svg>
             </button>
-            <button onclick="removeUploadedBOQFile('${file.name}')" class="text-red-500 hover:text-red-700" title="Remove file">
+            <button type="button" onclick="removeUploadedBOQFile('${file.name}')" class="text-red-500 hover:text-red-700" title="Remove file">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                 </svg>
@@ -3696,6 +4314,11 @@ function showUploadedBOQFile(file) {
 
     boqFilesList.appendChild(fileItem);
     uploadedBOQList.classList.remove('hidden');
+    
+    // Trigger validation when file is uploaded
+    if (typeof validateCurrentStep === 'function') {
+        validateCurrentStep();
+    }
 }
 
 function removeUploadedBOQFile(fileName) {
@@ -3716,6 +4339,11 @@ function removeUploadedBOQFile(fileName) {
     const boqFilesList = document.getElementById('boqFilesList');
     if (boqFilesList && boqFilesList.children.length === 0) {
         document.getElementById('uploadedBOQList').classList.add('hidden');
+    }
+    
+    // Trigger validation when file is removed
+    if (typeof validateCurrentStep === 'function') {
+        validateCurrentStep();
     }
 }
 
@@ -3749,6 +4377,9 @@ async function processBOQFile(file) {
                     showEnhancedToast(`💰 Estimated cost updated to ₱${parseFloat(result.cost_data.total_cost).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} from BOQ data`, 'success', 4000);
                 }
             }
+            
+            // Autofill project name and lot size from BOQ data
+            autofillProjectDataFromBOQ(result.cost_data);
             
             // Update file status to success
             updateBOQFileStatus(file.name, 'success', 'Processed');
@@ -3814,6 +4445,91 @@ function updateBOQFileStatus(fileName, status, text) {
                 statusSpan.textContent = text;
             }
             break;
+        }
+    }
+    
+    // Trigger validation when file processing is complete (success or error)
+    if (typeof validateCurrentStep === 'function') {
+        validateCurrentStep();
+    }
+}
+
+function autofillProjectDataFromBOQ(costData) {
+    // Autofilling project data from BOQ
+    
+    // Autofill project name
+    if (costData.project_info && costData.project_info.project_name) {
+        const projectNameField = document.getElementById('id_project_name');
+        if (projectNameField && !projectNameField.value.trim()) {
+            projectNameField.value = costData.project_info.project_name;
+            // Add visual indicator for autofilled field
+            projectNameField.classList.add('bg-blue-50', 'border-blue-300');
+            projectNameField.setAttribute('data-autofilled', 'true');
+            showEnhancedToast(`📝 Project name autofilled: "${costData.project_info.project_name}"`, 'info', 3000);
+        }
+    }
+    
+    // Autofill lot size
+    if (costData.lot_size && parseFloat(costData.lot_size) > 0) {
+        const lotSizeField = document.getElementById('id_lot_size');
+        if (lotSizeField && !lotSizeField.value.trim()) {
+            lotSizeField.value = costData.lot_size;
+            // Add visual indicator for autofilled field
+            lotSizeField.classList.add('bg-blue-50', 'border-blue-300');
+            lotSizeField.setAttribute('data-autofilled', 'true');
+            showEnhancedToast(`📏 Lot size autofilled: ${costData.lot_size} m²`, 'info', 3000);
+        }
+    }
+    
+    // Location autofill removed as requested
+    
+    // Add event listeners to remove highlighting when user edits autofilled fields
+    const projectNameField = document.getElementById('id_project_name');
+    if (projectNameField) {
+        projectNameField.addEventListener('input', function() {
+            if (this.getAttribute('data-autofilled') === 'true') {
+                this.classList.remove('bg-blue-50', 'border-blue-300');
+                this.removeAttribute('data-autofilled');
+            }
+            // Update draft button state when project name changes
+            updateDraftButtonState();
+        });
+    }
+    
+    const lotSizeField = document.getElementById('id_lot_size');
+    if (lotSizeField) {
+        lotSizeField.addEventListener('input', function() {
+            if (this.getAttribute('data-autofilled') === 'true') {
+                this.classList.remove('bg-blue-50', 'border-blue-300');
+                this.removeAttribute('data-autofilled');
+            }
+        });
+    }
+    
+    // Update draft button state after autofill
+    updateDraftButtonState();
+    
+    // Trigger validation after autofill
+    if (typeof validateCurrentStep === 'function') {
+        validateCurrentStep();
+    }
+}
+
+function updateDraftButtonState() {
+    const projectNameField = document.getElementById('id_project_name');
+    const draftButton = document.getElementById('save-draft-btn');
+    
+    if (projectNameField && draftButton) {
+        const hasProjectName = projectNameField.value.trim() !== '';
+        
+        if (hasProjectName) {
+            draftButton.disabled = false;
+            draftButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            draftButton.title = 'Save project as draft';
+        } else {
+            draftButton.disabled = true;
+            draftButton.classList.add('opacity-50', 'cursor-not-allowed');
+            draftButton.title = 'Please enter a project name to save as draft';
         }
     }
 }
@@ -3885,7 +4601,7 @@ function getDetailedBOQPreviewHTML(data) {
     
     return `
         <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h5 class="font-medium text-gray-900 mb-2">Project Summary</h5>
                     <div class="space-y-2 text-sm">
@@ -3990,7 +4706,10 @@ function getDetailedBOQPreviewHTML(data) {
 // Save project as draft function
 window.saveProjectAsDraft = function() {
     const form = document.querySelector('form');
-    if (!form) return;
+    if (!form) {
+        console.error('Form not found');
+        return;
+    }
     
     // Set form submission flag
     isFormSubmitting = true;
@@ -4019,38 +4738,110 @@ window.saveProjectAsDraft = function() {
     `;
     saveBtn.disabled = true;
     
+    // Show saving draft overlay
+    const savingOverlay = document.createElement('div');
+    savingOverlay.id = 'saving-draft-overlay';
+    savingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    savingOverlay.innerHTML = `
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Saving Draft</h3>
+            <p class="text-gray-600">Please wait while we save your project draft...</p>
+        </div>
+    `;
+    document.body.appendChild(savingOverlay);
+    
     // Prepare form data for AJAX submission
     const formData = new FormData(form);
     
+    // Ensure client is included in form data for draft saves
+    if (window.selectedClient && window.selectedClient.id) {
+        formData.set('client', window.selectedClient.id);
+        console.log('Added client to form data:', window.selectedClient.id);
+    }
+    
+    // Include extracted BOQ data in form submission
+    if (window.extractedBOQData && window.extractedBOQData.size > 0) {
+        const boqDataArray = Array.from(window.extractedBOQData.entries());
+        formData.set('extracted_boq_data', JSON.stringify(boqDataArray));
+        console.log('Added extracted BOQ data to form submission:', boqDataArray.length, 'files');
+    }
+    
     // Submit via AJAX to get better response handling
+    
     fetch(window.location.pathname, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRFToken': getCookie('csrftoken')
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // If not JSON, it might be an HTML error page
+            return response.text().then(html => {
+                console.error('Server returned HTML instead of JSON:', html.substring(0, 500));
+                throw new Error('Server returned HTML instead of JSON. This usually means there was a server error.');
+            });
+        }
+    })
     .then(data => {
         if (data.success) {
-            showEnhancedToast(data.message, 'success', 5000);
-            console.log('Draft saved successfully:', data.details);
-            // Draft saved successfully
+            // Update overlay message to show success
+            const savingOverlay = document.getElementById('saving-draft-overlay');
+            if (savingOverlay) {
+                savingOverlay.innerHTML = `
+                    <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Draft Saved Successfully!</h3>
+                        <p class="text-gray-600">Redirecting to draft projects...</p>
+                    </div>
+                `;
+            }
+            
+            // Show success toast above the overlay
+            showEnhancedToast(data.message, 'success', 3000);
+            
+            // Redirect to draft projects list after successful save
+            setTimeout(() => {
+                window.location.href = '/projects/drafts/';
+            }, 2000);
         } else {
-            showEnhancedToast(data.error, 'error', 8000);
-            console.error('Draft save failed:', data);
+            // Hide overlay on error and show error toast
+            const savingOverlay = document.getElementById('saving-draft-overlay');
+            if (savingOverlay) {
+                savingOverlay.remove();
+            }
+            showEnhancedToast(data.error || 'Draft save failed', 'error', 8000);
+            
+            // Restore button state on error
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+            isFormSubmitting = false;
         }
     })
     .catch(error => {
+        // Hide overlay on error and show error toast
+        const savingOverlay = document.getElementById('saving-draft-overlay');
+        if (savingOverlay) {
+            savingOverlay.remove();
+        }
         showEnhancedToast('❌ Network error while saving draft. Please try again.', 'error', 8000);
         console.error('Draft save error:', error);
-    })
-    .finally(() => {
-        // Restore button state
+        
+        // Restore button state on error
         saveBtn.innerHTML = originalText;
         saveBtn.disabled = false;
-        
-        // Reset form submission flag
         isFormSubmitting = false;
     });
 };

@@ -1,5 +1,7 @@
 // project_form_enhanced.js
 // Enhanced JavaScript for production-ready project form
+// Cache bust: 2024-12-19-16:30 - Draft save conflicts completely removed
+// All draft save functionality moved to project_form.html
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize form functionality
@@ -7,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initFormValidation();
     initAutoComplete();
     initProgressTracking();
-    initDraftSave();
+    // initDraftSave(); // Removed - handled by project_form.html
     initFileUploads();
     
     // Tab navigation system
@@ -396,87 +398,12 @@ function initFormValidation() {
         }
     }
     
-    // Draft save functionality (manual only)
+    // Draft save functionality completely removed - handled by project_form.html
     function initDraftSave() {
-        // Save as draft button functionality
-        const draftButton = document.getElementById('save-draft-btn');
-        console.log('Draft button found:', draftButton); // Check if button is found
-
-        if (draftButton) {
-            draftButton.addEventListener('click', function(e) {
-                console.log('Draft button clicked!'); // Check if click is registered
-                e.preventDefault();
-                saveDraft();
-            });
-        } else {
-            console.log('Draft button not found - check ID'); // Debug message
-        }
-        
-        function saveDraft() {
-            const formData = new FormData(document.querySelector('form'));
-            saveDraftData(formData, false); // false for manual save
-        }
-        
-function saveDraftData(formData, isAutoSave = false) {
-    // Don't auto-save if form is being submitted
-    if (window.isSubmitting) return;
-    
-    console.log('Starting draft save...', isAutoSave ? 'auto' : 'manual');
-    
-    // Add draft flag to form data
-    formData.append('save_as_draft', 'true');
-    
-    // Get CSRF token properly
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    console.log('CSRF Token found:', !!csrfToken);
-    console.log('Request URL:', window.location.href);
-    
-    // Log some form data entries (not all to avoid spam)
-    console.log('save_as_draft:', formData.get('save_as_draft'));
-    console.log('project_name:', formData.get('project_name'));
-    
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken,
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response content-type:', response.headers.get('content-type'));
-        
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            // Log the actual HTML response to see what's being returned
-            return response.text().then(text => {
-                console.log('HTML response received (first 500 chars):', text.substring(0, 500));
-                throw new Error('Server returned HTML instead of JSON');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('JSON response received:', data);
-        if (data.success && !isAutoSave) {
-            showProjectToast('Draft saved successfully', 'success');
-            // Redirect to draft projects list after successful save
-            setTimeout(() => {
-                window.location.href = '/projects/drafts/';
-            }, 1500);
-        } else if (!data.success) {
-            showProjectToast('Draft save failed: ' + (data.error || 'Unknown error'), 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Draft save error:', error);
-        if (!isAutoSave) {
-            showProjectToast('Failed to save draft: ' + error.message, 'error');
-        }
-    });
-}}
+        // Draft save is now handled by the inline script in project_form.html
+        // This prevents conflicts between the two draft save implementations
+        console.log('Draft save functionality delegated to project_form.html');
+    }
     
     // Utility functions
     function showToast(message, type = 'info', duration = 5000) {
