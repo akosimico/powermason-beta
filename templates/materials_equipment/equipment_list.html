@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Equipment Management - PowerMason{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Equipment Management</h1>
+            <p class="text-gray-600 mt-1">Track owned and rented equipment</p>
+        </div>
+        <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Equipment
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="statsContainer">
+        <!-- Stats will load here -->
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Equipment</label>
+                <input type="text" id="searchInput" placeholder="Search by name..."
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       onkeypress="if(event.key==='Enter') loadEquipment()">
+            </div>
+            <div class="flex items-end">
+                <button onclick="loadEquipment()" class="w-full bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors">
+                    Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment List -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <div id="equipmentContainer">
+            <!-- Skeleton will show here -->
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Equipment Modal -->
+<div id="equipmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Add Equipment</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="equipmentForm" onsubmit="saveEquipment(event)">
+                <input type="hidden" id="equipmentId" name="id">
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Equipment Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" id="equipmentName" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., Excavator CAT 320D">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ownership Type <span class="text-red-500">*</span></label>
+                        <select name="ownership_type" id="ownershipType" required onchange="toggleOwnershipFields()"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Type</option>
+                            <option value="OWN">Owned</option>
+                            <option value="RNT">Rented</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div id="purchasePriceField">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+                            <input type="number" name="purchase_price" id="purchasePrice" step="0.01" min="0"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="0.00">
+                        </div>
+                        <div id="rentalRateField">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Rental Rate (per day)</label>
+                            <input type="number" name="rental_rate" id="rentalRate" step="0.01" min="0"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="equipmentDescription" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter detailed description..."></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_active" id="is_active" checked
+                               class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="is_active" class="ml-2 text-sm text-gray-700">Active</label>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()"
+                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <span id="submitText">Save Equipment</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full shadow-2xl">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+
+            <h3 class="text-lg font-bold text-gray-900 text-center mb-2">Delete Equipment</h3>
+            <p class="text-gray-600 text-center mb-6">
+                Are you sure you want to delete "<span id="deleteEquipmentName" class="font-semibold text-gray-900"></span>"? This action cannot be undone.
+            </p>
+
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                    Cancel
+                </button>
+                <button onclick="confirmDelete()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium">
+                    <span id="deleteButtonText">Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentEditId = null;
+let deleteItemId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadStats();
+    loadEquipment();
+});
+
+async function loadStats() {
+    SkeletonLoader.showGrid('statsContainer', 'stat-card', 3, 'grid grid-cols-1 md:grid-cols-3 gap-4');
+
+    try {
+        const response = await fetch('/materials/api/equipment/');
+        const data = await response.json();
+
+        const owned = data.equipment.filter(e => e.ownership_type === 'Owned').length;
+        const rented = data.equipment.filter(e => e.ownership_type === 'Rented').length;
+        const total = data.count;
+
+        const statsHTML = `
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Equipment</p>
+                        <p class="text-3xl font-bold mt-1">${total}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Owned</p>
+                        <p class="text-3xl font-bold mt-1">${owned}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">Rented</p>
+                        <p class="text-3xl font-bold mt-1">${rented}</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        SkeletonLoader.hide('statsContainer', statsHTML);
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+async function loadEquipment() {
+    SkeletonLoader.show('equipmentContainer', 'table');
+
+    try {
+        const search = document.getElementById('searchInput').value;
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+
+        const response = await fetch(`/materials/api/equipment/?${params}`);
+        const data = await response.json();
+
+        const html = `
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Equipment</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Rental Rate</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Purchase Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${data.equipment.length === 0 ? `
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                                <p class="mt-2 text-gray-500 font-medium">No equipment found</p>
+                                <button onclick="openCreateModal()" class="mt-4 text-blue-600 hover:text-blue-700 font-medium">
+                                    Add your first equipment
+                                </button>
+                            </td>
+                        </tr>
+                    ` : data.equipment.map(e => `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="font-medium text-gray-900">${e.name}</div>
+                                        ${e.description ? `<div class="text-xs text-gray-500 mt-1">${e.description.substring(0, 50)}${e.description.length > 50 ? '...' : ''}</div>` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-xs font-medium rounded-full ${e.ownership_type === 'Owned' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}">
+                                    ${e.ownership_type}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+                                ${e.rental_rate ? `₱${e.rental_rate.toFixed(2)}/day` : '-'}
+                            </td>
+                           <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+  ${e.purchase_price ? `₱${e.purchase_price.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+</td>
+
+                            <td class="px-6 py-4 text-sm space-x-2">
+                                <button onclick="editEquipment(${e.id})" class="text-green-600 hover:text-green-800 font-medium transition-colors">Edit</button>
+                                <button onclick="deleteEquipment(${e.id}, '${e.name}')" class="text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        SkeletonLoader.hide('equipmentContainer', html);
+    } catch (error) {
+        console.error('Error loading equipment:', error);
+        SkeletonLoader.hide('equipmentContainer', '<div class="p-6 text-center text-red-600">Error loading equipment</div>');
+    }
+}
+
+function openCreateModal() {
+    currentEditId = null;
+    document.getElementById('modalTitle').textContent = 'Add Equipment';
+    document.getElementById('submitText').textContent = 'Save Equipment';
+    document.getElementById('equipmentForm').reset();
+    document.getElementById('equipmentId').value = '';
+    document.getElementById('is_active').checked = true;
+    document.getElementById('equipmentModal').classList.remove('hidden');
+    toggleOwnershipFields();
+}
+
+function closeModal() {
+    document.getElementById('equipmentModal').classList.add('hidden');
+}
+
+function toggleOwnershipFields() {
+    const ownershipType = document.getElementById('ownershipType').value;
+    const purchaseField = document.getElementById('purchasePriceField');
+    const rentalField = document.getElementById('rentalRateField');
+    const purchaseInput = document.getElementById('purchasePrice');
+    const rentalInput = document.getElementById('rentalRate');
+
+    if (ownershipType === 'OWN') {
+        purchaseField.style.display = 'block';
+        rentalField.style.display = 'none';
+        purchaseInput.required = false;
+        rentalInput.required = false;
+        rentalInput.value = '';
+    } else if (ownershipType === 'RNT') {
+        purchaseField.style.display = 'none';
+        rentalField.style.display = 'block';
+        purchaseInput.required = false;
+        rentalInput.required = false;
+        purchaseInput.value = '';
+    } else {
+        purchaseField.style.display = 'block';
+        rentalField.style.display = 'block';
+    }
+}
+
+async function editEquipment(id) {
+    try {
+        const response = await fetch(`/materials/api/equipment/${id}/`);
+        const equipment = await response.json();
+
+        currentEditId = id;
+        document.getElementById('modalTitle').textContent = 'Edit Equipment';
+        document.getElementById('submitText').textContent = 'Update Equipment';
+        document.getElementById('equipmentId').value = id;
+        document.getElementById('equipmentName').value = equipment.name;
+        document.getElementById('ownershipType').value = equipment.ownership_type_code;
+        document.getElementById('purchasePrice').value = equipment.purchase_price || '';
+        document.getElementById('rentalRate').value = equipment.rental_rate || '';
+        document.getElementById('equipmentDescription').value = equipment.description || '';
+        document.getElementById('is_active').checked = true;
+
+        toggleOwnershipFields();
+        document.getElementById('equipmentModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading equipment:', error);
+        showToast('Error loading equipment', 'error');
+    }
+}
+
+async function saveEquipment(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.querySelector('#submitText').textContent;
+    submitBtn.querySelector('#submitText').textContent = 'Saving...';
+    submitBtn.disabled = true;
+
+    try {
+        const url = currentEditId ? `/materials/equipment/${currentEditId}/edit/` : '/materials/equipment/create/';
+
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            closeModal();
+            loadEquipment();
+            loadStats();
+            showToast(currentEditId ? 'Equipment updated successfully' : 'Equipment created successfully', 'success');
+        } else {
+            showToast('Error saving equipment', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving equipment:', error);
+        showToast('Error saving equipment', 'error');
+    } finally {
+        submitBtn.querySelector('#submitText').textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function deleteEquipment(id, name) {
+    deleteItemId = id;
+    document.getElementById('deleteEquipmentName').textContent = name;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    deleteItemId = null;
+}
+
+async function confirmDelete() {
+    if (!deleteItemId) return;
+
+    const deleteBtn = document.getElementById('deleteButtonText');
+    deleteBtn.textContent = 'Deleting...';
+
+    try {
+        const response = await fetch(`/materials/equipment/${deleteItemId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            closeDeleteModal();
+            loadEquipment();
+            loadStats();
+            showToast('Equipment deleted successfully', 'success');
+        } else {
+            showToast('Error deleting equipment', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting equipment:', error);
+        showToast('Error deleting equipment', 'error');
+    } finally {
+        deleteBtn.textContent = 'Delete';
+    }
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500'
+    };
+
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

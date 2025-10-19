@@ -1,0 +1,872 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Navigation -->
+        <nav class="mb-6">
+            <div class="flex items-center text-sm text-gray-600">
+                <a href="{% url 'budget_planning' project.id %}"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors mr-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Budget Planning
+                </a href>
+                <div class="flex items-center">
+                    <span class="text-gray-500">{{ project.project_name }}</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="font-semibold text-gray-900">Fund Allocation</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Fund Allocation</h1>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <span class="font-medium">{{ budget.scope.name }}</span> • 
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">{{ budget.get_category_display }}</span>
+                    </p>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Side - Budget Overview & Form -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Budget Overview Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget Overview</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Planned Amount -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-600">Planned Amount</span>
+                            <span class="text-sm font-bold text-gray-900">₱{{ budget.planned_amount|floatformat:2|intcomma }}</span>
+                        </div>
+                        
+                        <!-- Total Allocated -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-600">Total Allocated</span>
+                            <span class="text-sm font-bold text-blue-600">₱{{ total_allocated|floatformat:2|intcomma }}</span>
+                        </div>
+                        
+                        <!-- Remaining -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-600">Remaining</span>
+                            <span class="text-sm font-bold {% if remaining < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {% if remaining < 0 %}-{% endif %}₱{{ remaining_abs|floatformat:2|intcomma }}
+                            </span>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-medium text-gray-600">Allocation Progress</span>
+                                <span class="text-xs font-bold text-gray-900">{{ allocation_percent|floatformat:1 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                {% if remaining < 0 %}
+                                    <div class="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full transition-all duration-500" style="width: 100%"></div>
+                                {% elif allocation_percent >= 100 %}
+                                    <div class="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500" style="width: 100%"></div>
+                                {% elif allocation_percent >= 80 %}
+                                    <div class="h-full bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full transition-all duration-500" style="width: {{ allocation_percent }}%"></div>
+                                {% else %}
+                                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500" style="width: {{ allocation_percent }}%"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Status Message -->
+                        {% if remaining < 0 %}
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <span class="text-xs font-medium text-red-800">Budget exceeded by ₱{{ remaining_abs|floatformat:2|intcomma }}</span>
+                            </div>
+                        </div>
+                        {% elif allocation_percent >= 100 %}
+                        <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs font-medium text-green-800">Budget fully allocated</span>
+                            </div>
+                        </div>
+                        {% elif allocation_percent >= 80 %}
+                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs font-medium text-yellow-800">Nearing budget limit</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Allocation Form -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New Allocation</h3>
+                    
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
+                                Amount to Allocate
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 text-sm">₱</span>
+                                </div>
+                                <input type="number" 
+                                       step="0.01" 
+                                       name="amount" 
+                                       id="amount" 
+                                       required
+                                       class="block w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="note" class="block text-sm font-medium text-gray-700 mb-2">
+                                Note <span class="text-gray-400 text-xs">(optional)</span>
+                            </label>
+                            <textarea name="note" 
+                                      id="note" 
+                                      rows="3"
+                                      class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                      placeholder="Add a note about this allocation..."></textarea>
+                        </div>
+
+                        <div class="pt-2">
+                            <button type="submit" 
+                                    class="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Allocate Funds
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Deleted Allocations Section (if any exist) -->
+                {% if deleted_allocations %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Recently Deleted</h3>
+                        <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">{{ deleted_allocations.count }} item{{ deleted_allocations.count|pluralize }}</span>
+                    </div>
+                    
+                    <div class="space-y-3 max-h-60 overflow-y-auto">
+                        {% for alloc in deleted_allocations|slice:":5" %}
+                        <div class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900">₱{{ alloc.amount|floatformat:2|intcomma }}</span>
+                                    <span class="text-xs text-gray-500">{{ alloc.deleted_at|date:"M j, Y" }}</span>
+                                </div>
+                                {% if alloc.note %}
+                                    <p class="text-xs text-gray-600 mt-1 truncate">{{ alloc.note }}</p>
+                                {% endif %}
+                            </div>
+                            <button onclick="restoreAllocation('{{ alloc.id }}', '{{ alloc.amount|floatformat:2|intcomma }}')"
+                                    class="ml-3 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                                    title="Restore allocation">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Side - Allocation History -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Active Allocations</h3>
+                            <span class="text-sm text-gray-500">{{ total_allocations }} allocation{{ total_allocations|pluralize }}</span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden">
+                        {% if allocations %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Note</th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    {% for alloc in allocations %}
+                                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">{{ alloc.date_allocated|date:"M j, Y" }}</div>
+                                            <div class="text-xs text-gray-500">{{ alloc.date_allocated|date:"l" }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                                            <span class="text-sm font-bold text-gray-900">₱{{ alloc.amount|floatformat:2|intcomma }}</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            {% if alloc.note %}
+                                                <span class="text-sm text-gray-700">{{ alloc.note }}</span>
+                                            {% else %}
+                                                <span class="text-sm text-gray-400 italic">No note provided</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <button class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                                                    title="Delete allocation"
+                                                    onclick="confirmDelete('{{ alloc.id }}', '{{ alloc.amount|floatformat:2|intcomma }}')">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="bg-gray-50">
+                                    <tr>
+                                        <td class="px-6 py-3 text-sm font-semibold text-gray-900">Total Allocated</td>
+                                        <td class="px-6 py-3 text-right text-sm font-bold text-blue-600">₱{{ total_allocated|floatformat:2|intcomma }}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if allocations.has_other_pages %}
+                        <div class="px-6 py-4 border-t border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <p class="text-sm text-gray-700">
+                                        Showing 
+                                        <span class="font-medium">{{ allocations.start_index }}</span> 
+                                        to 
+                                        <span class="font-medium">{{ allocations.end_index }}</span> 
+                                        of 
+                                        <span class="font-medium">{{ total_allocations }}</span> 
+                                        allocations
+                                    </p>
+                                </div>
+                                
+                                <nav class="flex items-center space-x-2">
+                                    {% if allocations.has_previous %}
+                                    <a href="?page={{ allocations.previous_page_number }}" 
+                                       class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                        Previous
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% for num in allocations.paginator.page_range %}
+                                        {% if num == allocations.number %}
+                                            <span class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">
+                                                {{ num }}
+                                            </span>
+                                        {% elif num >= allocations.number|add:'-2' and num <= allocations.number|add:'2' %}
+                                            <a href="?page={{ num }}" 
+                                               class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                                {{ num }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if allocations.has_next %}
+                                    <a href="?page={{ allocations.next_page_number }}" 
+                                       class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                        Next
+                                    </a>
+                                    {% endif %}
+                                </nav>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <!-- Empty State -->
+                        <div class="px-6 py-12 text-center">
+                            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No allocations yet</h3>
+                            <p class="text-sm text-gray-500 mb-4">Start by adding your first fund allocation using the form on the left.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full hidden z-50 modal-backdrop">
+    <div class="relative top-20 mx-auto p-6 border-0 w-full max-w-lg shadow-2xl rounded-xl bg-white modal-content">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">Delete Allocation</h3>
+            </div>
+            <button onclick="closeDeleteModal()" 
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="space-y-6">
+            <!-- Warning Message -->
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-amber-800">Choose deletion type</h4>
+                        <p class="text-sm text-amber-700 mt-1">
+                            You're about to delete an allocation of <span id="deleteAmount" class="font-bold"></span>.
+                            Please choose how you want to proceed.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Options -->
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- Soft Delete Option -->
+                    <label class="relative flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
+                        <input type="radio" name="deleteType" value="soft" class="sr-only" onchange="updateDeleteType('soft')">
+                        <div class="flex-shrink-0 mt-0.5">
+                            <div class="w-4 h-4 border-2 border-gray-300 rounded-full flex items-center justify-center transition-all duration-200">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full opacity-0 scale-50 transition-all duration-200"></div>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="flex items-center gap-2">
+        
+                                <span class="text-sm font-medium text-gray-900">Soft Delete (Recommended)</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">Hide the allocation but keep it recoverable in the system</p>
+                        </div>
+                    </label>
+
+                    <!-- Hard Delete Option -->
+                    <label class="relative flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-300 hover:bg-red-50 transition-all duration-200">
+                        <input type="radio" name="deleteType" value="hard" class="sr-only" onchange="updateDeleteType('hard')">
+                        <div class="flex-shrink-0 mt-0.5">
+                            <div class="w-4 h-4 border-2 border-gray-300 rounded-full flex items-center justify-center transition-all duration-200">
+                                <div class="w-2 h-2 bg-red-600 rounded-full opacity-0 scale-50 transition-all duration-200"></div>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="flex items-center gap-2">
+                               
+                                <span class="text-sm font-medium text-gray-900">Hard Delete (Permanent)</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">Permanently remove the allocation from the database</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Confirmation Input -->
+            <div id="confirmationSection" class="opacity-50 pointer-events-none transition-all duration-300">
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Type <span class="font-mono bg-gray-100 px-2 py-1 rounded text-red-600 font-bold">DELETE</span> to confirm:
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="confirmationInput" 
+                               placeholder="Type DELETE to confirm..."
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+                               oninput="validateConfirmation()"
+                               autocomplete="off">
+                        <div id="inputFeedback" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <!-- Feedback icons will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="progressBar" class="w-full bg-gray-200 rounded-full h-1.5 opacity-0 transition-opacity duration-300">
+                        <div id="progressFill" class="bg-red-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4 border-t border-gray-200">
+                <button onclick="closeDeleteModal()" 
+                        class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-all duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    Cancel
+                </button>
+                
+                <button id="deleteButton" 
+                        onclick="performDelete()"
+                        disabled
+                        class="flex-1 px-4 py-2.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-all duration-300 focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed">
+                    <span id="deleteButtonText">Select delete type</span>
+                    <span id="deleteButtonIcon" class="ml-2 opacity-0 transition-opacity duration-200"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-90 rounded-xl flex items-center justify-center hidden">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+                <p class="text-sm text-gray-600">Processing deletion...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="fixed top-4 right-4 bg-white border border-green-200 rounded-lg shadow-lg p-4 hidden z-60 transform translate-x-full transition-transform duration-300">
+    <div class="flex items-center gap-3">
+        <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4 text-green-600 success-checkmark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-green-900" id="successMessage">Operation completed successfully</p>
+            <p class="text-xs text-green-700" id="successDetails"></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.modal-content {
+    animation: slideInScale 0.3s ease-out forwards;
+    transform: translateY(-20px) scale(0.95);
+}
+
+.modal-closing .modal-backdrop {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+
+.modal-closing .modal-content {
+    animation: slideOutScale 0.3s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideInScale {
+    from { 
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes slideOutScale {
+    from { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to { 
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+}
+
+.pulse-error {
+    animation: pulseError 0.6s ease-in-out;
+}
+
+@keyframes pulseError {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.success-checkmark {
+    animation: checkmark 0.6s ease-in-out forwards;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+}
+
+@keyframes checkmark {
+    to { stroke-dashoffset: 0; }
+}
+</style>
+
+<script>
+let deleteAllocationId = null;
+let selectedDeleteType = null;
+let isConfirmed = false;
+
+function confirmDelete(allocationId, amount) {
+    deleteAllocationId = allocationId;
+    document.getElementById('deleteAmount').textContent = '₱' + amount;
+    document.getElementById('deleteModal').classList.remove('hidden');
+    
+    // Reset form state
+    resetModalState();
+    
+    // Focus on the modal for accessibility
+    setTimeout(() => {
+        document.querySelector('input[name="deleteType"]').focus();
+    }, 300);
+}
+
+function resetModalState() {
+    selectedDeleteType = null;
+    isConfirmed = false;
+    
+    // Reset radio buttons
+    document.querySelectorAll('input[name="deleteType"]').forEach(radio => {
+        radio.checked = false;
+        updateRadioVisual(radio, false);
+    });
+    
+    // Reset confirmation section
+    const confirmationSection = document.getElementById('confirmationSection');
+    confirmationSection.classList.add('opacity-50', 'pointer-events-none');
+    
+    // Reset input
+    const input = document.getElementById('confirmationInput');
+    input.value = '';
+    input.classList.remove('border-red-500', 'border-green-500', 'pulse-error');
+    
+    // Reset progress
+    document.getElementById('progressBar').classList.add('opacity-0');
+    document.getElementById('progressFill').style.width = '0%';
+    
+    // Reset feedback
+    document.getElementById('inputFeedback').innerHTML = '';
+    
+    // Reset button
+    updateDeleteButton();
+}
+
+function updateDeleteType(type) {
+    selectedDeleteType = type;
+    
+    // Update radio button visuals
+    document.querySelectorAll('input[name="deleteType"]').forEach(radio => {
+        const isSelected = radio.value === type;
+        radio.checked = isSelected;
+        updateRadioVisual(radio, isSelected);
+    });
+    
+    // Enable confirmation section
+    const confirmationSection = document.getElementById('confirmationSection');
+    confirmationSection.classList.remove('opacity-50', 'pointer-events-none');
+    
+    // Focus on input
+    setTimeout(() => {
+        document.getElementById('confirmationInput').focus();
+    }, 200);
+    
+    updateDeleteButton();
+}
+
+function updateRadioVisual(radio, isSelected) {
+    const parent = radio.closest('label');
+    const circle = parent.querySelector('.w-4.h-4');
+    const dot = circle.querySelector('.w-2.h-2');
+    
+    if (isSelected) {
+        if (radio.value === 'soft') {
+            parent.classList.add('border-blue-300', 'bg-blue-50');
+            parent.classList.remove('border-gray-200');
+            circle.classList.add('border-blue-600', 'bg-blue-600');
+            circle.classList.remove('border-gray-300');
+        } else {
+            parent.classList.add('border-red-300', 'bg-red-50');
+            parent.classList.remove('border-gray-200');
+            circle.classList.add('border-red-600', 'bg-red-600');
+            circle.classList.remove('border-gray-300');
+        }
+        dot.classList.remove('opacity-0', 'scale-50');
+        dot.classList.add('opacity-100', 'scale-100');
+    } else {
+        parent.classList.remove('border-blue-300', 'bg-blue-50', 'border-red-300', 'bg-red-50');
+        parent.classList.add('border-gray-200');
+        circle.classList.remove('border-blue-600', 'bg-blue-600', 'border-red-600', 'bg-red-600');
+        circle.classList.add('border-gray-300');
+        dot.classList.add('opacity-0', 'scale-50');
+        dot.classList.remove('opacity-100', 'scale-100');
+    }
+}
+
+function validateConfirmation() {
+    const input = document.getElementById('confirmationInput');
+    const value = input.value.trim();
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const feedback = document.getElementById('inputFeedback');
+    
+    // Show progress bar
+    progressBar.classList.remove('opacity-0');
+    
+    // Calculate progress
+    const target = 'DELETE';
+    let progress = 0;
+    let isValid = false;
+    
+    if (value.length > 0) {
+        // Calculate character match progress
+        for (let i = 0; i < Math.min(value.length, target.length); i++) {
+            if (value[i] === target[i]) {
+                progress += (100 / target.length);
+            } else {
+                break;
+            }
+        }
+        
+        isValid = value === target;
+    }
+    
+    // Update progress bar
+    progressFill.style.width = progress + '%';
+    progressFill.className = isValid ? 'bg-green-500 h-1.5 rounded-full transition-all duration-300' : 'bg-red-500 h-1.5 rounded-full transition-all duration-300';
+    
+    // Update input styling
+    input.classList.remove('border-red-500', 'border-green-500', 'pulse-error');
+    
+    if (value.length > 0) {
+        if (isValid) {
+            input.classList.add('border-green-500');
+            feedback.innerHTML = '<svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        } else {
+            input.classList.add('border-red-500');
+            feedback.innerHTML = '<svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+            
+            // Shake animation on wrong input
+            if (value.length >= target.length && !isValid) {
+                input.classList.add('pulse-error');
+                setTimeout(() => input.classList.remove('pulse-error'), 600);
+            }
+        }
+    } else {
+        feedback.innerHTML = '';
+    }
+    
+    isConfirmed = isValid;
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const button = document.getElementById('deleteButton');
+    const buttonText = document.getElementById('deleteButtonText');
+    const buttonIcon = document.getElementById('deleteButtonIcon');
+    
+    if (!selectedDeleteType) {
+        button.disabled = true;
+        button.className = "flex-1 px-4 py-2.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-all duration-300";
+        buttonText.textContent = "Select delete type";
+        buttonIcon.classList.add('opacity-0');
+    } else if (!isConfirmed) {
+        button.disabled = true;
+        button.className = "flex-1 px-4 py-2.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-all duration-300";
+        buttonText.textContent = "Type DELETE to confirm";
+        buttonIcon.classList.add('opacity-0');
+    } else {
+        button.disabled = false;
+        if (selectedDeleteType === 'soft') {
+            button.className = "flex-1 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300";
+            buttonText.textContent = "Soft Delete";
+        } else {
+            button.className = "flex-1 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300";
+            buttonText.textContent = "Hard Delete";
+        }
+        buttonIcon.classList.remove('opacity-0');
+    }
+}
+
+function performDelete() {
+    if (!selectedDeleteType || !isConfirmed || !deleteAllocationId) return;
+    
+    // Show loading overlay
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    
+    // Determine the URL based on delete type
+    const url = selectedDeleteType === 'soft' 
+        ? `/projects/{{ project.id }}/budgets/{{ budget.id }}/allocations/${deleteAllocationId}/soft-delete/`
+        : `/projects/{{ project.id }}/budgets/{{ budget.id }}/allocations/${deleteAllocationId}/hard-delete/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        closeDeleteModal();
+        showSuccessToast(selectedDeleteType);
+        // Reload page after short delay
+        setTimeout(() => window.location.reload(), 1500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        // Show error message
+        alert('An error occurred while deleting the allocation. Please try again.');
+    });
+}
+
+function restoreAllocation(allocationId, amount) {
+    if (!confirm(`Are you sure you want to restore the allocation of ₱${amount}?`)) {
+        return;
+    }
+    
+    fetch(`/projects/{{ project.id }}/budgets/{{ budget.id }}/allocations/${allocationId}/restore/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        showSuccessToast('restore');
+        // Reload page after short delay
+        setTimeout(() => window.location.reload(), 1500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while restoring the allocation. Please try again.');
+    });
+}
+
+function showSuccessToast(type) {
+    const toast = document.getElementById('successToast');
+    const message = document.getElementById('successMessage');
+    const details = document.getElementById('successDetails');
+    
+    if (type === 'soft') {
+        message.textContent = 'Allocation soft deleted successfully';
+        details.textContent = 'The allocation has been hidden and can be recovered if needed';
+    } else if (type === 'hard') {
+        message.textContent = 'Allocation permanently deleted';
+        details.textContent = 'The allocation has been permanently removed from the database';
+    } else if (type === 'restore') {
+        message.textContent = 'Allocation restored successfully';
+        details.textContent = 'The allocation is now active and included in calculations';
+    }
+    
+    toast.classList.remove('hidden', 'translate-x-full');
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+    }, 5000);
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('modal-closing');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('modal-closing');
+        resetModalState();
+        deleteAllocationId = null;
+    }, 300);
+}
+
+// Helper function to get CSRF token for Django
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('deleteModal');
+    if (!modal.classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+        } else if (e.key === 'Enter' && !document.getElementById('deleteButton').disabled) {
+            performDelete();
+        }
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+
+// Form validation for the allocation form
+document.querySelector('form').addEventListener('submit', function(e) {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value);
+    
+    if (!amount || amount <= 0) {
+        e.preventDefault();
+        amountInput.focus();
+        alert('Please enter a valid amount greater than zero.');
+    }
+});
+</script>
+{% endblock %}

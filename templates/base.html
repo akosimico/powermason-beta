@@ -1,0 +1,798 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PowerMason - Project Management Dashboard{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/skeleton-loading.css' %}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'img/powermason_logo.png' %}">
+    
+    <!-- Meta Tags for SEO and PWA -->
+    <meta name="description" content="PowerMason Construction Management System - Web-Based Project Monitoring with Cost Tracking">
+    <meta name="theme-color" content="#3b82f6">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="{% static 'img/powermason_logo.png' %}" as="image">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-gray-50 font-sans h-full overflow-hidden antialiased">
+
+    <!-- Loading Overlay - Removed, using skeleton loading instead -->
+
+    <!-- Mobile Overlay for Sidebar -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="toggleMobileSidebar()"></div>
+
+    <div class="flex h-full">
+        
+        <!-- Mobile Header -->
+        <div class="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-30 h-16 flex items-center justify-between px-4">
+            <button onclick="toggleMobileSidebar()" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <div class="flex items-center space-x-2">
+                <img src="{% static 'img/powermason_logo.png' %}" alt="PowerMason" class="w-8 h-8">
+                <span class="font-bold text-blue-600 text-lg">PowerMason</span>
+            </div>
+            <div class="w-10"></div> <!-- Spacer for centering -->
+        </div>
+
+        <!-- Desktop Sidebar / Mobile Sidebar -->
+        <aside id="sidebar" class="fixed lg:relative inset-y-0 left-0 z-50 w-72 bg-white shadow-xl border-r border-gray-200 flex-shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out lg:block">
+            <!-- Mobile Close Button -->
+            <div class="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <img src="{% static 'img/powermason_logo.png' %}" alt="PowerMason" class="w-8 h-8">
+                    <span class="font-bold text-blue-600 text-lg">PowerMason</span>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="h-full overflow-y-auto pt-0 lg:pt-6">
+                {% include "partials/_sidebar.html" %}
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 h-full overflow-hidden flex flex-col pt-16 lg:pt-0">
+
+            <!-- Content Container -->
+            <div class="flex-1 overflow-auto p-4 sm:p-6">
+
+                <!-- Enhanced Flash Messages -->
+                {% if messages %}
+                <div id="message-container" class="space-y-3 mb-4 sm:mb-6">
+                    {% for message in messages %}
+                        {% if not "signed" in message.message|lower and not "permission" in message.message|lower and not "welcome to powermason" in message.message|lower %}
+                        
+                        <div class="message-alert relative flex items-start space-x-3 p-3 sm:p-4 rounded-xl border shadow-sm transition-all duration-500 opacity-100 transform translate-y-0
+                            {% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                                bg-green-50 border-green-200 text-green-800
+                            {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                                bg-red-50 border-red-200 text-red-800
+                            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                                bg-yellow-50 border-yellow-200 text-yellow-800
+                            {% elif message.level == DEFAULT_MESSAGE_LEVELS.INFO %}
+                                bg-blue-50 border-blue-200 text-blue-800
+                            {% else %}
+                                bg-gray-50 border-gray-200 text-gray-800
+                            {% endif %}">
+            
+                            <!-- Enhanced Icons -->
+                            <div class="flex-shrink-0 pt-0.5">
+                                {% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                                    <div class="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                                    <div class="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                    </div>
+                                {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                                    <div class="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                {% else %}
+                                    <div class="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+            
+                            <!-- Message Content -->
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-sm leading-relaxed">{{ message }}</p>
+                            </div>
+
+                            <!-- Enhanced Close Button -->
+                            <button type="button" 
+                                    class="flex-shrink-0 ml-2 sm:ml-4 p-1 sm:p-1.5 rounded-full hover:bg-black hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 
+                                    {% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                                        focus:ring-green-500
+                                    {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                                        focus:ring-red-500
+                                    {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                                        focus:ring-yellow-500
+                                    {% else %}
+                                        focus:ring-blue-500
+                                    {% endif %}"
+                                    onclick="dismissMessage(this)">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Page Content -->
+                <div class="content-area">
+                    {% block content %}
+                    <!-- Page-specific content goes here -->
+                    <div class="text-center py-8 sm:py-12">
+                        <div class="max-w-md mx-auto px-4">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Welcome to PowerMason</h3>
+                            <p class="text-gray-600">Your construction project management dashboard is ready.</p>
+                        </div>
+                    </div>
+                    {% endblock %}
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- Welcome Popup Component -->
+    {% include 'components/welcome_popup.html' %}
+
+    <!-- Global Toast Notification System -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3 max-w-sm w-full sm:max-w-md">
+        <!-- Toast notifications will be dynamically inserted here -->
+    </div>
+
+    <!-- Enhanced Scripts -->
+    <script>
+        // Mobile Sidebar Toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const isOpen = sidebar.classList.contains('translate-x-0');
+            
+            if (isOpen) {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                overlay.classList.remove('hidden');
+                document.body.classList.add('lg:overflow-auto', 'overflow-hidden');
+            }
+        }
+
+        // Close sidebar on window resize to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('mobileOverlay');
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('lg:translate-x-0');
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+
+        // Enhanced Message Handling
+        function dismissMessage(button) {
+            const message = button.closest('.message-alert');
+            if (message) {
+                message.style.opacity = '0';
+                message.style.transform = 'translateY(-10px) scale(0.95)';
+                setTimeout(() => {
+                    message.remove();
+                    
+                    // Clean up container if empty
+                    const container = document.getElementById('message-container');
+                    if (container && container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }
+        }
+
+        // Global Toast Notification System
+        function showToast(message, type = 'info', duration = 5000, icon = null) {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+
+            const toastId = 'toast-' + Date.now();
+            const toastTypes = {
+                success: {
+                    bg: 'bg-green-50',
+                    border: 'border-green-200',
+                    text: 'text-green-800',
+                    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+                    iconBg: 'bg-green-100',
+                    iconColor: 'text-green-600'
+                },
+                error: {
+                    bg: 'bg-red-50',
+                    border: 'border-red-200',
+                    text: 'text-red-800',
+                    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+                    iconBg: 'bg-red-100',
+                    iconColor: 'text-red-600'
+                },
+                warning: {
+                    bg: 'bg-yellow-50',
+                    border: 'border-yellow-200',
+                    text: 'text-yellow-800',
+                    icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    iconBg: 'bg-yellow-100',
+                    iconColor: 'text-yellow-600'
+                },
+                info: {
+                    bg: 'bg-blue-50',
+                    border: 'border-blue-200',
+                    text: 'text-blue-800',
+                    icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    iconBg: 'bg-blue-100',
+                    iconColor: 'text-blue-600'
+                }
+            };
+
+            const config = toastTypes[type] || toastTypes.info;
+            
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `${config.bg} ${config.border} ${config.text} border rounded-xl shadow-lg p-4 transform transition-all duration-300 ease-in-out translate-x-full opacity-0 toast-enter`;
+            
+            toast.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 ${config.iconBg} rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 ${config.iconColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${config.icon}"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm leading-relaxed">${message}</p>
+                    </div>
+                    <button type="button" onclick="dismissToast('${toastId}')" class="flex-shrink-0 ml-2 p-1 rounded-full hover:bg-black hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${type === 'success' ? 'green' : type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'blue'}-500">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            }, 100);
+
+            // Auto-dismiss
+            if (duration > 0) {
+                setTimeout(() => {
+                    dismissToast(toastId);
+                }, duration);
+            }
+
+            return toastId;
+        }
+
+        function dismissToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.classList.add('toast-exit');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }
+
+        // Project-specific toast notifications
+        function showProjectToast(message, type = 'success', duration = 6000) {
+            return showToast(message, type, duration);
+        }
+
+        // Global functions for project status updates
+        window.showProjectCreationSuccess = function(projectName, projectId, budget) {
+            const message = `🎉 Project "${projectName}" created successfully! Project ID: ${projectId}${budget ? ` | Budget: ₱${budget.toLocaleString()}` : ''} | Status: Pending Approval`;
+            showProjectToast(message, 'success');
+        };
+
+        window.showProjectApprovalSuccess = function(projectName, projectId, approvedBudget) {
+            const message = `✅ Project "${projectName}" approved successfully! Project ID: ${projectId} | Approved Budget: ₱${approvedBudget.toLocaleString()} | Status: Active`;
+            showProjectToast(message, 'success');
+        };
+
+        window.showProjectRejection = function(projectName, projectId) {
+            const message = `❌ Project "${projectName}" (ID: ${projectId}) has been rejected and removed from the system.`;
+            showProjectToast(message, 'warning');
+        };
+
+        // Auto-dismiss messages with enhanced animation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for session-based toast messages
+            {% if request.session.show_toast %}
+                const toastData = {{ request.session.show_toast|safe }};
+                if (toastData && toastData.type && toastData.message) {
+                    const duration = toastData.duration || 5000;
+                    showProjectToast(toastData.message, toastData.type, duration);
+                    // Clear the session data
+                    fetch('/projects/clear-toast-session/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    }).catch(err => console.log('Could not clear toast session:', err));
+                }
+            {% endif %}
+
+            const messageElements = document.querySelectorAll("#message-container .message-alert");
+            
+            messageElements.forEach((msg, index) => {
+                // Stagger the auto-dismiss timing
+                setTimeout(() => {
+                    if (msg.parentNode) { // Check if still in DOM
+                        msg.style.opacity = "0";
+                        msg.style.transform = "translateY(-10px) scale(0.95)";
+                        setTimeout(() => {
+                            if (msg.parentNode) {
+                                msg.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000 + (index * 500)); // 5 seconds + staggered delay
+            });
+
+            // Skeleton loading is used instead of page overlay
+
+            // Enhanced smooth scrolling
+            if ('scrollBehavior' in document.documentElement.style) {
+                document.documentElement.style.scrollBehavior = 'smooth';
+            }
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+/ or Cmd+/ for quick navigation help
+                if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                    e.preventDefault();
+                    showKeyboardShortcuts();
+                }
+                
+                // Escape to close any open modals or dropdowns
+                if (e.key === 'Escape') {
+                    closeAllDropdowns();
+                    // Close mobile sidebar on escape
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('mobileOverlay');
+                    if (sidebar.classList.contains('translate-x-0') && window.innerWidth < 1024) {
+                        toggleMobileSidebar();
+                    }
+                }
+            });
+
+            // Touch handling for better mobile experience
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            document.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!touchStartX || !touchStartY) {
+                    return;
+                }
+
+                let touchEndX = e.touches[0].clientX;
+                let touchEndY = e.touches[0].clientY;
+
+                let diffX = touchStartX - touchEndX;
+                let diffY = touchStartY - touchEndY;
+
+                // Swipe right to open sidebar (only on mobile)
+                if (Math.abs(diffX) > Math.abs(diffY) && diffX < -50 && touchStartX < 50 && window.innerWidth < 1024) {
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar.classList.contains('-translate-x-full')) {
+                        toggleMobileSidebar();
+                    }
+                }
+
+                // Swipe left to close sidebar (only on mobile)
+                if (Math.abs(diffX) > Math.abs(diffY) && diffX > 50 && window.innerWidth < 1024) {
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar.classList.contains('translate-x-0')) {
+                        toggleMobileSidebar();
+                    }
+                }
+
+                touchStartX = 0;
+                touchStartY = 0;
+            });
+        });
+
+        // Loading overlay functions removed - using skeleton loading instead
+
+        function showKeyboardShortcuts() {
+            // You can implement a keyboard shortcuts modal here
+            console.log('Keyboard shortcuts: Ctrl+/ for help, Escape to close modals');
+        }
+
+        function closeAllDropdowns() {
+            // Close any open dropdowns in the sidebar
+            const dropdowns = document.querySelectorAll('[id*="Dropdown"]');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            // Log page load performance
+            if (window.performance && window.performance.timing) {
+                const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+                console.log('PowerMason loaded in', loadTime + 'ms');
+            }
+        });
+
+        // Enhanced error handling
+        window.addEventListener('error', function(e) {
+            console.error('PowerMason Error:', e.error);
+            // You can add error reporting here
+        });
+
+        // Network status monitoring
+        window.addEventListener('online', function() {
+            console.log('PowerMason: Back online');
+            showNetworkStatus('online');
+        });
+
+        window.addEventListener('offline', function() {
+            console.log('PowerMason: Offline mode');
+            showNetworkStatus('offline');
+        });
+
+        function showNetworkStatus(status) {
+            // You can show a toast notification for network status changes
+            const isOnline = status === 'online';
+            const message = isOnline ? 'Connection restored' : 'You are offline';
+            const color = isOnline ? 'green' : 'red';
+            
+            // Create a temporary notification
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 lg:top-4 right-4 bg-${color}-100 border border-${color}-200 text-${color}-800 px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-${color}-500 rounded-full ${isOnline ? 'animate-pulse' : ''}"></div>
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+
+    <!-- Additional Scripts -->
+    <script src="{% static 'js/sidebar.js' %}"></script>
+    <script src="{% static 'js/number-format-utils.js' %}"></script>
+    <script src="{% static 'js/skeleton-loader.js' %}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+
+    <!-- Enhanced CSS -->
+    <style>
+        /* Smooth transitions */
+        * {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        /* Enhanced scrollbar styling for desktop */
+        @media (min-width: 1024px) {
+            .content-area::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .content-area::-webkit-scrollbar-track {
+                background: #f3f4f6;
+                border-radius: 3px;
+            }
+            
+            .content-area::-webkit-scrollbar-thumb {
+                background: #d1d5db;
+                border-radius: 3px;
+            }
+            
+            .content-area::-webkit-scrollbar-thumb:hover {
+                background: #9ca3af;
+            }
+
+            /* Main content scrollbar */
+            main > div:first-child::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            main > div:first-child::-webkit-scrollbar-track {
+                background: #f9fafb;
+            }
+            
+            main > div:first-child::-webkit-scrollbar-thumb {
+                background: #d1d5db;
+                border-radius: 4px;
+            }
+            
+            main > div:first-child::-webkit-scrollbar-thumb:hover {
+                background: #9ca3af;
+            }
+        }
+
+        /* Hide scrollbars on mobile for cleaner look */
+        @media (max-width: 1023px) {
+            .content-area::-webkit-scrollbar,
+            main > div:first-child::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .content-area,
+            main > div:first-child {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+
+        /* Focus improvements */
+        .focus-visible:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Animation improvements */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-alert {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Loading overlay removed - using skeleton loading instead */
+
+        /* Mobile-specific improvements */
+        @media (max-width: 1023px) {
+            /* Prevent zoom on input focus on iOS */
+            input[type="text"],
+            input[type="email"],
+            input[type="password"],
+            input[type="number"],
+            input[type="tel"],
+            input[type="url"],
+            select,
+            textarea {
+                font-size: 16px;
+            }
+
+            /* Improve touch targets */
+            button,
+            .touch-target {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            /* Better spacing on mobile */
+            .content-area {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+
+        /* Desktop optimizations */
+        @media (min-width: 1024px) {
+            .content-area {
+                scroll-behavior: smooth;
+            }
+        }
+
+        /* Safe area support for mobile devices */
+        @supports(padding: max(0px)) {
+            .mobile-header {
+                padding-left: max(1rem, env(safe-area-inset-left));
+                padding-right: max(1rem, env(safe-area-inset-right));
+            }
+            
+            #sidebar {
+                padding-left: env(safe-area-inset-left);
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            #sidebar,
+            .mobile-header,
+            #mobileOverlay {
+                display: none !important;
+            }
+            
+            main {
+                width: 100% !important;
+                padding-top: 0 !important;
+            }
+            
+            .message-alert {
+                display: none !important;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* High contrast support */
+        @media (prefers-contrast: high) {
+            .border-gray-200 {
+                border-color: #000;
+            }
+            
+            .text-gray-600 {
+                color: #000;
+            }
+        }
+
+        /* Focus ring for better accessibility */
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Smooth page transitions */
+        body {
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        /* Content fade-in animation */
+        .content-area {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Toast notification animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-enter {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .toast-exit {
+            animation: slideOutRight 0.3s ease-out;
+        }
+
+        /* Toast container positioning for mobile */
+        @media (max-width: 640px) {
+            #toast-container {
+                top: 1rem;
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+            }
+        }
+
+        /* Mobile sidebar animation */
+        #sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Overlay animation */
+        #mobileOverlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Improve mobile scrolling performance */
+        @media (max-width: 1023px) {
+            .content-area,
+            main > div:first-child {
+                -webkit-overflow-scrolling: touch;
+                transform: translate3d(0, 0, 0);
+            }
+        }
+
+        /* Dark mode support (basic) */
+        @media (prefers-color-scheme: dark) {
+            /* You can add dark mode styles here if needed */
+        }
+    </style>
+
+</body>
+</html>

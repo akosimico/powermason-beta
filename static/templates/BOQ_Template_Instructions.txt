@@ -1,0 +1,174 @@
+BOQ Template Instructions - Company Standard Format
+===================================================
+
+Create a SINGLE Excel sheet following the company's standard BOQ layout:
+
+SECTION 1: PROJECT INFORMATION HEADER (Rows 1-16)
+================================================
+A1: Project Name
+B1: [Enter project name here]
+
+A2: Project Type
+B2: [Enter project type here - Residential/Commercial/Industrial/Mixed-Use]
+
+A3: Location
+B3: [Enter project location here]
+
+A4: Client
+B4: [Enter client name here]
+
+A5: Contractor
+B5: [Enter contractor name]
+
+A6: Proposal No
+B6: [Enter proposal number]
+
+A7: Lot Size (sqm)
+B7: [Enter lot size in square meters] ← REQUIRED for cost per sqm calculation
+
+A8: Floor Area (sqm)
+B8: [Enter floor area in square meters]
+
+A9: Project Category
+B9: [Enter project category - Private/Government/Corporate]
+
+A10: Complexity Level
+B10: [Enter complexity level - Low End/Mid Range/High End]
+
+A11: Role/Type
+B11: [Enter role/type - General Contractor/Subcontractor/Consultant]
+
+A12: Date Prepared
+B12: [Enter date prepared - YYYY-MM-DD format]
+
+A13: Prepared By
+B13: [Enter prepared by - Project Manager/Estimator name]
+
+A14: Project Value (PHP)
+B14: =SUM(G20:G29) ← This will auto-calculate total project value
+
+A15: Cost per sqm (PHP)
+B15: =B14/B7 ← This will auto-calculate cost per square meter
+
+A16: Total Items
+B16: =COUNTA(A20:A29) ← This will auto-calculate total number of items
+
+A17: BILL OF QUANTITIES: DETAILED BREAKDOWN
+
+SECTION 2: BOQ TABLE HEADER (Row 19)
+====================================
+A19: Item #
+B19: Description
+C19: Section/Category
+D19: UOM
+E19: Quantity
+F19: Unit Cost
+G19: Total Cost
+H19: Material Cost
+I19: Labor Cost
+J19: Equipment Cost
+K19: Subcontractor Cost
+L19: Dependencies
+M19: Remarks
+
+
+SECTION 3: BOQ ITEMS TABLE (Starting Row 20)
+============================================
+A20: 1 ← Item number (sequential)
+B20: [Work item description]
+C20: [Section/Category - e.g., "General Requirements", "Site Works", "MEP", "Finishing"]
+D20: [Unit of measurement: sqm, cu.m, pcs, kg, lot, lm, etc.]
+E20: [Quantity]
+F20: [Total unit cost]
+G20: =E20*F20 ← Auto-calculate total cost
+H20: [Material unit cost]
+I20: [Labor unit cost]
+J20: [Equipment unit cost]
+K20: [Subcontractor unit cost]
+L20: [Dependencies - item numbers this depends on, comma-separated]
+M20: [Remarks/Notes]
+
+[Continue for all items...]
+
+A[Last+1]: TOTAL
+E[Last+1]: =SUM(E20:E[LastItem])
+G[Last+1]: =SUM(G20:G[LastItem])
+H[Last+1]: =SUM(H20:H[LastItem])
+I[Last+1]: =SUM(I20:I[LastItem])
+J[Last+1]: =SUM(J20:J[LastItem])
+K[Last+1]: =SUM(K20:K[LastItem])
+
+B[Final+1]: GRAND TOTAL
+L[Final+1]: [Formula: =SUM of all subtotals]
+
+
+HANDLING LONG BOQs:
+==================
+1. Use Excel's "Freeze Panes" feature:
+   - Select cell B10
+   - Go to View > Freeze Panes
+   - This keeps project info visible while scrolling through items
+
+2. The system will automatically:
+   - Read all items from row 10 until it finds blank rows or "GRAND TOTAL"
+   - Calculate totals regardless of number of items
+   - Handle projects with 10 items or 1000+ items
+
+3. For very long BOQs:
+   - Use section headers (e.g., "GENERAL REQUIREMENTS", "SITE WORKS", "FINISHES")
+   - Place section headers in column B with no item number
+   - System will skip these rows automatically
+
+
+COST BREAKDOWN FORMAT:
+======================
+Material Cost (Column I): Direct material costs only
+Labor Cost (Column J): Direct labor costs only
+Amount (Column L): Total cost = (Material + Labor) × Quantity
+
+AUTOMATIC CALCULATIONS:
+======================
+Cost per sqm = Total Cost ÷ Lot Size
+- System automatically calculates this when you upload the BOQ
+- Displayed in preview and used for cost learning
+- Requires Lot Size field to be filled
+
+Examples:
+- Site Clearing: Material=120, Labor=80, Qty=100 → Amount=20,000
+- Excavation: Material=500, Labor=300, Qty=50 → Amount=40,000
+- Concrete Work: Material=4,000, Labor=1,200, Qty=20 → Amount=104,000
+- If Total Cost = 509,000 and Lot Size = 200 sqm → Cost per sqm = 2,545
+
+
+SECTION HEADERS:
+===============
+Use these standard section headers in column B:
+- GENERAL REQUIREMENTS
+- SITE WORKS
+- STRUCTURAL WORKS
+- ARCHITECTURAL WORKS
+- MEP (Mechanical, Electrical, Plumbing)
+- FINISHES
+- SPECIALTIES
+- EQUIPMENT
+- CONTINGENCY
+
+
+IMPORTANT NOTES:
+===============
+1. Keep project info in rows 1-5 (fixed position)
+2. Start BOQ items at row 10 (fixed position)
+3. Use formulas for calculations (Amount = (Material + Labor) × Quantity)
+4. All amounts in PHP (Philippine Peso)
+5. Use standard UOM: sq.m, cu.m, pcs, kg, lot, lm, etc.
+6. System auto-detects project information from header
+7. Section headers help organize work by trade
+8. Subtotal rows help with cost tracking
+
+
+This template ensures the system can automatically extract:
+- Complete project information
+- Detailed item-level costs and breakdowns
+- Section-wise cost organization
+- Support for projects of any size
+- Company-standard formatting and layout

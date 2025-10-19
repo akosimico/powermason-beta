@@ -1,0 +1,30 @@
+Project Name,Sample Residential House,,,,,,,,,,,
+Project Type,Residential,,,,,,,,,,,
+Location,Quezon City, Philippines,,,,,,,,,,
+Client,John and Jane Smith,,,,,,,,,,,
+Contractor,PowerMason Construction,,,,,,,,,,,
+Proposal No,PM-2024-001,,,,,,,,,,,
+Lot Size (sqm),150,,,,,,,,,,,
+Floor Area (sqm),120,,,,,,,,,,,
+Project Category,Private,,,,,,,,,,,
+Complexity Level,Mid Range,,,,,,,,,,,
+Role/Type,General Contractor,,,,,,,,,,,
+Date Prepared,15/01/2024,,,,,,,,,,,
+Prepared By,Project Manager,,,,,,,,,,,
+Project Value (PHP),594000,,,,,,,,,,,
+Cost per sqm (PHP),3960,,,,,,,,,,,
+Total Items,10,,,,,,,,,,,
+BILL OF QUANTITIES: DETAILED BREAKDOWN,,,,,,,,,,,,
+,,,,,,,,,,,,
+Item #,Description,Section/Category,UOM,Quantity,Unit Cost,Total Cost,Material Cost,Labor Cost,Equipment Cost,Subcontractor Cost,Dependencies,Remarks
+1,Site Clearing and Preparation,General Requirements,sqm,150,200,30000,120,60,20,0,,Clear and prepare site
+2,Excavation for Foundation,General Requirements,cu.m,30,800,24000,500,250,50,0,1,Standard excavation depth 1.5m
+3,Concrete Footing,General Requirements,cu.m,15,5200,78000,4000,1000,200,0,2,Ready-mix concrete
+4,Reinforcement Steel,General Requirements,kg,800,105,84000,80,20,5,0,3,Grade 40 steel
+5,Concrete Slab on Grade,Site Works,sqm,120,1200,144000,800,300,100,0,4,6-inch thick slab
+6,Drainage System,Site Works,lm,100,350,35000,200,100,50,0,5,Complete drainage system
+7,Electrical Installation,MEP,lot,1,25000,25000,15000,8000,2000,0,6,Complete electrical system
+8,Plumbing Installation,MEP,lot,1,18000,18000,12000,5000,1000,0,6,Complete plumbing system
+9,Floor Tiles,Finishing,sqm,120,800,96000,600,150,50,0,6,Ceramic tiles
+10,Painting Works,Finishing,sqm,300,200,60000,100,80,20,0,9,Interior and exterior
+TOTAL,,,1637,,594000,33400,14960,3495,0,,,

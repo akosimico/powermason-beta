@@ -1,0 +1,9 @@
+Employee ID,First Name,Last Name,Email,Phone,Role,Status,Hire Date,Contract End Date,Department,Days Until Contract Expiry,Has User Account
+QA0001,quality,assurance,,,Quality Assurance Officer,Active,2025-09-21,,,,No
+PM0001,micoxdXD,barnedo,mico@gmail.com,0993 631 1663,Project Manager,Active,2025-09-19,,Electrical,,No
+SO0002,employee,dipumapasok,jhaynoelbarnedo@gmail.com,0932 32131,Safety Officer,Active,2025-10-01,2025-10-10,sakit mo sa ulo,,No
+FM0001,fore,man,,,Foreman,Active,2025-09-21,,,,No
+PM0002,test Project,Manager,testpm@gmail.com,(213) 213-12,Project Manager,Active,2025-09-19,,Electrical,,Yes
+PIC0001,Bogart,Mansinilya,shanleybarnedo@gmail.com,0993 293 2932,Project In Charge,Active,2025-09-01,2025-09-22,,,No
+SO0001,mee,mee,,(099) 329-32932,Safety Officer,Active,2025-09-19,,Electrical,,No
+QO0001,test,test,test@gmail.com,(098) 765-4321,Quality Officer,Active,2025-01-20,2025-09-27,,,No

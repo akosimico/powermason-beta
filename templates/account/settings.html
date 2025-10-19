@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block head_title %}
+    {% trans "Account Settings - Powermason" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 px-6 py-12 flex justify-center">
+    <div class="bg-white shadow-xl rounded-2xl p-10 w-full max-w-3xl">
+
+        <!-- Page Title -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">{% trans "Account Settings" %}</h1>
+
+        <!-- Settings Options -->
+        <div class="space-y-6">
+
+            <!-- Change Email -->
+            <div class="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">{% trans "Change Email" %}</h2>
+                    <p class="text-gray-600 text-sm">Update your primary email address for your Powermason account.</p>
+                </div>
+                <a href="{% url 'account_email' %}" class="text-blue-600 font-medium hover:underline">{% trans "Go" %}</a>
+            </div>
+
+            <!-- Change Password -->
+            <div class="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">{% trans "Change Password" %}</h2>
+                    <p class="text-gray-600 text-sm">Update your password to keep your account secure.</p>
+                </div>
+                <a href="{% url 'account_change_password' %}" class="text-blue-600 font-medium hover:underline">{% trans "Go" %}</a>
+            </div>
+
+            <!-- Account Connections -->
+         
+            <div class="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">{% trans "Account Connections" %}</h2>
+                    <p class="text-gray-600 text-sm">Manage social accounts linked to your Powermason account.</p>
+                </div>
+                <a href="{% url 'socialaccount_connections' %}" class="text-blue-600 font-medium hover:underline">{% trans "Go" %}</a>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock content %}

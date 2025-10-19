@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Cost Dashboard - {{ project.project_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        @apply bg-white rounded-lg shadow-md p-6 border-l-4;
+    }
+    .metric-value {
+        @apply text-3xl font-bold mb-1;
+    }
+    .metric-label {
+        @apply text-sm text-gray-600 uppercase tracking-wide;
+    }
+    .alert-critical {
+        @apply bg-red-50 border-l-4 border-red-500 p-4 mb-3;
+    }
+    .alert-warning {
+        @apply bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-3;
+    }
+    .alert-info {
+        @apply bg-blue-50 border-l-4 border-blue-500 p-4 mb-3;
+    }
+    .progress-bar {
+        @apply h-3 rounded-full transition-all duration-500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Cost Tracking Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ project.project_id }} - {{ project.project_name }}
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'project_view'  project.project_source|lower project.id %}"
+                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Project
+                </a>
+                <button onclick="openExpenseModal()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Add Expense
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    {% if alerts %}
+    <div class="mb-6">
+        {% for alert in alerts %}
+        <div class="alert-{{ alert.level|lower }}">
+            <div class="flex items-start">
+                <i class="fas fa-{{ alert.icon }} text-lg mr-3 mt-1
+                    {% if alert.level == 'CRITICAL' %}text-red-600
+                    {% elif alert.level == 'WARNING' %}text-yellow-600
+                    {% else %}text-blue-600{% endif %}"></i>
+                <div>
+                    <p class="font-medium
+                        {% if alert.level == 'CRITICAL' %}text-red-800
+                        {% elif alert.level == 'WARNING' %}text-yellow-800
+                        {% else %}text-blue-800{% endif %}">
+                        {{ alert.message }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Allocated -->
+        <div class="metric-card border-blue-500">
+            <div class="metric-label">Total Allocated</div>
+            <div class="metric-value text-blue-600">₱{{ total_allocated|floatformat:2|intcomma }}</div>
+            <p class="text-xs text-gray-500 mt-1">Available budget</p>
+        </div>
+
+        <!-- Total Spent -->
+        <div class="metric-card {% if is_over_budget %}border-red-500{% else %}border-green-500{% endif %}">
+            <div class="metric-label">Total Spent</div>
+            <div class="metric-value {% if is_over_budget %}text-red-600{% else %}text-green-600{% endif %}">
+                ₱{{ total_spent|floatformat:2|intcomma }}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">{{ budget_utilization|floatformat:1 }}% utilized</p>
+        </div>
+
+        <!-- Remaining Budget -->
+        <div class="metric-card {% if remaining_budget < 0 %}border-red-500{% else %}border-gray-400{% endif %}">
+            <div class="metric-label">Remaining</div>
+            <div class="metric-value {% if remaining_budget < 0 %}text-red-600{% else %}text-gray-700{% endif %}">
+                ₱{{ remaining_budget|floatformat:2|intcomma }}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                {% if remaining_budget < 0 %}Over budget!{% else %}Available{% endif %}
+            </p>
+        </div>
+
+        <!-- Cost Performance Index (CPI) -->
+        <div class="metric-card border-{{ cpi_color }}-500">
+            <div class="metric-label">Cost Performance Index</div>
+            <div class="metric-value text-{{ cpi_color }}-600">{{ cpi|floatformat:2 }}</div>
+            <p class="text-xs text-gray-500 mt-1">{{ cpi_status }} - Target: 1.00</p>
+        </div>
+    </div>
+
+    <!-- Budget Utilization Progress Bar -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget Utilization</h3>
+        <div class="relative">
+            <div class="w-full bg-gray-200 rounded-full h-6">
+                <div class="progress-bar {% if budget_utilization >= 90 %}bg-red-600
+                            {% elif budget_utilization >= 75 %}bg-yellow-500
+                            {% else %}bg-green-500{% endif %}"
+                     style="width: {{ budget_utilization|floatformat:1 }}%">
+                </div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                <span>0%</span>
+                <span class="font-semibold">{{ budget_utilization|floatformat:1 }}%</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        {% if burn_rate %}
+        <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-3 gap-4 text-sm">
+            <div>
+                <span class="text-gray-600">Daily Burn Rate:</span>
+                <span class="font-semibold ml-2">₱{{ burn_rate|floatformat:2|intcomma }}/day</span>
+            </div>
+            <div>
+                <span class="text-gray-600">Days Elapsed:</span>
+                <span class="font-semibold ml-2">{{ days_elapsed }} days</span>
+            </div>
+            {% if projected_cost %}
+            <div>
+                <span class="text-gray-600">Projected Total Cost:</span>
+                <span class="font-semibold ml-2 {% if projected_cost > total_allocated %}text-red-600{% endif %}">
+                    ₱{{ projected_cost|floatformat:2|intcomma }}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Budget by Category (Pie Chart) -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget by Category</h3>
+            <canvas id="categoryPieChart" height="250"></canvas>
+        </div>
+
+        <!-- Spending Trend (Line Chart) -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Spending Trend</h3>
+            <canvas id="spendingTrendChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Category Breakdown Table -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown by Category</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Allocated</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for cat in categories_data %}
+                    <tr class="{% if cat.is_over %}bg-red-50{% endif %}">
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ cat.scope }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ cat.category }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-900">₱{{ cat.allocated|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3 text-sm text-right {% if cat.is_over %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
+                            ₱{{ cat.spent|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right {% if cat.remaining < 0 %}text-red-600{% else %}text-gray-900{% endif %}">
+                            ₱{{ cat.remaining|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if cat.utilization >= 90 %}bg-red-100 text-red-800
+                                {% elif cat.utilization >= 75 %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ cat.utilization|floatformat:1 }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            No budget categories found. Please set up project budget first.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Expenses</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for expense in recent_expenses %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ expense.expense_date|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            {{ expense.budget_category.scope.name }} - {{ expense.budget_category.get_category_display }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ expense.get_expense_type_display }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ expense.vendor|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900">₱{{ expense.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ expense.created_by.full_name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            No expenses recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div id="expenseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Add New Expense</h3>
+            <button onclick="closeExpenseModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="expenseForm" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Budget Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Budget Category *</label>
+                    <select name="budget_category_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select category...</option>
+                        {% for budget in budget_categories %}
+                        <option value="{{ budget.id }}">
+                            {{ budget.scope.name }} - {{ budget.get_category_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Expense Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expense Type *</label>
+                    <select name="expense_type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select type...</option>
+                        {% for code, label in expense_types %}
+                        <option value="{{ code }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₱) *</label>
+                    <input type="number" name="amount" step="0.01" min="0.01" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expense Date *</label>
+                    <input type="date" name="expense_date" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           value="{{ 'now'|date:'Y-m-d' }}">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Vendor -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+                    <input type="text" name="vendor"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Vendor name">
+                </div>
+
+                <!-- Receipt Number -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Receipt/Invoice #</label>
+                    <input type="text" name="receipt_number"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Receipt number">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Additional notes..."></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="closeExpenseModal()"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    <i class="fas fa-save mr-2"></i>Save Expense
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// ========================================
+// CHARTS
+// ========================================
+
+// Category Pie Chart
+const ctxPie = document.getElementById('categoryPieChart').getContext('2d');
+const categoryPieChart = new Chart(ctxPie, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for cat in categories_data %}
+            '{{ cat.scope }} - {{ cat.category }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Spending',
+            data: [
+                {% for cat in categories_data %}
+                {{ cat.spent }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                '#EC4899', '#14B8A6', '#F97316'
+            ],
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': ₱' + context.parsed.toLocaleString('en-PH', {minimumFractionDigits: 2});
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Spending Trend Line Chart
+const ctxLine = document.getElementById('spendingTrendChart').getContext('2d');
+const spendingTrendChart = new Chart(ctxLine, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for month in monthly_spending %}
+            '{{ month.month }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Monthly Spending',
+            data: [
+                {% for month in monthly_spending %}
+                {{ month.amount }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Spent: ₱' + context.parsed.y.toLocaleString('en-PH', {minimumFractionDigits: 2});
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₱' + value.toLocaleString('en-PH');
+                    }
+                }
+            }
+        }
+    }
+});
+
+// ========================================
+// EXPENSE MODAL
+// ========================================
+
+function openExpenseModal() {
+    document.getElementById('expenseModal').classList.remove('hidden');
+}
+
+function closeExpenseModal() {
+    document.getElementById('expenseModal').classList.add('hidden');
+    document.getElementById('expenseForm').reset();
+}
+
+// Handle expense form submission
+document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch('{% url "api_add_quick_expense" project.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': data.csrfmiddlewaretoken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(result.message + (result.warning ? '\n\nWarning: ' + result.warning : ''));
+            closeExpenseModal();
+            location.reload(); // Reload to show updated data
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error adding expense: ' + error);
+    }
+});
+
+// Close modal on outside click
+document.getElementById('expenseModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeExpenseModal();
+    }
+});
+</script>
+{% endblock %}

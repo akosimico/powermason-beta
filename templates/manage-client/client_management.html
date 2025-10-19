@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% load static %}
+{% load role_tags %}
+{% load xero_tags %}
+
+{% block title %}Client Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Client Management</h1>
+            <p class="text-gray-600 mt-1">Manage client information for project assignments</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+            <!-- Search -->
+            <form method="GET" class="flex">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           placeholder="Search clients..." 
+                           class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <button type="submit" 
+                        class="px-4 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200 transition">
+                    Search
+                </button>
+            </form>
+
+            <!-- Add Button -->
+            <button 
+                id="addClientBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Client
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg p-4 mb-6 border border-gray-200">
+        <form method="GET" class="flex flex-wrap gap-4">
+            <!-- Keep existing search value -->
+            <input type="hidden" name="search" value="{{ search_query }}">
+            
+            <!-- Status Filter -->
+            <div class="flex items-center space-x-2">
+                <label for="status_filter" class="text-sm font-medium text-gray-700">Status:</label>
+                <select name="status" id="status_filter" 
+                        class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        onchange="this.form.submit()">
+                    <option value="">All Clients</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                </select>
+            </div>
+
+            <!-- Client Type Filter -->
+            <div class="flex items-center space-x-2">
+                <label for="type_filter" class="text-sm font-medium text-gray-700">Type:</label>
+                <select name="client_type" id="type_filter" 
+                        class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    <option value="DC" {% if request.GET.client_type == 'DC' %}selected{% endif %}>Direct Client</option>
+                    <option value="GC" {% if request.GET.client_type == 'GC' %}selected{% endif %}>General Contractor</option>
+                </select>
+            </div>
+
+            <!-- Reset Filters -->
+            {% if request.GET.status or request.GET.client_type %}
+            <a href="{% url 'manage_client:client_management' %}?search={{ search_query }}" 
+               class="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded border border-blue-300 hover:bg-blue-50 transition">
+                Clear Filters
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    
+    
+<!-- Client Cards Grid -->
+<div id="clientCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for client in page_obj %}
+    <div class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 cursor-pointer client-card" 
+    data-client-id="{{ client.id }}">
+        
+        <!-- Header -->
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1 truncate">{{ client.company_name }}</h3>
+                    <p class="text-sm text-gray-600 font-medium truncate">{{ client.contact_name }}</p>
+                </div>
+                <div class="flex flex-col items-end space-y-2 ml-4">
+                    <!-- Status badges in a more compact layout -->
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                    {% if client.is_active %}bg-green-100 text-green-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">
+                            {% if client.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        <span class="px-2 py-1 rounded text-xs font-medium
+                                    {% if client.client_type == 'DC' %}bg-blue-100 text-blue-700
+                                    {% else %}bg-purple-100 text-purple-700{% endif %}">
+                            {{ client.get_client_type_display }}
+                        </span>
+                    </div>
+                    
+                    <!-- Xero Status - Only show if connected -->
+                    {% if has_xero_connection %}
+                    <div class="flex items-center">
+                        {% if client.xero_contact_id %}
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 flex items-center">
+                            <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Xero
+                        </span>
+                        {% else %}
+                        <button class="sync-client-btn px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition flex items-center"
+                                data-client-id="{{ client.id }}"
+                                title="Sync to Xero">
+                            <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            Sync
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contact Info - More compact -->
+            <div class="space-y-2 mb-4 text-sm text-gray-600">
+                {% if client.email %}
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span class="truncate">{{ client.email }}</span>
+                </div>
+                {% endif %}
+
+                {% if client.phone %}
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span class="truncate">{{ client.phone }}</span>
+                </div>
+                {% endif %}
+
+                {% if client.city or client.state %}
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="truncate">{{ client.city }}{% if client.city and client.state %}, {% endif %}{{ client.state }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Project Types - Show only if they exist -->
+            {% if client.project_types.all %}
+            <div class="mb-4">
+                <div class="flex flex-wrap gap-1">
+                    {% for project_type in client.project_types.all|slice:":2" %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                        {{ project_type.name }}
+                    </span>
+                    {% endfor %}
+                    {% if client.project_types.count > 2 %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                        +{{ client.project_types.count|add:"-2" }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+<!-- Xero Details - Only show for synced clients -->
+{% if has_xero_connection and client.xero_contact_id %}
+<div class="bg-green-50 border border-green-200 p-3 rounded-lg mb-4" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between">
+        <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-green-800">Xero Contact</p>
+            <p class="text-xs text-green-600 truncate">{{ client.xero_contact_id|truncatechars:15 }}</p>
+            {% if client.xero_last_sync %}
+            <p class="text-xs text-green-600">{{ client.xero_last_sync|timesince }} ago</p>
+            {% endif %}
+        </div>
+        <div class="flex space-x-1 ml-2">
+            <button class="sync-client-btn text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition"
+                    data-client-id="{{ client.id }}"
+                    title="Re-sync to Xero"
+                    onclick="event.stopPropagation()">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+            {% if client.xero_contact_url %}
+            <a href="{{ client.xero_contact_url }}" target="_blank" 
+               class="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition"
+               title="View in Xero"
+               onclick="event.stopPropagation()">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+            <!-- No Xero Connection Message - Only if not connected at all -->
+            {% if not has_xero_connection %}
+            <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="h-4 w-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        <span class="text-xs font-medium text-blue-800">Connect Xero</span>
+                    </div>
+                    <a href="/xero/connect/" target="_blank"
+                       class="text-xs font-medium text-blue-600 hover:text-blue-800 underline">
+                        Setup
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-500">
+                    {{ client.project_count }} project{{ client.project_count|pluralize }}
+                </span>
+                <div class="flex space-x-3">
+                    <button 
+                        class="edit-btn text-blue-600 hover:text-blue-800 text-xs font-medium transition"
+                        data-id="{{client.id}}">
+                        Edit
+                    </button>
+                    {% if user.is_superuser or user|has_role:"OM" %}
+                    <button 
+                        class="delete-btn text-red-600 hover:text-red-800 text-xs font-medium transition"
+                        data-id="{{ client.id }}"
+                        data-name="{{ client.company_name|escapejs }}"
+                        data-count="{{ client.project_count }}">
+                        Delete
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
+        <p class="text-gray-500 mb-4">
+            {% if search_query %}
+                No clients match your search "{{ search_query }}".
+            {% else %}
+                Get started by adding your first client.
+            {% endif %}
+        </p>
+        <button id="addClientBtn2" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
+            Add Client
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex justify-center mt-8">
+        <div class="flex space-x-1">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client_type %}&client_type={{ request.GET.client_type }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50">Previous</a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="px-3 py-2 border border-blue-500 bg-blue-500 text-white rounded-md text-sm">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client_type %}&client_type={{ request.GET.client_type }}{% endif %}" 
+                   class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.client_type %}&client_type={{ request.GET.client_type }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Client Details Modal -->
+<div id="clientDetailsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-200">
+            <div>
+                <h2 id="detailsClientName" class="text-2xl font-bold text-gray-900"></h2>
+                <p id="detailsContactName" class="text-gray-600"></p>
+            </div>
+            <button type="button" id="closeDetailsBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold">
+                ✕
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Client Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Client Information</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                        <div id="detailsClientInfo">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Project Types -->
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 mt-6">Project Types</h3>
+                    <div id="detailsProjectTypes" class="flex flex-wrap gap-2">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                </div>
+
+                <!-- Projects List -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Projects</h3>
+                    <div id="detailsProjectsList" class="space-y-3">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end space-x-3 border-t p-4">
+    <button id="closeDetailsFooterBtn" class="px-4 py-2 bg-gray-200 rounded-md">Close</button>
+    <button onclick="openEditClientModal(currentClientId)" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        Edit Client
+    </button>
+</div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% include "partials/client_modals.html" %}
+
+{% if form_data %}
+    {{ form_data|json_script:"error-form-data" }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorFormData = JSON.parse(
+                document.getElementById('error-form-data').textContent
+            );
+            populateFormWithErrorData(errorFormData);
+
+            // Convert Django boolean to real JS boolean
+            const shouldOpenModal = JSON.parse("{{ show_add_modal|yesno:'true,false'|lower }}");
+            if (shouldOpenModal) {
+                document.getElementById('clientModal').classList.remove('hidden');
+            }
+        });
+    </script>
+{% endif %}
+
+{% if show_client_modal %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('clientModal').classList.remove('hidden');
+    });
+</script>
+{% endif %}
+
+{% block extra_js %}
+{% if edit_client_id %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        openEditClientModal("{{ edit_client_id }}");
+    });
+</script>
+{% endif %}
+
+<script>
+    const addClientUrl = "{% url 'manage_client:add_client' %}";
+    const clientManagementUrl = "{% url 'manage_client:client_management' %}";
+    window.userToken = "{{ token|default:'' }}";  
+    window.userRole = "{{ role|default:'' }}";
+</script>
+
+
+<script>
+// Handle sync button clicks
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sync-client-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const clientId = this.dataset.clientId;
+            const originalContent = this.innerHTML;
+            
+            // Show loading state
+            this.innerHTML = '<svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            this.disabled = true;
+            this.classList.add('opacity-50');
+            
+            // Make the sync request
+            fetch(`xero/api/clients/${clientId}/sync-to-xero/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned HTML instead of JSON. Check your URL pattern.');
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    this.innerHTML = '<svg class="h-3 w-3 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+                    this.classList.remove('bg-yellow-100', 'text-yellow-700');
+                    this.classList.add('bg-green-100', 'text-green-700');
+                    
+                    // Show success message
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'fixed top-4 right-4 z-50 bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center';
+                    successMsg.innerHTML = `
+                        <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Client successfully synced to Xero!</span>
+                    `;
+                    document.body.appendChild(successMsg);
+                    
+                    // Remove message after 3 seconds and reload
+                    setTimeout(() => {
+                        successMsg.remove();
+                        location.reload();
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Sync failed');
+                }
+            })
+            .catch(error => {
+                console.error('Sync error:', error);
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                this.classList.remove('opacity-50');
+                
+                // Show error briefly
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'absolute z-50 bg-red-100 border border-red-200 text-red-700 px-2 py-1 rounded text-xs mt-1';
+                errorMsg.textContent = 'Sync failed';
+                this.parentNode.appendChild(errorMsg);
+                
+                setTimeout(() => errorMsg.remove(), 3000);
+            });
+        });
+    });
+});
+</script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="{% static 'js/client_management.js' %}"></script>
+{% endblock %}
+{% endblock %}

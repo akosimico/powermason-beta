@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load tz %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+
+  <!-- Header Buttons -->
+  <div class="flex flex-wrap items-center gap-3 mb-6">
+    <button 
+      type="button"
+      onclick="history.back()"
+      class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md shadow hover:bg-gray-300 transition">
+      &larr; Back
+    </button>
+
+    <a href="{% url 'progress_history' %}" 
+       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition">
+      View History
+    </a>
+  </div>
+
+  <!-- Pending Updates Card -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pending Progress Updates</h2>
+
+    {% if updates %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Task</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Project</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">PM</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Reported %</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">Remarks</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Proof</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Reported At</th>
+            <th class="px-4 py-2 text-left font-medium text-gray-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          {% for update in updates %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2 text-gray-900">{{ update.task.task_name }}</td>
+            <td class="px-4 py-2 text-gray-900">{{ update.task.project.project_name }}</td>
+            <td class="px-4 py-2 text-gray-700">{{ update.reported_by.full_name }}</td>
+            <td class="px-4 py-2 font-semibold text-gray-900">{{ update.progress_percent }}%</td>
+            <td class="px-3 py-2 text-gray-700">{{ update.remarks|default:"-" }}</td>
+            <td class="px-4 py-2">
+              {% if update.attachments.all %}
+                {% for att in update.attachments.all %}
+                  <a href="{{ att.file.url }}" target="_blank" class="text-indigo-600 hover:underline">Proof {{ forloop.counter }}</a><br>
+                {% endfor %}
+              {% else %}
+                <span class="text-gray-400 italic">No proof</span>
+              {% endif %}
+            </td>
+           <td class="px-4 py-2 text-gray-700">
+    {% timezone "Asia/Manila" %}
+        {{ update.created_at|date:"M d, Y h:i A" }}
+    {% endtimezone %}
+</td>
+            <td class="px-4 py-2 flex flex-wrap gap-2">
+              <a href="{% url 'approve_update' update.id %}" 
+                 class="px-3 py-1 rounded-md bg-green-600 text-white font-medium shadow hover:bg-green-700 transition">
+                Approve
+              </a>
+              <a href="{% url 'reject_update' update.id %}" 
+                 class="px-3 py-1 rounded-md bg-red-600 text-white font-medium shadow hover:bg-red-700 transition">
+                Reject
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-gray-500 italic mt-4">No pending updates to review.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

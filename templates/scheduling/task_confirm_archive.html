@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-12 p-8 bg-white rounded-xl shadow-lg border border-gray-200 text-center">
+
+    <!-- Header with Warning Icon -->
+    <div class="flex items-center justify-center gap-3 mb-6">
+        <svg class="w-8 h-8 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"/>
+        </svg>
+        <h1 class="text-3xl font-bold text-gray-800">Confirm Archive Task</h1>
+    </div>
+
+    <!-- Description -->
+    <p class="text-gray-700 mb-6">
+        Are you sure you want to archive the task
+        <span class="font-medium text-gray-900">{{ task.task_name }}</span>?
+    </p>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-center gap-4">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" 
+                    class="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 shadow transition focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                Yes, Archive
+            </button>
+        </form>
+
+        <a href="{% url 'task_list' project.id  %}" 
+           class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+            Cancel
+        </a>
+    </div>
+
+    <!-- Optional Note -->
+    <p class="mt-6 text-sm text-gray-500">
+        Deleting a task is permanent and cannot be undone. Please make sure you have selected the correct task.
+    </p>
+</div>
+{% endblock %}

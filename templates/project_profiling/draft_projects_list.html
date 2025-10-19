@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+{% load project_extras %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Draft Projects</h1>
+                    <p class="mt-2 text-lg text-gray-600">
+                        Continue editing your saved project drafts
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        {{ projects|length }} Draft{{ projects|length|pluralize }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {% if projects %}
+            <!-- Projects Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for project in projects %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                    <!-- Project Header -->
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-lg font-semibold text-gray-900 truncate">
+                                    {{ project.project_data|get_item:"project_name"|default:"Untitled Project" }}
+                                </h3>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Project ID: {{ project.project_data|get_item:"project_id"|default:"Will be generated" }}
+                                </p>
+                            </div>
+                            <div class="flex-shrink-0 ml-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Draft
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Details -->
+                    <div class="p-6 space-y-4">
+                        <!-- Type and Category -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Type</p>
+                                <p class="text-sm text-gray-900 mt-1">
+                                    {{ project.project_data|get_item:"project_type"|display_type|default:"Not set" }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</p>
+                                <p class="text-sm text-gray-900 mt-1">
+                                    {{ project.project_data|get_item:"project_category"|display_category|default:"Not set" }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Client -->
+                        {% if project.project_data|get_item:"client_id" %}
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Client</p>
+                            <p class="text-sm text-gray-900 mt-1">
+                                {% with client_id=project.project_data|get_item:"client_id" %}
+                                    {% for client in all_clients %}
+                                        {% if client.id == client_id|add:0 %}
+                                            {{ client.company_name }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Location -->
+                        {% if project.project_data|get_item:"location" %}
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</p>
+                            <p class="text-sm text-gray-900 mt-1">
+                                {{ project.project_data|get_item:"location"|truncatechars:60 }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Last Modified -->
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Modified</p>
+                            <p class="text-sm text-gray-900 mt-1">
+                                {{ project.submitted_at|timesince }} ago
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        <div class="flex items-center justify-between gap-3">
+                            <button onclick="deleteDraft('{{ project.id }}')"
+                                    class="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Delete
+                            </button>
+
+                            <a href="{% url 'edit_draft_project' project.id %}"
+                               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Continue Editing
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <div class="max-w-md mx-auto">
+                    <svg class="w-24 h-24 text-gray-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <h3 class="text-xl font-medium text-gray-900 mb-2">No Draft Projects</h3>
+                    <p class="text-gray-500 mb-6">
+                        You don't have any draft projects yet. Start creating a project and save it as a draft to continue editing later.
+                    </p>
+                    <a href="{% url 'manage_client:client_management' %}"
+                       class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Create New Project
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="ml-4 text-lg font-medium text-gray-900">Delete Draft Project</h3>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">
+                    Are you sure you want to delete this draft project? This action cannot be undone.
+                </p>
+                <div class="flex items-center justify-end space-x-3">
+                    <button onclick="closeDeleteModal()"
+                            class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDelete()"
+                            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let draftToDelete = null;
+
+function deleteDraft(projectId) {
+    draftToDelete = projectId;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    draftToDelete = null;
+}
+
+function confirmDelete() {
+    if (draftToDelete) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "delete_draft_project" 0 %}'.replace('0', draftToDelete);
+
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Add CSRF token to the page for JavaScript access
+if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+    const meta = document.createElement('meta');
+    meta.name = 'csrf-token';
+    meta.content = '{{ csrf_token }}';
+    document.head.appendChild(meta);
+}
+</script>
+
+{% endblock %}

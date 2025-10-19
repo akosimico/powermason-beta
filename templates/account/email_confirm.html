@@ -1,0 +1,69 @@
+{% extends "base_auth.html" %}
+{% load static %}
+{% load i18n %}
+{% load account %}
+{% load allauth %}
+
+{% block head_title %}
+    {% trans "Verify Your Email - Powermason" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-6 py-12">
+    <div class="bg-white shadow-xl rounded-2xl p-10 max-w-lg w-full text-center">
+
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+            <img src="{% static 'img/powermason_logo.png' %}" alt="Powermason Logo" class="h-24 w-auto">
+        </div>
+
+        <!-- Title -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">
+            {% trans "Verify Your Email Address for Powermason" %}
+        </h1>
+
+        {% if confirmation %}
+            {% user_display confirmation.email_address.user as user_display %}
+            {% if can_confirm %}
+                <!-- Confirmation Message -->
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    {% blocktrans with confirmation.email_address.email as email %}
+                        Please confirm that <a href="mailto:{{ email }}" class="text-blue-600 hover:underline">{{ email }}</a> is an email address for user {{ user_display }} to access Powermason.
+                    {% endblocktrans %}
+                </p>
+
+                <!-- Confirm Form -->
+                {% url 'account_confirm_email' confirmation.key as action_url %}
+                <form method="post" action="{{ action_url }}">
+                    {% csrf_token %}
+                    {{ redirect_field }}
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition">
+                        {% trans "Confirm Email" %}
+                    </button>
+                </form>
+
+            {% else %}
+                <!-- Already Confirmed Message -->
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    {% blocktrans with confirmation.email_address.email as email %}
+                        Unable to confirm <strong>{{ email }}</strong> because it is already confirmed by a different account.
+                    {% endblocktrans %}
+                </p>
+            {% endif %}
+        {% else %}
+            {% url 'account_email' as email_url %}
+            <!-- Expired/Invalid Link -->
+            <p class="text-gray-600 mb-6 leading-relaxed">
+                {% blocktrans %}
+                    This email confirmation link expired or is invalid. Please 
+                    <a href="{{ email_url }}" class="text-blue-600 hover:underline font-medium">
+                        issue a new email confirmation request
+                    </a>.
+                {% endblocktrans %}
+            </p>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock content %}

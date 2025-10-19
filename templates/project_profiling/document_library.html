@@ -1,0 +1,2290 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Document Library - PowerMason{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+    .document-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: #3b82f6;
+    }
+
+    .document-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 1.5rem;
+    }
+
+    .doc-pdf { background: #fee2e2; color: #dc2626; }
+    .doc-image { background: #dbeafe; color: #2563eb; }
+    .doc-doc { background: #e0e7ff; color: #4f46e5; }
+    .doc-xls { background: #d1fae5; color: #059669; }
+    .doc-default { background: #f3f4f6; color: #6b7280; }
+
+    .version-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        background: #f3f4f6;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .stage-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .stage-INIT { background: #dbeafe; color: #1e40af; }
+    .stage-PLAN { background: #fef3c7; color: #92400e; }
+    .stage-EXEC { background: #d1fae5; color: #065f46; }
+    .stage-CLOSE { background: #e0e7ff; color: #3730a3; }
+
+    .filter-pills {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        border-radius: 9999px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-pill:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-pill.active {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border-color: #2563eb;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+    }
+
+    .filter-pill svg {
+        flex-shrink: 0;
+    }
+
+    .filter-pill.active svg {
+        animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    /* Document Type Specific Colors */
+    .filter-contract:not(.active):hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .filter-permit:not(.active):hover {
+        border-color: #10b981;
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .filter-report:not(.active):hover {
+        border-color: #8b5cf6;
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+
+    .filter-invoice:not(.active):hover {
+        border-color: #f59e0b;
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .filter-blueprint:not(.active):hover {
+        border-color: #6366f1;
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .filter-photo:not(.active):hover {
+        border-color: #06b6d4;
+        background: #cffafe;
+        color: #164e63;
+    }
+
+    .filter-other:not(.active):hover {
+        border-color: #6b7280;
+        background: #f3f4f6;
+        color: #1f2937;
+    }
+
+    /* Stage Specific Colors */
+    .filter-stage-init:not(.active):hover {
+        border-color: #3b82f6;
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .filter-stage-plan:not(.active):hover {
+        border-color: #f59e0b;
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .filter-stage-exec:not(.active):hover {
+        border-color: #10b981;
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .filter-stage-close:not(.active):hover {
+        border-color: #8b5cf6;
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+
+    .upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    /* Notification Styles */
+    .notification {
+        position: fixed !important;
+        top: 80px !important;
+        right: 20px !important;
+        max-width: 400px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        z-index: 999999 !important;
+        animation: slideIn 0.3s ease-out;
+        opacity: 0;
+        transform: translateX(100%);
+        pointer-events: auto !important;
+    }
+
+    .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .notification.hide {
+        animation: slideOut 0.3s ease-out forwards;
+    }
+
+    .notification-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .notification-error {
+        background: #ef4444;
+        color: white;
+    }
+
+    .notification-icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .notification-message {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+
+    .notification-close {
+        flex-shrink: 0;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+
+    .notification-close:hover {
+        opacity: 1;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+
+    /* Enhanced Document Organization Styles */
+    .project-section {
+        transition: all 0.3s ease;
+    }
+
+    .project-header {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .project-header:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .document-card-compact {
+        transition: all 0.2s ease;
+    }
+
+    .document-card-compact:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Line clamp utilities */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* View mode toggle */
+    .view-toggle {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 4px;
+        display: flex;
+        gap: 4px;
+    }
+
+    .view-toggle button {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+    }
+
+    .view-toggle button.active {
+        background: #3b82f6;
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+
+    .view-toggle button:hover:not(.active) {
+        background: #f3f4f6;
+        color: #374151;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Document Library</h1>
+            <p class="text-gray-600 mt-1">Manage project documents and attachments</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- View Mode Toggle -->
+            <div class="view-toggle">
+                <button onclick="setViewMode('organized')" id="viewOrganized" class="active">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Organized
+                </button>
+                <button onclick="setViewMode('grid')" id="viewGrid">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                    Grid
+                </button>
+            </div>
+            <button onclick="openUploadModal()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Upload Document
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div id="statsContainer" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Stats will be loaded here -->
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
+        <!-- Filter Header -->
+<div class="w-full border-b border-gray-200 bg-gray-50">
+  <div
+    onclick="toggleFilters()"
+    class="px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors cursor-pointer"
+  >
+    <div class="flex items-center gap-2">
+      <svg
+        class="w-5 h-5 text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+        ></path>
+      </svg>
+      <h3 class="text-sm font-semibold text-gray-900">Filters & Search</h3>
+      <span
+        id="filterCount"
+        class="hidden px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+      ></span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a
+        href="#"
+        onclick="clearFilters(); event.stopPropagation();"
+        class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          ></path>
+        </svg>
+        Clear
+      </a>
+
+      <svg
+        id="filterToggleIcon"
+        class="w-5 h-5 text-gray-600 transform transition-transform"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 9l-7 7-7-7"
+        ></path>
+      </svg>
+    </div>
+  </div>
+</div>
+
+
+        <div id="filterPanel" class="p-6 space-y-6 hidden">
+            <!-- Search -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search by title, description, or tags..."
+                        class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        onkeyup="debounceSearch()"
+                    >
+                </div>
+            </div>
+
+            <!-- Document Type Filter -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Document Type</label>
+                <div class="filter-pills" id="typeFilter">
+                    <button class="filter-pill active" data-type="ALL" onclick="filterByType('ALL', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <span>All Types</span>
+                    </button>
+                    <button class="filter-pill filter-contract" data-type="CONTRACT" onclick="filterByType('CONTRACT', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>Contracts</span>
+                    </button>
+                    <button class="filter-pill filter-permit" data-type="PERMIT" onclick="filterByType('PERMIT', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                        <span>Permits</span>
+                    </button>
+                    <button class="filter-pill filter-report" data-type="REPORT" onclick="filterByType('REPORT', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>Reports</span>
+                    </button>
+                    <button class="filter-pill filter-invoice" data-type="INVOICE" onclick="filterByType('INVOICE', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>Invoices</span>
+                    </button>
+                    <button class="filter-pill filter-blueprint" data-type="BLUEPRINT" onclick="filterByType('BLUEPRINT', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        <span>Blueprints</span>
+                    </button>
+                    <button class="filter-pill filter-photo" data-type="PHOTO" onclick="filterByType('PHOTO', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Photos</span>
+                    </button>
+                    <button class="filter-pill filter-other" data-type="OTHER" onclick="filterByType('OTHER', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Other</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Project Stage Filter -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Project Stage</label>
+                <div class="filter-pills" id="stageFilter">
+                    <button class="filter-pill active" data-stage="ALL" onclick="filterByStage('ALL', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <span>All Stages</span>
+                    </button>
+                    <button class="filter-pill filter-stage-init" data-stage="INIT" onclick="filterByStage('INIT', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <span>Initiation</span>
+                    </button>
+                    <button class="filter-pill filter-stage-plan" data-stage="PLAN" onclick="filterByStage('PLAN', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        <span>Planning</span>
+                    </button>
+                    <button class="filter-pill filter-stage-exec" data-stage="EXEC" onclick="filterByStage('EXEC', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                        <span>Execution</span>
+                    </button>
+                    <button class="filter-pill filter-stage-close" data-stage="CLOSE" onclick="filterByStage('CLOSE', this)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Closeout</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Project Filter -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Project</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <select
+                        id="projectFilter"
+                        class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white transition-all"
+                        onchange="filterByProject(this.value)"
+                    >
+                        <option value="">All Projects</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Show Archived Toggle -->
+            <div>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        id="showArchivedFilter"
+                        onchange="loadDocuments()"
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    >
+                    <span class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                        </svg>
+                        Show Archived Documents
+                    </span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Grid -->
+    <div id="documentsContainer">
+        <!-- Documents will be loaded here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bg-white rounded-lg shadow-sm p-12 text-center">
+        <svg class="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Documents Found</h3>
+        <p class="text-gray-600 mb-6">Start by uploading your first document</p>
+        <button onclick="openUploadModal()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition">
+            Upload Document
+        </button>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900">Upload Document</h2>
+                <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <form id="uploadForm" class="p-6" onsubmit="handleUpload(event)">
+            <!-- Upload Zone -->
+            <div id="uploadZone" class="upload-zone mb-6" onclick="document.getElementById('fileInput').click()">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p class="text-lg font-semibold text-gray-700 mb-1">Click to upload or drag and drop</p>
+                <p class="text-sm text-gray-500">PDF, DOC, XLS, Images (Max 10MB)</p>
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event)">
+            </div>
+
+            <div id="selectedFiles" class="hidden mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-semibold text-gray-700">
+                        <span id="fileCount">0</span> file(s) selected
+                    </p>
+                    <button type="button" onclick="clearFiles()" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                        Clear All
+                    </button>
+                </div>
+                <div id="fileList" class="space-y-2 max-h-40 overflow-y-auto">
+                    <!-- Files will be listed here -->
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Document Title *</label>
+                    <input
+                        type="text"
+                        id="docTitle"
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Project Contract Agreement"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea
+                        id="docDescription"
+                        rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Brief description of the document..."
+                    ></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                        <select id="docProject" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                            <option value="">Select Project</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Enhanced Document Type Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Document Type *</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <!-- Contract -->
+                        <div class="doc-type-option" data-type="CONTRACT" onclick="selectDocType('CONTRACT', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Contract</span>
+                            </div>
+                        </div>
+
+                        <!-- Permit -->
+                        <div class="doc-type-option" data-type="PERMIT" onclick="selectDocType('PERMIT', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-green-400 hover:bg-green-50">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Permit</span>
+                            </div>
+                        </div>
+
+                        <!-- Report -->
+                        <div class="doc-type-option" data-type="PROGRESS" onclick="selectDocType('PROGRESS', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Report</span>
+                            </div>
+                        </div>
+
+                        <!-- Invoice -->
+                        <div class="doc-type-option" data-type="INVOICE" onclick="selectDocType('INVOICE', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-orange-400 hover:bg-orange-50">
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Invoice</span>
+                            </div>
+                        </div>
+
+                        <!-- Blueprint -->
+                        <div class="doc-type-option" data-type="TECHNICAL" onclick="selectDocType('TECHNICAL', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-indigo-400 hover:bg-indigo-50">
+                                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Blueprint</span>
+                            </div>
+                        </div>
+
+                        <!-- Photo -->
+                        <div class="doc-type-option" data-type="PHOTO" onclick="selectDocType('PHOTO', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-cyan-400 hover:bg-cyan-50">
+                                <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Photo</span>
+                            </div>
+                        </div>
+
+                        <!-- Costing -->
+                        <div class="doc-type-option" data-type="COSTING" onclick="selectDocType('COSTING', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50">
+                                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Costing</span>
+                            </div>
+                        </div>
+
+                        <!-- Other -->
+                        <div class="doc-type-option" data-type="OTHER" onclick="selectDocType('OTHER', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-gray-400 hover:bg-gray-50">
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-700 text-center">Other</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="docType" name="document_type" required>
+                    <p id="docTypeError" class="mt-2 text-sm text-red-600 hidden">Please select a document type</p>
+                </div>
+
+                <!-- Enhanced Project Stage Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Project Stage *</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <!-- Initiation -->
+                        <div class="stage-option" data-stage="INIT" onclick="selectStage('INIT', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-700 text-center">Initiation</span>
+                            </div>
+                        </div>
+
+                        <!-- Planning -->
+                        <div class="stage-option" data-stage="PLAN" onclick="selectStage('PLAN', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50">
+                                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-700 text-center">Planning</span>
+                            </div>
+                        </div>
+
+                        <!-- Execution -->
+                        <div class="stage-option" data-stage="EXEC" onclick="selectStage('EXEC', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-green-400 hover:bg-green-50">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-700 text-center">Execution</span>
+                            </div>
+                        </div>
+
+                        <!-- Closeout -->
+                        <div class="stage-option" data-stage="CLOSE" onclick="selectStage('CLOSE', this)">
+                            <div class="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50">
+                                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-700 text-center">Closeout</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="docStage" name="project_stage" required>
+                    <p id="docStageError" class="mt-2 text-sm text-red-600 hidden">Please select a project stage</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Version</label>
+                        <input
+                            type="text"
+                            id="docVersion"
+                            value="1.0"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., 1.0, 2.1"
+                            onchange="toggleReplacesField()"
+                        >
+                    </div>
+
+                    <div id="replacesField" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Replaces Document (Optional)</label>
+                        <select id="docReplaces" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Auto-detect or select manually</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="versionNotesField" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Version Notes</label>
+                    <textarea
+                        id="docVersionNotes"
+                        rows="2"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="What changed in this version?"
+                    ></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
+                    <input
+                        type="text"
+                        id="docTags"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., contract, legal, important"
+                    >
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold">
+                    Upload Document
+                </button>
+                <button type="button" onclick="closeUploadModal()" class="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Document Detail Modal -->
+<div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h2 id="detailTitle" class="text-2xl font-bold text-gray-900 mb-2"></h2>
+                    <div class="flex items-center gap-2">
+                        <span id="detailVersionBadge" class="version-badge"></span>
+                        <span id="detailStageBadge" class="stage-badge"></span>
+                    </div>
+                </div>
+                <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="detailContent" class="p-6">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Archive Confirmation Modal -->
+<div id="archiveConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Archive Document?</h3>
+                    <p class="text-sm text-gray-600">This document will be moved to archives. You can restore it later.</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeArchiveModal()" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+                    Cancel
+                </button>
+                <button onclick="confirmArchive()" class="flex-1 px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium">
+                    Archive
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentFilters = {
+    search: '',
+    type: 'ALL',
+    stage: 'ALL',
+    project: ''
+};
+
+let selectedFiles = [];
+let searchTimeout = null;
+let pendingArchiveDocId = null;
+let currentViewMode = 'organized';
+let currentDocumentsData = null;
+
+// Notification System
+function showNotification(type, title, message) {
+    console.log('Showing notification:', type, title, message);
+
+    // Remove any existing notifications first
+    document.querySelectorAll('.notification').forEach(n => n.remove());
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        max-width: 400px;
+        min-width: 300px;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        z-index: 999999;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        transform: translateX(500px);
+        transition: transform 0.3s ease-out;
+    `;
+
+    const iconSVG = type === 'success'
+        ? '<svg style="width: 24px; height: 24px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        : '<svg style="width: 24px; height: 24px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+
+    notification.innerHTML = `
+        ${iconSVG}
+        <div style="flex: 1;">
+            <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+            <div style="font-size: 14px; opacity: 0.9;">${message}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" style="flex-shrink: 0; cursor: pointer; opacity: 0.8; background: none; border: none; color: white; padding: 0;">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    notification.className = 'notification';
+    document.body.appendChild(notification);
+    console.log('Notification appended to body');
+
+    // Trigger slide-in animation
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+        console.log('Notification animated in');
+    }, 10);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(500px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for project filter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project');
+    if (projectId) {
+        currentFilters.project = projectId;
+    } else {
+        // Ensure all projects are shown by default
+        currentFilters.project = '';
+    }
+
+    loadStats();
+    loadProjects();
+    loadDocuments();
+    setupDragDrop();
+    
+    // Update filter count to reflect default state
+    updateFilterCount();
+});
+
+// Load statistics
+async function loadStats() {
+    SkeletonLoader.show('statsContainer', 'stat-card', 4);
+
+    try {
+        const response = await fetch('/projects/api/document-stats/');
+        const data = await response.json();
+
+        const html = `
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Total Documents</p>
+                        <p class="text-3xl font-bold text-gray-900">${data.total_documents || 0}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Contracts</p>
+                        <p class="text-3xl font-bold text-gray-900">${data.contracts || 0}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Reports</p>
+                        <p class="text-3xl font-bold text-gray-900">${data.reports || 0}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Total Size</p>
+                        <p class="text-3xl font-bold text-gray-900">${data.total_size || '0 MB'}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        SkeletonLoader.hide('statsContainer', html);
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        SkeletonLoader.hide('statsContainer', '<p class="text-red-600">Error loading statistics</p>');
+    }
+}
+
+// Load projects for filters and forms
+async function loadProjects() {
+    try {
+        const response = await fetch('/projects/api/projects-list/');
+        const data = await response.json();
+
+        const projectSelect = document.getElementById('projectFilter');
+        const docProjectSelect = document.getElementById('docProject');
+
+        // Sort projects to show pending approval projects first
+        const sortedProjects = data.projects.sort((a, b) => {
+            // Pending projects first
+            if (a.status === 'pending' && b.status !== 'pending') return -1;
+            if (a.status !== 'pending' && b.status === 'pending') return 1;
+            
+            // Within the same status, sort by project name
+            return a.project_name.localeCompare(b.project_name);
+        });
+
+        sortedProjects.forEach(project => {
+            // Create display text with project name and ID/code
+            const displayText = project.project_id && project.project_id !== 'N/A' 
+                ? `${project.project_name} (${project.project_id})`
+                : project.project_name;
+            
+            const option = new Option(displayText, project.id);
+            projectSelect.add(option.cloneNode(true));
+            docProjectSelect.add(option);
+        });
+
+        // Pre-select project if specified in URL, otherwise show all projects
+        if (currentFilters.project) {
+            projectSelect.value = currentFilters.project;
+            docProjectSelect.value = currentFilters.project;
+        } else {
+            // Ensure "All Projects" is selected by default
+            projectSelect.value = '';
+            docProjectSelect.value = '';
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+}
+
+// Load documents with filters
+async function loadDocuments() {
+    SkeletonLoader.show('documentsContainer', 'table');
+
+    const showArchived = document.getElementById('showArchivedFilter')?.checked || false;
+
+    const params = new URLSearchParams({
+        search: currentFilters.search,
+        type: currentFilters.type,
+        stage: currentFilters.stage,
+        project: currentFilters.project,
+        show_archived: showArchived
+    });
+
+    try {
+        const response = await fetch(`/projects/api/documents/?${params}`);
+        const data = await response.json();
+
+        if (data.documents.length === 0) {
+            document.getElementById('emptyState').classList.remove('hidden');
+            SkeletonLoader.hide('documentsContainer', '');
+            return;
+        }
+
+        document.getElementById('emptyState').classList.add('hidden');
+
+        // Store current documents data
+        currentDocumentsData = data.documents;
+        
+        // Create HTML based on current view mode
+        let html;
+        if (currentViewMode === 'organized') {
+            const groupedDocuments = groupDocumentsByProject(data.documents);
+            html = createOrganizedDocumentView(groupedDocuments);
+        } else {
+            html = createGridDocumentView(data.documents);
+        }
+
+        SkeletonLoader.hide('documentsContainer', html);
+    } catch (error) {
+        console.error('Error loading documents:', error);
+        SkeletonLoader.hide('documentsContainer', '<p class="text-red-600">Error loading documents</p>');
+    }
+}
+
+// Group documents by project
+function groupDocumentsByProject(documents) {
+    const groups = {};
+    
+    documents.forEach(doc => {
+        const projectName = doc.project_name || 'Unassigned Documents';
+        
+        if (!groups[projectName]) {
+            groups[projectName] = {
+                projectName: projectName,
+                documents: [],
+                stats: {
+                    total: 0,
+                    byType: {},
+                    byStage: {},
+                    totalSize: 0
+                }
+            };
+        }
+        
+        groups[projectName].documents.push(doc);
+        groups[projectName].stats.total++;
+        
+        // Count by document type
+        const docType = doc.document_type_display || 'Other';
+        groups[projectName].stats.byType[docType] = (groups[projectName].stats.byType[docType] || 0) + 1;
+        
+        // Count by project stage
+        const stage = doc.project_stage_display || 'Unknown';
+        groups[projectName].stats.byStage[stage] = (groups[projectName].stats.byStage[stage] || 0) + 1;
+        
+        // Calculate total size (parse file size string)
+        const sizeMatch = doc.file_size.match(/(\d+\.?\d*)\s*(MB|KB|Bytes)/);
+        if (sizeMatch) {
+            const size = parseFloat(sizeMatch[1]);
+            const unit = sizeMatch[2];
+            let sizeInMB = size;
+            
+            if (unit === 'KB') sizeInMB = size / 1024;
+            else if (unit === 'Bytes') sizeInMB = size / (1024 * 1024);
+            
+            groups[projectName].stats.totalSize += sizeInMB;
+        }
+    });
+    
+    return groups;
+}
+
+// Create organized document view with project groupings
+function createOrganizedDocumentView(groupedDocuments) {
+    const projectNames = Object.keys(groupedDocuments);
+    
+    // Sort projects with pending projects first, then by name
+    projectNames.sort((a, b) => {
+        const aIsUnassigned = a === 'Unassigned Documents';
+        const bIsUnassigned = b === 'Unassigned Documents';
+        const aIsPending = a.includes('(Pending)');
+        const bIsPending = b.includes('(Pending)');
+        
+        // Put "Unassigned Documents" at the end
+        if (aIsUnassigned) return 1;
+        if (bIsUnassigned) return -1;
+        
+        // Put pending projects first (after unassigned check)
+        if (aIsPending && !bIsPending) return -1;
+        if (!aIsPending && bIsPending) return 1;
+        
+        // Within the same status, sort by name
+        return a.localeCompare(b);
+    });
+    
+    let html = '<div class="space-y-6">';
+    
+    projectNames.forEach(projectName => {
+        const group = groupedDocuments[projectName];
+        const isUnassigned = projectName === 'Unassigned Documents';
+        const isPending = projectName.includes('(Pending)');
+        
+        // Determine styling based on project status
+        let headerClass, iconClass, iconColor, badgeColor;
+        if (isUnassigned) {
+            headerClass = 'from-gray-50 to-gray-100';
+            iconClass = 'bg-gray-100';
+            iconColor = 'text-gray-600';
+            badgeColor = 'bg-gray-100 text-gray-800';
+        } else if (isPending) {
+            headerClass = 'from-orange-50 to-amber-50';
+            iconClass = 'bg-orange-100';
+            iconColor = 'text-orange-600';
+            badgeColor = 'bg-orange-100 text-orange-800';
+        } else {
+            headerClass = 'from-blue-50 to-indigo-50';
+            iconClass = 'bg-blue-100';
+            iconColor = 'text-blue-600';
+            badgeColor = 'bg-blue-100 text-blue-800';
+        }
+        
+        html += `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Project Header -->
+                <div class="bg-gradient-to-r ${headerClass} px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 ${iconClass} rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    ${isPending ? `
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    ` : `
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    `}
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-lg font-semibold text-gray-900">${projectName}</h3>
+                                    ${isPending ? `
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-200 text-orange-800">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Pending Approval
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <p class="text-sm text-gray-600">${group.stats.total} document${group.stats.total !== 1 ? 's' : ''} • ${formatProjectSize(group.stats.totalSize)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleProjectSection('${projectName.replace(/[^a-zA-Z0-9]/g, '_')}')" 
+                                    class="text-gray-500 hover:text-gray-700 transition-colors">
+                                <svg class="w-5 h-5 transform transition-transform" id="icon_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Project Stats -->
+                    <div class="mt-3 flex flex-wrap gap-4 text-sm">
+                        ${Object.entries(group.stats.byType).map(([type, count]) => `
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeColor}">
+                                ${type}: ${count}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Documents Grid -->
+                <div class="p-6" id="content_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${group.documents.map(doc => createDocumentCard(doc)).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// Toggle project section visibility
+function toggleProjectSection(projectId) {
+    const content = document.getElementById(`content_${projectId}`);
+    const icon = document.getElementById(`icon_${projectId}`);
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.classList.remove('rotate-180');
+    } else {
+        content.style.display = 'none';
+        icon.classList.add('rotate-180');
+    }
+}
+
+// Format project size
+function formatProjectSize(sizeInMB) {
+    if (sizeInMB >= 1024) {
+        return `${(sizeInMB / 1024).toFixed(1)} GB`;
+    } else if (sizeInMB >= 1) {
+        return `${sizeInMB.toFixed(1)} MB`;
+    } else {
+        return `${(sizeInMB * 1024).toFixed(0)} KB`;
+    }
+}
+
+// Create grid document view (original layout)
+function createGridDocumentView(documents) {
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${documents.map(doc => createDocumentCard(doc)).join('')}
+        </div>
+    `;
+}
+
+// Set view mode
+function setViewMode(mode) {
+    currentViewMode = mode;
+    
+    // Update toggle buttons
+    document.getElementById('viewOrganized').classList.toggle('active', mode === 'organized');
+    document.getElementById('viewGrid').classList.toggle('active', mode === 'grid');
+    
+    // Reload documents with new view mode
+    if (currentDocumentsData) {
+        let html;
+        if (mode === 'organized') {
+            const groupedDocuments = groupDocumentsByProject(currentDocumentsData);
+            html = createOrganizedDocumentView(groupedDocuments);
+        } else {
+            html = createGridDocumentView(currentDocumentsData);
+        }
+        
+        document.getElementById('documentsContainer').innerHTML = html;
+    } else {
+        loadDocuments();
+    }
+}
+
+// Create document card HTML - Compact and Organized Design
+function createDocumentCard(doc) {
+    const iconClass = getDocumentIconClass(doc.file_extension);
+    const stageClass = `stage-${doc.project_stage}`;
+    const docTypeInfo = getDocumentTypeInfo(doc.document_type);
+
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group">
+            <!-- Card Header -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-start gap-3">
+                    <!-- Document Icon -->
+                    <div class="document-icon ${iconClass} flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg">
+                        ${getDocumentIcon(doc.file_extension)}
+                    </div>
+
+                    <!-- Title and Meta -->
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-blue-600 transition-colors">
+                            ${doc.title.length > 50 ? doc.title.substring(0, 50) + '...' : doc.title}
+                        </h3>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${docTypeInfo.badgeClass}">
+                                ${docTypeInfo.label}
+                            </span>
+                            <span class="${stageClass} stage-badge text-xs">${doc.project_stage_display}</span>
+                        </div>
+                    </div>
+
+                    <!-- Version Badge -->
+                    <span class="flex-shrink-0 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                        v${doc.version}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-4">
+                <!-- Description -->
+                ${doc.description ? `
+                    <p class="text-xs text-gray-600 line-clamp-2 mb-3">${doc.description.length > 100 ? doc.description.substring(0, 100) + '...' : doc.description}</p>
+                ` : ''}
+
+                <!-- Meta Information -->
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                    <div class="flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>${doc.file_size}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>${doc.uploaded_at}</span>
+                    </div>
+                </div>
+
+                <!-- Uploaded By -->
+                <div class="text-xs text-gray-500 mb-3">
+                    <span class="font-medium">Uploaded by:</span> ${doc.uploaded_by}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-1">
+                    <button onclick="downloadDocument(${doc.id}, event)"
+                            class="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                            title="Download">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Download
+                    </button>
+                    <button onclick="showDocumentDetail(${doc.id})"
+                            class="px-2 py-1.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-medium rounded transition-colors"
+                            title="View Details">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="showVersionHistory(${doc.id}, event)"
+                            class="px-2 py-1.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-medium rounded transition-colors"
+                            title="Version History">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
+                    ${doc.is_archived ? `
+                        <button onclick="restoreDocument(${doc.id}, event)"
+                                class="px-2 py-1.5 border border-green-300 hover:border-green-400 text-green-700 text-xs font-medium rounded transition-colors"
+                                title="Restore">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    ` : `
+                        <button onclick="archiveDocument(${doc.id}, event)"
+                                class="px-2 py-1.5 border border-orange-300 hover:border-orange-400 text-orange-700 text-xs font-medium rounded transition-colors"
+                                title="Archive">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                            </svg>
+                        </button>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Get document type information (label, badge class)
+function getDocumentTypeInfo(type) {
+    const types = {
+        'CONTRACT': {
+            label: 'Contract',
+            badgeClass: 'bg-blue-100 text-blue-800'
+        },
+        'PERMIT': {
+            label: 'Permit',
+            badgeClass: 'bg-green-100 text-green-800'
+        },
+        'PROGRESS': {
+            label: 'Progress',
+            badgeClass: 'bg-purple-100 text-purple-800'
+        },
+        'COSTING': {
+            label: 'Costing',
+            badgeClass: 'bg-yellow-100 text-yellow-800'
+        },
+        'INVOICE': {
+            label: 'Invoice',
+            badgeClass: 'bg-orange-100 text-orange-800'
+        },
+        'RECEIPT': {
+            label: 'Receipt',
+            badgeClass: 'bg-pink-100 text-pink-800'
+        },
+        'TECHNICAL': {
+            label: 'Blueprint',
+            badgeClass: 'bg-indigo-100 text-indigo-800'
+        },
+        'PHOTO': {
+            label: 'Photo',
+            badgeClass: 'bg-cyan-100 text-cyan-800'
+        },
+        'OTHER': {
+            label: 'Other',
+            badgeClass: 'bg-gray-100 text-gray-800'
+        }
+    };
+    return types[type] || types['OTHER'];
+}
+
+// Get document icon
+function getDocumentIcon(extension) {
+    const icons = {
+        'pdf': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>',
+        'doc': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+        'docx': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+        'xls': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+        'xlsx': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+        'jpg': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>',
+        'jpeg': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>',
+        'png': '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+    };
+    return icons[extension?.toLowerCase()] || '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>';
+}
+
+// Get document icon class
+function getDocumentIconClass(extension) {
+    if (['pdf'].includes(extension?.toLowerCase())) return 'doc-pdf';
+    if (['jpg', 'jpeg', 'png'].includes(extension?.toLowerCase())) return 'doc-image';
+    if (['doc', 'docx'].includes(extension?.toLowerCase())) return 'doc-doc';
+    if (['xls', 'xlsx'].includes(extension?.toLowerCase())) return 'doc-xls';
+    return 'doc-default';
+}
+
+// Filter functions
+function filterByType(type, element) {
+    currentFilters.type = type;
+    document.querySelectorAll('#typeFilter .filter-pill').forEach(pill => pill.classList.remove('active'));
+    element.classList.add('active');
+    updateFilterCount();
+    loadDocuments();
+}
+
+function filterByStage(stage, element) {
+    currentFilters.stage = stage;
+    document.querySelectorAll('#stageFilter .filter-pill').forEach(pill => pill.classList.remove('active'));
+    element.classList.add('active');
+    updateFilterCount();
+    loadDocuments();
+}
+
+function filterByProject(projectId) {
+    currentFilters.project = projectId;
+    updateFilterCount();
+    loadDocuments();
+}
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        currentFilters.search = document.getElementById('searchInput').value;
+        updateFilterCount();
+        loadDocuments();
+    }, 500);
+}
+
+// Toggle filters panel
+function toggleFilters() {
+    const panel = document.getElementById('filterPanel');
+    const icon = document.getElementById('filterToggleIcon');
+
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        panel.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Clear all filters
+function clearFilters() {
+    currentFilters = {
+        search: '',
+        type: 'ALL',
+        stage: 'ALL',
+        project: ''
+    };
+
+    // Reset search input
+    document.getElementById('searchInput').value = '';
+
+    // Reset project select
+    document.getElementById('projectFilter').value = '';
+
+    // Reset type filter pills
+    document.querySelectorAll('#typeFilter .filter-pill').forEach(pill => {
+        pill.classList.remove('active');
+        if (pill.dataset.type === 'ALL') {
+            pill.classList.add('active');
+        }
+    });
+
+    // Reset stage filter pills
+    document.querySelectorAll('#stageFilter .filter-pill').forEach(pill => {
+        pill.classList.remove('active');
+        if (pill.dataset.stage === 'ALL') {
+            pill.classList.add('active');
+        }
+    });
+
+    // Update filter count
+    updateFilterCount();
+
+    // Reload documents
+    loadDocuments();
+}
+
+// Update active filter count
+function updateFilterCount() {
+    let count = 0;
+    if (currentFilters.search) count++;
+    if (currentFilters.type !== 'ALL') count++;
+    if (currentFilters.stage !== 'ALL') count++;
+    if (currentFilters.project) count++;
+
+    const badge = document.getElementById('filterCount');
+    if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+// Document Type Selection
+function selectDocType(type, element) {
+    // Remove active state from all options
+    document.querySelectorAll('.doc-type-option > div').forEach(option => {
+        option.classList.remove('border-blue-600', 'bg-blue-50', 'border-green-600', 'bg-green-50',
+                                'border-purple-600', 'bg-purple-50', 'border-orange-600', 'bg-orange-50',
+                                'border-indigo-600', 'bg-indigo-50', 'border-cyan-600', 'bg-cyan-50',
+                                'border-yellow-600', 'bg-yellow-50', 'border-gray-600', 'bg-gray-50');
+        option.classList.add('border-gray-200');
+    });
+
+    // Add active state to selected option based on type
+    const innerDiv = element.querySelector('div');
+    innerDiv.classList.remove('border-gray-200');
+
+    // Apply type-specific colors
+    const colorMap = {
+        'CONTRACT': ['border-blue-600', 'bg-blue-50'],
+        'PERMIT': ['border-green-600', 'bg-green-50'],
+        'PROGRESS': ['border-purple-600', 'bg-purple-50'],
+        'INVOICE': ['border-orange-600', 'bg-orange-50'],
+        'TECHNICAL': ['border-indigo-600', 'bg-indigo-50'],
+        'PHOTO': ['border-cyan-600', 'bg-cyan-50'],
+        'COSTING': ['border-yellow-600', 'bg-yellow-50'],
+        'OTHER': ['border-gray-600', 'bg-gray-50']
+    };
+
+    if (colorMap[type]) {
+        innerDiv.classList.add(...colorMap[type]);
+    }
+
+    // Set hidden input value
+    document.getElementById('docType').value = type;
+    document.getElementById('docTypeError').classList.add('hidden');
+}
+
+// Project Stage Selection
+function selectStage(stage, element) {
+    // Remove active state from all options
+    document.querySelectorAll('.stage-option > div').forEach(option => {
+        option.classList.remove('border-blue-600', 'bg-blue-50', 'border-yellow-600', 'bg-yellow-50',
+                                'border-green-600', 'bg-green-50', 'border-purple-600', 'bg-purple-50');
+        option.classList.add('border-gray-200');
+    });
+
+    // Add active state to selected option based on stage
+    const innerDiv = element.querySelector('div');
+    innerDiv.classList.remove('border-gray-200');
+
+    // Apply stage-specific colors
+    const colorMap = {
+        'INIT': ['border-blue-600', 'bg-blue-50'],
+        'PLAN': ['border-yellow-600', 'bg-yellow-50'],
+        'EXEC': ['border-green-600', 'bg-green-50'],
+        'CLOSE': ['border-purple-600', 'bg-purple-50']
+    };
+
+    if (colorMap[stage]) {
+        innerDiv.classList.add(...colorMap[stage]);
+    }
+
+    // Set hidden input value
+    document.getElementById('docStage').value = stage;
+    document.getElementById('docStageError').classList.add('hidden');
+}
+
+// Upload modal functions
+function openUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Reset selections
+    document.querySelectorAll('.doc-type-option > div, .stage-option > div').forEach(option => {
+        option.classList.remove('border-blue-600', 'bg-blue-50', 'border-green-600', 'bg-green-50',
+                                'border-purple-600', 'bg-purple-50', 'border-orange-600', 'bg-orange-50',
+                                'border-indigo-600', 'bg-indigo-50', 'border-cyan-600', 'bg-cyan-50',
+                                'border-yellow-600', 'bg-yellow-50', 'border-gray-600', 'bg-gray-50');
+        option.classList.add('border-gray-200');
+    });
+    document.getElementById('docType').value = '';
+    document.getElementById('docStage').value = '';
+
+    // Load available documents for version replacement
+    loadAvailableDocuments();
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('uploadForm').reset();
+    clearFiles();
+}
+
+function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+        selectedFiles = files;
+        displaySelectedFiles();
+        document.getElementById('uploadZone').style.borderColor = '#3b82f6';
+    }
+}
+
+function displaySelectedFiles() {
+    const fileListContainer = document.getElementById('fileList');
+    const fileCountElement = document.getElementById('fileCount');
+
+    if (selectedFiles.length === 0) {
+        document.getElementById('selectedFiles').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('selectedFiles').classList.remove('hidden');
+    fileCountElement.textContent = selectedFiles.length;
+
+    fileListContainer.innerHTML = selectedFiles.map((file, index) => `
+        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+                <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-gray-900 text-sm truncate">${file.name}</p>
+                    <p class="text-xs text-gray-600">${formatFileSize(file.size)}</p>
+                </div>
+            </div>
+            <button type="button" onclick="removeFile(${index})" class="text-red-600 hover:text-red-700 ml-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    displaySelectedFiles();
+
+    // Update the file input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('fileInput').files = dt.files;
+
+    if (selectedFiles.length === 0) {
+        document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
+    }
+}
+
+function clearFiles() {
+    selectedFiles = [];
+    document.getElementById('fileInput').value = '';
+    document.getElementById('selectedFiles').classList.add('hidden');
+    document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
+}
+
+// Toggle version fields visibility
+function toggleReplacesField() {
+    const version = document.getElementById('docVersion').value;
+    const replacesField = document.getElementById('replacesField');
+    const versionNotesField = document.getElementById('versionNotesField');
+
+    if (version && version !== '1.0') {
+        replacesField.classList.remove('hidden');
+        versionNotesField.classList.remove('hidden');
+    } else {
+        replacesField.classList.add('hidden');
+        versionNotesField.classList.add('hidden');
+    }
+}
+
+// Load available documents for version replacement
+async function loadAvailableDocuments() {
+    const projectId = document.getElementById('docProject').value;
+    if (!projectId) return;
+
+    try {
+        const response = await fetch(`/projects/api/documents/?project=${projectId}`);
+        const data = await response.json();
+
+        const replacesSelect = document.getElementById('docReplaces');
+        replacesSelect.innerHTML = '<option value="">Auto-detect or select manually</option>';
+
+        data.documents.forEach(doc => {
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = `${doc.title} (v${doc.version}) - ${doc.document_type_display}`;
+            replacesSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading documents:', error);
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Setup drag and drop
+function setupDragDrop() {
+    const uploadZone = document.getElementById('uploadZone');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+            uploadZone.classList.add('drag-over');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+            uploadZone.classList.remove('drag-over');
+        }, false);
+    });
+
+    uploadZone.addEventListener('drop', handleDrop, false);
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+        document.getElementById('fileInput').files = files;
+        handleFileSelect({ target: { files: files } });
+    }
+}
+
+// Get CSRF token from cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Handle upload
+async function handleUpload(event) {
+    event.preventDefault();
+
+    // Validate file selection
+    if (selectedFiles.length === 0) {
+        showNotification('error', 'No Files Selected', 'Please select at least one file to upload');
+        return;
+    }
+
+    // Validate document type selection
+    const docType = document.getElementById('docType').value;
+    if (!docType) {
+        document.getElementById('docTypeError').classList.remove('hidden');
+        showNotification('error', 'Document Type Required', 'Please select a document type');
+        return;
+    }
+
+    // Validate project stage selection
+    const docStage = document.getElementById('docStage').value;
+    if (!docStage) {
+        document.getElementById('docStageError').classList.remove('hidden');
+        showNotification('error', 'Project Stage Required', 'Please select a project stage');
+        return;
+    }
+
+    // Disable submit button to prevent double submission
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = `Uploading ${selectedFiles.length} file(s)...`;
+
+    const formData = new FormData();
+
+    // Append all files
+    selectedFiles.forEach(file => {
+        formData.append('files', file);
+    });
+
+    formData.append('title', document.getElementById('docTitle').value);
+    formData.append('description', document.getElementById('docDescription').value);
+    formData.append('project', document.getElementById('docProject').value);
+    formData.append('document_type', document.getElementById('docType').value);
+    formData.append('project_stage', document.getElementById('docStage').value);
+    formData.append('version', document.getElementById('docVersion').value);
+    formData.append('tags', document.getElementById('docTags').value);
+
+    // Add version-specific fields
+    const replacesId = document.getElementById('docReplaces').value;
+    const versionNotes = document.getElementById('docVersionNotes').value;
+
+    if (replacesId) {
+        formData.append('replaces_id', replacesId);
+    }
+    if (versionNotes) {
+        formData.append('version_notes', versionNotes);
+    }
+
+    try {
+        const response = await fetch('/projects/api/document-upload/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            const docTitle = document.getElementById('docTitle').value;
+            const fileCount = selectedFiles.length;
+            const message = fileCount === 1
+                ? `Document "${docTitle}" has been uploaded successfully.`
+                : `${fileCount} documents have been uploaded successfully.`;
+            showNotification('success', 'Upload Successful!', message);
+            closeUploadModal();
+            loadStats();
+            loadDocuments();
+        } else {
+            showNotification('error', 'Upload Failed', data.error || 'An error occurred while uploading the document(s). Please try again.');
+        }
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        showNotification('error', 'Upload Error', 'Network error occurred. Please check your connection and try again.');
+    } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// Show document detail
+async function showDocumentDetail(docId) {
+    document.getElementById('detailModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const response = await fetch(`/projects/api/documents/${docId}/`);
+        const doc = await response.json();
+
+        document.getElementById('detailTitle').textContent = doc.title;
+        document.getElementById('detailVersionBadge').textContent = `v${doc.version}`;
+        document.getElementById('detailStageBadge').textContent = doc.project_stage_display;
+        document.getElementById('detailStageBadge').className = `stage-badge stage-${doc.project_stage}`;
+
+        const content = `
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Description</h3>
+                    <p class="text-gray-600">${doc.description || 'No description provided'}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Project</p>
+                        <p class="font-semibold text-gray-900">${doc.project_name}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Document Type</p>
+                        <p class="font-semibold text-gray-900">${doc.document_type_display}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">File Size</p>
+                        <p class="font-semibold text-gray-900">${doc.file_size}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Uploaded By</p>
+                        <p class="font-semibold text-gray-900">${doc.uploaded_by}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Uploaded At</p>
+                        <p class="font-semibold text-gray-900">${doc.uploaded_at}</p>
+                    </div>
+                </div>
+
+                ${doc.tags ? `
+                <div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Tags</h3>
+                    <div class="flex gap-2 flex-wrap">
+                        ${doc.tags.split(',').map(tag => `
+                            <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">${tag.trim()}</span>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="flex gap-3 pt-4 border-t border-gray-200">
+                    <button onclick="downloadDocument(${doc.id}, event)" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold">
+                        Download Document
+                    </button>
+                    <button onclick="showVersionHistory(${doc.id}, event)" class="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Version History
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('detailContent').innerHTML = content;
+    } catch (error) {
+        console.error('Error loading document details:', error);
+        alert('Error loading document details');
+    }
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Download document
+function downloadDocument(docId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    window.location.href = `/projects/api/documents/${docId}/download/`;
+}
+
+// Show version history
+async function showVersionHistory(docId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    try {
+        const response = await fetch(`/projects/api/documents/${docId}/versions/`);
+        const data = await response.json();
+
+        let html = '<div class="space-y-4">';
+        html += '<h3 class="font-semibold text-gray-900 mb-4">Version History</h3>';
+
+        if (data.versions.length === 0) {
+            html += '<p class="text-gray-600">No previous versions</p>';
+        } else {
+            data.versions.forEach(version => {
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="version-badge">v${version.version}</span>
+                            <span class="text-sm text-gray-600">${version.uploaded_at}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">${version.description || 'No description'}</p>
+                        ${version.version_notes ? `<p class="text-sm text-gray-500 italic mb-2">Notes: ${version.version_notes}</p>` : ''}
+                        <button onclick="downloadDocument(${version.id}, event)" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            Download this version
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div>';
+
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.error('Error loading version history:', error);
+        alert('Error loading version history');
+    }
+}
+
+// Archive document - Open modal
+function archiveDocument(docId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    pendingArchiveDocId = docId;
+    document.getElementById('archiveConfirmModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// Close archive modal
+function closeArchiveModal() {
+    document.getElementById('archiveConfirmModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    pendingArchiveDocId = null;
+}
+
+// Confirm archive action
+async function confirmArchive() {
+    if (!pendingArchiveDocId) return;
+
+    const docId = pendingArchiveDocId;
+    closeArchiveModal();
+
+    try {
+        const response = await fetch(`/projects/api/documents/${docId}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showNotification('success', 'Document Archived', 'The document has been archived successfully.');
+            loadDocuments();
+            loadStats();
+        } else {
+            showNotification('error', 'Archive Failed', data.error || 'Failed to archive document.');
+        }
+    } catch (error) {
+        console.error('Error archiving document:', error);
+        showNotification('error', 'Archive Error', 'Network error occurred. Please try again.');
+    }
+}
+
+// Restore document
+async function restoreDocument(docId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    try {
+        const response = await fetch(`/projects/api/documents/${docId}/restore/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showNotification('success', 'Document Restored', 'The document has been restored successfully.');
+            loadDocuments();
+            loadStats();
+        } else {
+            showNotification('error', 'Restore Failed', data.error || 'Failed to restore document.');
+        }
+    } catch (error) {
+        console.error('Error restoring document:', error);
+        showNotification('error', 'Restore Error', 'Network error occurred. Please try again.');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static allauth i18n %}
+
+{% block head_title %}
+    {% trans "Email Addresses" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 px-6 py-12 flex justify-center">
+    <div class="bg-white shadow-xl rounded-2xl p-10 w-full max-w-2xl">
+
+        <!-- Page Title -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">{% trans "Email Addresses" %}</h1>
+
+        {% if emailaddresses %}
+            <p class="text-gray-600 mb-6">
+                {% trans 'The following email addresses are associated with your account:' %}
+            </p>
+
+            {% url 'account_email' as email_url %}
+            <form method="post" action="{{ email_url }}" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Email List -->
+                {% for radio in emailaddress_radios %}
+                    {% with emailaddress=radio.emailaddress %}
+                    <label class="flex items-center justify-between bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition">
+                        <div class="flex items-center space-x-3">
+                            <input type="radio" name="email" value="{{ emailaddress.email }}" id="{{ radio.id }}" {% if radio.checked %}checked{% endif %} class="form-radio h-5 w-5 text-blue-600">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-800">{{ emailaddress.email }}</span>
+                                <div class="flex space-x-2 mt-1">
+                                    {% if emailaddress.verified %}
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">{% translate "Verified" %}</span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">{% translate "Unverified" %}</span>
+                                    {% endif %}
+                                    {% if emailaddress.primary %}
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{% translate "Primary" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    {% endwith %}
+                {% endfor %}
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <button type="submit" name="action_primary" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">{% trans 'Make Primary' %}</button>
+                    <button type="submit" name="action_send" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">{% trans 'Re-send Verification' %}</button>
+                    <button type="submit" name="action_remove" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">{% trans 'Remove' %}</button>
+                </div>
+            </form>
+        {% else %}
+            {% include "account/snippets/warn_no_email.html" %}
+        {% endif %}
+
+        {% if can_add_email %}
+            <!-- Add Email Section -->
+            <h2 class="text-2xl font-semibold text-gray-800 mt-10 mb-4">{% trans "Add Email Address" %}</h2>
+            {% url 'account_email' as action_url %}
+            <form method="post" action="{{ action_url }}" class="space-y-4">
+                {% csrf_token %}
+                <!-- Render form fields manually or with Django form helper -->
+                {% for field in form %}
+                    <div class="flex flex-col mb-4">
+                        <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium mb-1">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <span class="text-red-600 text-sm mt-1">{{ field.errors|striptags }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" name="action_add" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">{% trans "Add Email" %}</button>
+            </form>
+            <div class="mt-4">
+                <a href="javascript:history.back()" class="inline-block text-black-600 hover:text-gray-900 text-sm">
+                    &larr; {% trans "Back" %}
+                </a>
+            </div>
+
+        {% endif %}
+
+    </div>
+</div>
+{% endblock content %}

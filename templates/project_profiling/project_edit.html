@@ -1,0 +1,1473 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block content %}
+<!-- Django data as JSON script for JavaScript -->
+<script id="django-data" type="application/json">
+{
+    "autoFillMode": false,
+    "preSelectedClientId": {% if form.instance.client.id %}"{{ form.instance.client.id }}"{% else %}null{% endif %},
+    "preSelectedClientName": {% if form.instance.client.company_name %}"{{ form.instance.client.company_name|escapejs }}"{% else %}null{% endif %},
+    "editMode": true
+}
+</script>
+
+<!-- Progress indicator -->
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="mb-8">
+        <div class="flex items-center justify-between text-sm font-medium text-gray-500 mb-4">
+            <span class="text-blue-600">Step 1</span>
+            <span class="text-blue-600">Step 2</span>
+            <span class="text-blue-600">Step 3</span>
+            <span class="text-blue-600">Complete</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 100%"></div>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-8 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Project</h1>
+                    <p class="text-gray-600 max-w-2xl">Update project information below. Required fields are marked with an asterisk.</p>
+                </div>
+                <div class="hidden lg:block">
+                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ form.instance.project_id|default:"N/A" }}</div>
+                            <div class="text-sm text-gray-500">Project ID</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="px-6 py-8" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <!-- Project Source -->
+            <div class="mb-8">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Source</label>
+                            <p class="text-lg font-semibold text-gray-900">{{ form.instance.get_project_source_display }}</p>
+                        </div>
+                        <div class="text-right">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                            <p class="text-lg font-semibold text-blue-600">{{ form.instance.project_id|default:"Not Assigned" }}</p>
+                        </div>
+                    </div>
+                    <input type="hidden" name="project_source" value="{{ form.instance.project_source }}">
+                    <input type="hidden" name="project_id" value="{{ form.instance.project_id|default_if_none:'' }}">
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="space-y-8">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button type="button" class="tab-button active border-b-2 border-blue-500 py-2 px-1 text-sm font-medium text-blue-600" data-tab="basic">
+                            Basic Information
+                        </button>
+                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="location">
+                            Location & Timeline
+                        </button>
+                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="team">
+                            Team & Resources
+                        </button>
+                        <button type="button" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="financial">
+                            Financial & Legal
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Basic Information Tab -->
+                <div class="tab-content" id="basic-tab">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                            </svg>
+                            Basic Information
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Project Name -->
+                            <div class="form-group">
+                                <label for="id_project_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Project Name 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                {{ form.project_name|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.project_name.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.project_name.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Project Type -->
+                            <div class="form-group">
+                                <label for="id_project_type" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Project Type 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                {{ form.project_type|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.project_type.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.project_type.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Project Category -->
+                            <div class="form-group">
+                                <label for="id_project_category" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Project Category 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                {{ form.project_category|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.project_category.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.project_category.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Client Selection -->
+                            <div class="form-group">
+                                <label for="id_client" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Client 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.client|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                </div>
+                                {% if form.client.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.client.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="id_description" class="block text-sm font-medium text-gray-700 mb-2">
+                                Project Description
+                                <span class="text-gray-500 text-xs">(Optional)</span>
+                            </label>
+                            {{ form.description|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none" }}
+                            <p class="mt-1 text-sm text-gray-500">Provide a detailed description of the project scope and objectives.</p>
+                            {% if form.description.errors %}
+                                <p class="mt-1 text-sm text-red-600 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.description.errors.0 }}
+                                    </p>
+                                {% endif %}
+                        </div>
+
+                        <!-- Client Details Box -->
+                        <div id="client-details-box" class="{% if not form.instance.client %}hidden{% endif %}">
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                                <h4 class="text-base font-semibold text-gray-800 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Client Information
+                                </h4>
+                                <div id="client-details-content" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    {% if form.instance.client %}
+                                    <div>
+                                        <span class="font-medium text-gray-700">Company:</span>
+                                        <span class="text-gray-900">{{ form.instance.client.company_name }}</span>
+                                    </div>
+                                    {% if form.instance.client.contact_person %}
+                                    <div>
+                                        <span class="font-medium text-gray-700">Contact Person:</span>
+                                        <span class="text-gray-900">{{ form.instance.client.contact_person }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.instance.client.email %}
+                                    <div>
+                                        <span class="font-medium text-gray-700">Email:</span>
+                                        <span class="text-gray-900">{{ form.instance.client.email }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.instance.client.phone %}
+                                    <div>
+                                        <span class="font-medium text-gray-700">Phone:</span>
+                                        <span class="text-gray-900">{{ form.instance.client.phone }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location & Timeline Tab -->
+                <div class="tab-content hidden" id="location-tab">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Location & Timeline
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Location -->
+                            <div class="form-group">
+                                <label for="id_location" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Location 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.location|add_class:"block w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-vertical" }}
+                                    <div class="absolute top-3 right-0 pr-3 flex items-start">
+                                        <button type="button" class="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center" onclick="openMapModal()">
+                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Map
+                                        </button>
+                                    </div>
+                                </div>
+                                {% if form.location.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.location.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- City/Province -->
+                            <div class="form-group">
+                                <label for="id_city_province" class="block text-sm font-medium text-gray-700 mb-2">
+                                    City / Province 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                {{ form.city_province|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.city_province.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.city_province.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Start Date -->
+                            <div class="form-group">
+                                <label for="id_start_date" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Start Date 
+                                    <span class="text-red-500 ml-1" aria-label="required">*</span>
+                                </label>
+                                {{ form.start_date|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.start_date.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.start_date.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Target Completion Date -->
+                            <div class="form-group">
+                                <label for="id_target_completion_date" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Target Completion Date 
+                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                {{ form.target_completion_date|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.target_completion_date.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.target_completion_date.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- GPS Coordinates -->
+                        <div class="form-group">
+                            <label for="id_gps_coordinates" class="block text-sm font-medium text-gray-700 mb-2">
+                                GPS Coordinates 
+                                <span class="text-gray-500 text-xs">(Optional)</span>
+                            </label>
+                            {{ form.gps_coordinates|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                            <p class="mt-1 text-sm text-gray-500">Format: latitude, longitude (e.g., 40.7128, -74.0060)</p>
+                            {% if form.gps_coordinates.errors %}
+                                <p class="mt-1 text-sm text-red-600 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.gps_coordinates.errors.0 }}
+                                    </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team & Resources Tab -->
+                <div class="tab-content hidden" id="team-tab">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                            </svg>
+                            Team & Resources
+                        </h3>
+
+                        <!-- Employee Assignments Section -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-6">
+                            <h4 class="text-base font-semibold text-gray-900 mb-6 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Employee Assignments
+                            </h4>
+                            <p class="text-sm text-gray-600 mb-6">Assign employees to key project roles. Only active employees with the corresponding roles will be shown in the dropdowns.</p>
+
+                            <!-- Project Manager -->
+                            <div class="form-group mb-6" id="pm_container">
+                                <label for="project_manager_input" class="block text-sm font-medium text-gray-700 mb-2">
+    <span class="flex items-center">
+        <svg class="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+        </svg>
+        <span>Project Manager</span>
+        <span class="text-red-500 ml-1" aria-label="required">*</span>
+    </span>
+</label>
+                                
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="project_manager_input"
+                                           class="block w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                           placeholder="Search for a project manager..."
+                                           autocomplete="off"
+                                           value="{{ form.instance.project_manager.full_name|default:'' }}">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
+                                    
+                                    <!-- Hidden field for form submission -->
+                                    <input type="hidden" 
+                                           id="project_manager_id" 
+                                           name="project_manager"
+                                           value="{{ form.instance.project_manager.id|default:'' }}">
+                                </div>
+
+                                <!-- Suggestions dropdown -->
+                                <ul id="pm_suggestions" class="absolute w-full bg-white border border-gray-300 rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 shadow-lg">
+                                    <!-- Suggestions will be populated here -->
+                                </ul>
+
+                                <!-- Selected PM Display -->
+                                <div id="assigned_pm_display" class="mt-3">
+                                    {% if form.instance.project_manager %}
+                                    <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-green-800">
+                                                Assigned to: {{ form.instance.project_manager.full_name }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-600">
+                                                No Project Manager Assigned
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if form.project_manager.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.project_manager.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Site Engineer -->
+                            <div class="form-group">
+                                <label for="id_site_engineer" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Site Engineer 
+                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                {{ form.site_engineer|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.site_engineer.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.site_engineer.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Subcontractors -->
+                            <div class="form-group">
+                                <label for="id_subcontractors" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Subcontractors 
+                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                {{ form.subcontractors|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none" }}
+                                <p class="mt-1 text-sm text-gray-500">List any subcontractors involved in this project</p>
+                                {% if form.subcontractors.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.subcontractors.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Status -->
+                            <div class="form-group">
+                                <label for="id_status" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Project Status
+                                </label>
+                                {{ form.status|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.status.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.status.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial & Legal Tab -->
+                <div class="tab-content hidden" id="financial-tab">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z"></path>
+                            </svg>
+                            Financial & Legal Information
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Estimated Cost -->
+                            <div class="form-group">
+                                <label for="id_estimated_cost" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Estimated Cost 
+                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm">₱</span>
+                                    </div>
+                                    {{ form.estimated_cost|add_class:"block w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                </div>
+                                {% if form.estimated_cost.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.estimated_cost.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Payment Terms -->
+                            <div class="form-group">
+                                <label for="id_payment_terms" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Payment Terms 
+                                </label>
+                                {{ form.payment_terms|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                {% if form.payment_terms.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.payment_terms.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Contract Agreement -->
+                        <div class="form-group">
+                            <label for="id_contract_agreement" class="block text-sm font-medium text-gray-700 mb-2">
+                                Contract Agreement 
+                                <span class="text-gray-500 text-xs">(Optional)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="contract_display" 
+                                       class="block w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                       placeholder="{% if form.instance.contract_agreement %}{{ form.instance.contract_agreement.name }}{% else %}No file selected{% endif %}"
+                                       value="{% if form.instance.contract_agreement %}{{ form.instance.contract_agreement.name }}{% endif %}"
+                                       readonly>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" class="text-blue-500 hover:text-blue-600 text-sm font-medium" onclick="uploadContract()">
+                                        Browse Files
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden Django form field -->
+                            <div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;">
+                                {{ form.contract_agreement|add_class:"w-full border border-gray-300 rounded-md px-3 py-2" }}
+                            </div>
+                            
+                            <p class="mt-1 text-sm text-gray-500">Upload contract documents or provide file reference</p>
+                            {% if form.contract_agreement.errors %}
+                                <p class="mt-1 text-sm text-red-600 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    {{ form.contract_agreement.errors.0 }}
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Permits & Licenses -->
+                        <div class="form-group">
+                            <label for="id_permits_licenses" class="block text-sm font-medium text-gray-700 mb-2">
+                                Permits & Licenses 
+                                <span class="text-gray-500 text-xs">(Optional)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="permits_display" 
+                                       class="block w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                       placeholder="{% if form.instance.permits_licenses %}{{ form.instance.permits_licenses.name }}{% else %}No file selected{% endif %}"
+                                       value="{% if form.instance.permits_licenses %}{{ form.instance.permits_licenses.name }}{% endif %}"
+                                       readonly>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" class="text-blue-500 hover:text-blue-600 text-sm font-medium" onclick="uploadPermits()">
+                                        Browse Files
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;">
+                                {{form.permits_licenses|add_class:"w-full border border-gray-300 rounded-md px-3 py-2"}}
+                            </div>
+
+                            <p class="mt-1 text-sm text-gray-500">Upload permits, licenses, or regulatory documents</p>
+                            {% if form.permits_licenses.errors %}
+                                <p class="mt-1 text-sm text-red-600 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.permits_licenses.errors.0 }}
+                                    </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="mt-12 pt-8 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <!-- Previous/Next Navigation -->
+                    <div class="flex space-x-3">
+                        <button type="button" id="prev-tab" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Previous
+                        </button>
+                        <button type="button" id="next-tab" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                            Next
+                            <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center space-x-3">
+                        <a href="javascript:history.back()"  class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                            Cancel
+                        </a>
+                        <button type="submit" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Update Project
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div id="mapModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Select Project Location</h3>
+                        <p class="text-sm text-gray-600">Click on the map to set the project location</p>
+                    </div>
+                    <button type="button" onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="flex-1 relative">
+                <div id="projectLocationMap" class="w-full h-full"></div>
+
+                <!-- Map Controls -->
+                <div class="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 space-y-2">
+                    <button type="button" onclick="getCurrentLocationForMap()" class="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Current Location
+                    </button>
+                    <button type="button" onclick="searchLocationOnMap()" class="w-full px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors">
+                        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+
+                <!-- Location Search Input -->
+                <div id="searchContainer" class="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 hidden">
+                    <input type="text" id="locationSearchInput" class="w-64 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Search for a location...">
+                    <button type="button" onclick="performLocationSearch()" class="ml-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
+                        Search
+                    </button>
+                    <button type="button" onclick="hideLocationSearch()" class="ml-1 px-3 py-2 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        <span id="selectedLocationText">No location selected</span>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="closeMapModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="button" onclick="confirmLocation()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" disabled id="confirmLocationBtn">
+                            Confirm Location
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-6 shadow-xl">
+            <div class="flex items-center">
+                <svg class="animate-spin h-6 w-6 text-green-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-700 font-medium">Updating project...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced form styling */
+.form-group {
+    position: relative;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Tab styling */
+.tab-button.active {
+    color: #2563eb;
+    border-color: #2563eb;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Enhanced dropdown styling */
+#pm_suggestions {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+#pm_suggestions li {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+}
+
+#pm_suggestions li:hover {
+    background-color: #f8fafc;
+    transform: translateX(4px);
+}
+
+#pm_suggestions li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .grid.grid-cols-1.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-button {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .flex.items-center.justify-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .flex.items-center.space-x-3 {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Custom scrollbar for dropdown */
+#pm_suggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+#pm_suggestions::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+#pm_suggestions::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+#pm_suggestions::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Map modal and container styling */
+#mapModal .flex-1 {
+    min-height: 400px;
+}
+
+#projectLocationMap {
+    height: 100% !important;
+    min-height: 400px !important;
+    width: 100% !important;
+    z-index: 1;
+}
+
+/* Ensure map modal has proper dimensions */
+#mapModal .max-w-4xl {
+    height: 80vh;
+    min-height: 500px;
+}
+
+/* Map controls positioning */
+#mapModal .absolute {
+    z-index: 1000;
+}
+</style>
+<script>
+// Global functions for template callbacks
+window.getCurrentLocation = function() {
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                const coordsInput = document.getElementById('id_gps_coordinates');
+                if (coordsInput) {
+                    coordsInput.value = lat + ', ' + lng;
+                    console.log('Location captured successfully');
+                }
+            },
+            function(error) {
+                console.log('Unable to get current location');
+            }
+        );
+    } else {
+        console.log('Geolocation is not supported by this browser');
+    }
+};
+
+window.uploadContract = function() {
+    const realFileInput = document.getElementById('id_contract_agreement');
+    
+    if (realFileInput) {
+        realFileInput.click();
+        
+        realFileInput.onchange = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const displayField = document.getElementById('contract_display');
+                if (displayField) {
+                    displayField.value = file.name;
+                }
+            }
+        };
+    }
+};
+
+window.uploadPermits = function() {
+    const realFileInput = document.getElementById('id_permits_licenses');
+    
+    if(realFileInput){
+        realFileInput.click();
+
+        realFileInput.onchange = function(event){
+            const file = event.target.files[0];
+            if(file){
+                const displayField = document.getElementById('permits_display');
+                if(displayField){
+                    displayField.value = file.name;
+                }
+            }
+        }
+    }
+};
+
+// Map variables and functions
+let projectMap = null;
+let currentMarker = null;
+let selectedLocation = null;
+
+// Philippines bounds
+const philippinesCenter = [12.8797, 121.7740]; // Central Philippines
+const philippinesBounds = [
+    [4.5, 116.0],  // Southwest
+    [21.5, 127.0]  // Northeast
+];
+
+window.openMapModal = function() {
+    const modal = document.getElementById('mapModal');
+    modal.classList.remove('hidden');
+
+    // Initialize map if not already done
+    if (!projectMap) {
+        setTimeout(() => {
+            initializeMap();
+        }, 200);
+    } else {
+        // Refresh the map size
+        setTimeout(() => {
+            projectMap.invalidateSize();
+        }, 200);
+    }
+};
+
+window.closeMapModal = function() {
+    const modal = document.getElementById('mapModal');
+    modal.classList.add('hidden');
+};
+
+function initializeMap() {
+    const mapContainer = document.getElementById('projectLocationMap');
+
+    if (projectMap) {
+        projectMap.remove();
+    }
+
+    // Ensure container has proper dimensions
+    mapContainer.style.height = '400px';
+    mapContainer.style.width = '100%';
+
+    // Initialize map centered on Philippines
+    projectMap = L.map('projectLocationMap', {
+        center: philippinesCenter,
+        zoom: 6,
+        maxBounds: philippinesBounds,
+        maxBoundsViscosity: 1.0
+    });
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(projectMap);
+
+    // Force resize after a short delay
+    setTimeout(() => {
+        projectMap.invalidateSize();
+    }, 100);
+
+    // Add click handler for map
+    projectMap.on('click', function(e) {
+        setLocationMarker(e.latlng);
+    });
+
+    // If there's existing GPS coordinates, show them on the map
+    const existingCoords = document.getElementById('id_gps_coordinates').value;
+    if (existingCoords && existingCoords.trim()) {
+        const coords = existingCoords.split(',');
+        if (coords.length === 2) {
+            const lat = parseFloat(coords[0].trim());
+            const lng = parseFloat(coords[1].trim());
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const latlng = L.latLng(lat, lng);
+                setLocationMarker(latlng);
+                projectMap.setView(latlng, 15);
+            }
+        }
+    }
+}
+
+function setLocationMarker(latlng) {
+    // Remove existing marker
+    if (currentMarker) {
+        projectMap.removeLayer(currentMarker);
+    }
+
+    // Add new marker
+    currentMarker = L.marker(latlng).addTo(projectMap);
+
+    // Store selected location
+    selectedLocation = latlng;
+
+    // Update selected location text
+    const lat = latlng.lat.toFixed(6);
+    const lng = latlng.lng.toFixed(6);
+    document.getElementById('selectedLocationText').textContent = `Selected: ${lat}, ${lng}`;
+
+    // Enable confirm button
+    document.getElementById('confirmLocationBtn').disabled = false;
+}
+
+window.confirmLocation = function() {
+    if (selectedLocation) {
+        const lat = selectedLocation.lat.toFixed(6);
+        const lng = selectedLocation.lng.toFixed(6);
+
+        // Update GPS coordinates field
+        document.getElementById('id_gps_coordinates').value = `${lat}, ${lng}`;
+
+        // Close modal
+        closeMapModal();
+
+        // Show success message
+        console.log('Location set successfully');
+    }
+};
+
+window.getCurrentLocationForMap = function() {
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                setLocationMarker(latlng);
+                projectMap.setView(latlng, 15);
+            },
+            function(error) {
+                console.log('Unable to get current location');
+            }
+        );
+    } else {
+        console.log('Geolocation is not supported by this browser');
+    }
+};
+
+window.searchLocationOnMap = function() {
+    const searchContainer = document.getElementById('searchContainer');
+    searchContainer.classList.toggle('hidden');
+
+    if (!searchContainer.classList.contains('hidden')) {
+        document.getElementById('locationSearchInput').focus();
+    }
+};
+
+window.hideLocationSearch = function() {
+    document.getElementById('searchContainer').classList.add('hidden');
+    document.getElementById('locationSearchInput').value = '';
+};
+
+window.performLocationSearch = function() {
+    const query = document.getElementById('locationSearchInput').value.trim();
+    if (!query) return;
+
+    // Use Nominatim API for geocoding (OpenStreetMap's geocoding service)
+    const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=ph`;
+
+    fetch(geocodeUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const result = data[0];
+                const lat = parseFloat(result.lat);
+                const lng = parseFloat(result.lon);
+                const latlng = L.latLng(lat, lng);
+
+                setLocationMarker(latlng);
+                projectMap.setView(latlng, 15);
+                hideLocationSearch();
+            } else {
+                alert('Location not found. Please try a different search term.');
+            }
+        })
+        .catch(error => {
+            console.error('Geocoding error:', error);
+            alert('Error searching for location. Please try again.');
+        });
+};
+
+// Client details functionality
+function showClientDetails(clientId) {
+    console.log('showClientDetails called with clientId:', clientId);
+    
+    if (!clientId) {
+        console.log('No client ID provided');
+        return;
+    }
+    
+    const detailsBox = document.getElementById('client-details-box');
+    const detailsContent = document.getElementById('client-details-content');
+    
+    if (!detailsBox || !detailsContent) {
+        console.error('Client details elements not found');
+        return;
+    }
+    
+    // Show loading state
+    detailsContent.innerHTML = '<div class="text-gray-500">Loading client details...</div>';
+    detailsBox.classList.remove('hidden');
+    
+    fetch(`/manage-client/api/clients/${clientId}/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Client data received:', data);
+            
+            const clientTypeMap = {
+                'DC': 'Direct Client',
+                'GC': 'General Contractor'
+            };
+            
+            let detailsHTML = `
+                <div>
+                    <span class="font-medium text-gray-700">Company:</span>
+                    <span class="text-gray-900">${data.company_name || 'N/A'}</span>
+                </div>
+                <div>
+                    <span class="font-medium text-gray-700">Type:</span>
+                    <span class="text-gray-900">${clientTypeMap[data.client_type] || data.client_type}</span>
+                </div>
+            `;
+            
+            if (data.contact_name) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Contact Person:</span>
+                        <span class="text-gray-900">${data.contact_name}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.email) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Email:</span>
+                        <span class="text-gray-900">${data.email}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.phone) {
+                detailsHTML += `
+                    <div>
+                        <span class="font-medium text-gray-700">Phone:</span>
+                        <span class="text-gray-900">${data.phone}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.address) {
+                detailsHTML += `
+                    <div class="md:col-span-2">
+                        <span class="font-medium text-gray-700">Address:</span>
+                        <span class="text-gray-900">${data.address}`;
+                if (data.city || data.state) {
+                    detailsHTML += `, ${data.city || ''} ${data.state || ''}`.replace(/,\s*$/, '');
+                }
+                if (data.zip_code) {
+                    detailsHTML += ` ${data.zip_code}`;
+                }
+                detailsHTML += `</span>
+                    </div>
+                `;
+            }
+            
+            detailsContent.innerHTML = detailsHTML;
+        })
+        .catch(error => {
+            console.error('Error fetching client details:', error);
+            detailsContent.innerHTML = '<div class="text-red-500">Error loading client details</div>';
+        });
+}
+
+// Store all clients for filtering
+let allClients = [];
+
+// Initialize client filtering
+function initializeClientFiltering() {
+    const projectTypeSelect = document.getElementById('id_project_type');
+    const clientSelect = document.getElementById('id_client');
+  
+    
+    if (!projectTypeSelect || !clientSelect) return;
+    
+    // Store all original client options
+    Array.from(clientSelect.options).forEach(option => {
+        if (option.value) {
+            allClients.push({
+                value: option.value,
+                text: option.text,
+                element: option.cloneNode(true)
+            });
+        }
+    });
+    
+    // Filter clients when project type changes
+    projectTypeSelect.addEventListener('change', function() {
+        filterClientsByProjectType(this.value);
+    });
+    
+    // Apply initial filter if project type is already selected
+    if (projectTypeSelect.value) {
+        filterClientsByProjectType(projectTypeSelect.value);
+    }
+}
+
+// Filter clients based on project type
+function filterClientsByProjectType(projectType) {
+
+    const clientSelect = document.getElementById('id_client');
+    if (!clientSelect) return;
+    
+    // Store current selection
+    const currentValue = clientSelect.value;
+    
+    // Clear current options (except empty option)
+    const emptyOption = clientSelect.querySelector('option[value=""]');
+    clientSelect.innerHTML = '';
+    if (emptyOption) {
+        clientSelect.appendChild(emptyOption.cloneNode(true));
+    }
+    
+    // Determine which client type to show
+    let targetClientType;
+    
+    if (projectType === 'DC') {
+        targetClientType = 'DC'; // Direct Client projects show DC clients
+    } else if (projectType === 'GC') {
+        targetClientType = 'GC'; // General Contractor projects show GC clients
+    } else {
+        // If project type is not specified, show all clients
+        allClients.forEach(client => {
+            clientSelect.appendChild(client.element.cloneNode(true));
+        });
+        // Restore selection
+        clientSelect.value = currentValue;
+        return;
+    }
+    
+    // Fetch filtered clients from API
+    fetch(`/manage-client/api/clients/by-type/?client_type=${targetClientType}`)
+        .then(response => response.json())
+        .then(data => {
+            data.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.company_name;
+                clientSelect.appendChild(option);
+            });
+            
+            // Restore selection if it's still valid
+            if (currentValue) {
+                clientSelect.value = currentValue;
+                // If the value doesn't exist in filtered options, clear it
+                if (!clientSelect.value) {
+                    // Hide client details if selection becomes invalid
+                    const detailsBox = document.getElementById('client-details-box');
+                    if (detailsBox) {
+                        detailsBox.classList.add('hidden');
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching filtered clients:', error);
+            // Fallback: show all clients
+            allClients.forEach(client => {
+                clientSelect.appendChild(client.element.cloneNode(true));
+            });
+            clientSelect.value = currentValue;
+        });
+}
+
+// Tab navigation functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const prevButton = document.getElementById('prev-tab');
+    const nextButton = document.getElementById('next-tab');
+    
+    let currentTab = 0;
+    const tabs = ['basic', 'location', 'team', 'financial'];
+    
+    function showTab(index) {
+        // Hide all tab contents
+        tabContents.forEach(content => content.classList.add('hidden'));
+        
+        // Remove active class from all buttons
+        tabButtons.forEach(button => {
+            button.classList.remove('active', 'text-blue-600', 'border-blue-500');
+            button.classList.add('text-gray-500', 'border-transparent');
+        });
+        
+        // Show current tab content
+        const currentContent = document.getElementById(tabs[index] + '-tab');
+        if (currentContent) {
+            currentContent.classList.remove('hidden');
+        }
+        
+        // Activate current button
+        const currentButton = document.querySelector(`[data-tab="${tabs[index]}"]`);
+        if (currentButton) {
+            currentButton.classList.add('active', 'text-blue-600', 'border-blue-500');
+            currentButton.classList.remove('text-gray-500', 'border-transparent');
+        }
+        
+        // Update navigation buttons
+        prevButton.disabled = index === 0;
+        
+        // Hide Next button on last tab
+        if (index === tabs.length - 1) {
+            nextButton.style.display = 'none';
+        } else {
+            nextButton.style.display = 'inline-flex';
+        }
+        
+        currentTab = index;
+    }
+    
+    // Tab button click handlers
+    tabButtons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+            showTab(index);
+        });
+    });
+    
+    // Previous button
+    prevButton.addEventListener('click', () => {
+        if (currentTab > 0) {
+            showTab(currentTab - 1);
+        }
+    });
+    
+    // Next button
+    nextButton.addEventListener('click', () => {
+        if (currentTab < tabs.length - 1) {
+            showTab(currentTab + 1);
+        }
+    });
+    
+    // Initialize first tab
+    showTab(0);
+
+    // Project Manager autocomplete functionality
+    const pmInput = document.getElementById("project_manager_input");
+    const pmHidden = document.getElementById("project_manager_id");
+    const pmSuggestions = document.getElementById("pm_suggestions");
+
+    let pmTimeout;
+
+    // Fetch project managers
+    function searchPMs(query) {
+        fetch(`/projects/search/project-managers/?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                pmSuggestions.innerHTML = "";
+                if (data.length === 0) {
+                    pmSuggestions.innerHTML = '<li class="p-2 text-gray-500">No results</li>';
+                } else {
+                    data.forEach(pm => {
+                        const li = document.createElement("li");
+                        li.className = "p-2 hover:bg-gray-100 cursor-pointer";
+                        li.innerHTML = `<div class="font-medium">${pm.full_name}</div>
+                                        <div class="text-sm text-gray-600">${pm.email}</div>`;
+                        li.onclick = () => selectPM(pm);
+                        pmSuggestions.appendChild(li);
+                    });
+                }
+                pmSuggestions.classList.remove("hidden");
+            })
+            .catch(err => console.error("Error fetching PMs:", err));
+    }
+
+    // Select PM
+    function selectPM(pm) {
+        pmInput.value = pm.full_name;
+        pmHidden.value = pm.id;
+        document.getElementById("assigned_pm_display").innerHTML =
+            `<div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">
+                        Assigned to: ${pm.full_name}
+                    </p>
+                </div>
+            </div>`;
+        pmSuggestions.classList.add("hidden");
+    }
+
+    // Input listener
+    if (pmInput) {
+        pmInput.addEventListener("input", function() {
+            clearTimeout(pmTimeout);
+            const query = this.value.trim();
+            if (query.length < 2) {
+                pmSuggestions.classList.add("hidden");
+                return;
+            }
+            pmTimeout = setTimeout(() => searchPMs(query), 300);
+        });
+    }
+
+    // Hide dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+        const pmContainer = document.getElementById("pm_container");
+        if (pmContainer && !pmContainer.contains(e.target)) {
+            pmSuggestions.classList.add("hidden");
+        }
+    });
+
+    // Initialize client functionality
+    const clientSelect = document.getElementById('id_client');
+    if (clientSelect) {
+        // Show details for pre-selected client on page load
+        if (clientSelect.value) {
+            showClientDetails(clientSelect.value);
+        }
+        
+        // Show details when client selection changes
+        clientSelect.addEventListener('change', function() {
+            const clientId = this.value;
+            if (clientId) {
+                showClientDetails(clientId);
+            } else {
+                // Hide details if no client selected
+                const detailsBox = document.getElementById('client-details-box');
+                if (detailsBox) {
+                    detailsBox.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    // Initialize client filtering
+    initializeClientFiltering();
+});
+</script>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<!-- External Scripts -->
+<script src="{% static 'js/project_form_autofill.js' %}"></script>
+<script src="{% static 'js/project_form_enhanced.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,802 @@
+<!-- Add/Edit Client Modal -->
+<div id="clientModal" class="fixed inset-0 z-50 {% if not show_client_modal %}hidden{% endif %} flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-5 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+      <h2 id="modalTitle" class="text-xl font-semibold text-gray-900">
+        {% if modal_mode == 'edit' %}Edit Client{% else %}Add Client{% endif %}
+      </h2>
+      <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold" aria-label="Close modal">
+        ✕
+      </button>
+    </div>
+
+    <form id="clientForm" method="POST" class="space-y-4">
+      {% csrf_token %}
+
+      <!-- Client Type -->
+      <div>
+        <label for="clientType" class="block text-sm font-medium text-gray-700">Client Type *</label>
+        <select id="clientType" name="client_type" required onchange="handleClientTypeChange()"
+                class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+          <option value="">Select Client Type</option>
+          <option value="DC" {% if form_data.client_type == 'DC' %}selected{% endif %}>Direct Client</option>
+          <option value="GC" {% if form_data.client_type == 'GC' %}selected{% endif %}>General Contractor</option>
+        </select>
+      </div>
+
+      <!-- Company & Contact -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="companyName" class="block text-sm font-medium text-gray-700">Company Name *</label>
+          <input type="text" id="companyName" name="company_name" required
+                 value="{{ form_data.company_name|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter company name">
+        </div>
+        <div>
+          <label for="contactName" class="block text-sm font-medium text-gray-700">Contact Name *</label>
+          <input type="text" id="contactName" name="contact_name" required
+                 value="{{ form_data.contact_name|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter contact person name">
+        </div>
+      </div>
+
+      <!-- Email & Phone -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" id="email" name="email"
+                 value="{{ form_data.email|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter email address">
+        </div>
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+          <input type="text" id="phone" name="phone"
+                 value="{{ form_data.phone|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter phone number">
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div>
+        <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+        <textarea id="address" name="address" rows="2"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  placeholder="Enter full address">{{ form_data.address|default:'' }}</textarea>
+      </div>
+
+      <!-- City, State, Zip -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+          <input type="text" id="city" name="city"
+                 value="{{ form_data.city|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter city">
+        </div>
+        <div>
+          <label for="state" class="block text-sm font-medium text-gray-700">State/Province</label>
+          <input type="text" id="state" name="state"
+                 value="{{ form_data.state|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter state">
+        </div>
+        <div>
+          <label for="zipCode" class="block text-sm font-medium text-gray-700">Zip Code</label>
+          <input type="text" id="zipCode" name="zip_code"
+                 value="{{ form_data.zip_code|default:'' }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter zip code">
+        </div>
+      </div>
+
+            <!-- Contract Upload Section -->
+      <div class="border-t pt-4">
+        <div class="space-y-3">
+          <label for="contract" class="block text-sm font-medium text-gray-700">
+            Contract Document
+            <span class="text-xs text-gray-500 font-normal">(Optional - PDF, DOC, DOCX)</span>
+          </label>
+          
+          <!-- File input with custom styling -->
+          <div class="relative">
+            <input type="file" id="contract" name="contract" 
+                   accept=".pdf,.doc,.docx"
+                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                   onchange="handleContractFileChange(this)">
+            <div class="flex items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+              <div class="text-center">
+                <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-600">
+                  <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span>
+                  or drag and drop
+                </p>
+                <p class="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- File info display -->
+          <div id="contractFileInfo" class="hidden">
+            <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div>
+                  <p id="contractFileName" class="text-sm font-medium text-blue-900"></p>
+                  <p id="contractFileSize" class="text-xs text-blue-700"></p>
+                </div>
+              </div>
+              <button type="button" onclick="clearContractFile()" class="text-blue-600 hover:text-blue-800">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Current contract display (for edit mode) -->
+          <div id="currentContractInfo" class="hidden">
+            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-sm font-medium text-green-900">Current Contract:</p>
+                  <a id="currentContractLink" href="#" target="_blank" class="text-sm text-green-700 hover:text-green-900 underline"></a>
+                </div>
+              </div>
+              <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Uploaded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Project Types Section -->
+      <div id="projectTypesSection" class="border-t pt-4">
+        <h3 class="text-lg font-medium text-gray-900 mb-3">Available Project Types</h3>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <label class="block text-sm font-medium text-gray-700">Select Project Types for this Client</label>
+            <button type="button" onclick="openProjectTypeModal()" 
+                    class="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none transition">
+              + Add New Type
+            </button>
+          </div>
+          <div id="projectTypesList" class="space-y-2">
+            <!-- Project types checkboxes -->
+            {% for project_type in project_types %}
+            <div class="flex items-center">
+              <input id="pt_{{ project_type.id }}" 
+                     name="project_types" 
+                     type="checkbox" 
+                     value="{{ project_type.id }}"
+                     {% if form_data.project_types and project_type.id|stringformat:"s" in form_data.project_types %}checked{% endif %}
+                     class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+              <label for="pt_{{ project_type.id }}" class="ml-2 block text-sm text-gray-700">
+                {{ project_type.name }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          <div id="noProjectTypes" class="text-sm text-gray-500 italic {% if project_types %}hidden{% endif %}">
+            No project types available. Click "Add New Type" to create one.
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+        <textarea id="notes" name="notes" rows="3"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  placeholder="Enter additional notes about this client">{{ form_data.notes|default:'' }}</textarea>
+      </div>
+
+      <!-- Active Checkbox -->
+      <div class="flex items-center">
+        <input id="isActive" name="is_active" type="checkbox" 
+               {% if form_data.is_active or not form_data %}checked{% endif %}
+               class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <label for="isActive" class="ml-2 block text-sm text-gray-700 font-medium">Active Client</label>
+      </div>
+
+      {% if request.session.xero_access_token %}
+<div class="border-t pt-4">
+  <h3 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
+    <svg class="h-4 w-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+    </svg>
+    Xero Integration
+  </h3>
+  
+  <div class="bg-blue-50 p-3 rounded-lg">
+    <div class="flex items-center">
+      <input id="syncToXero" name="sync_to_xero" type="checkbox" 
+             {% if form_data.sync_to_xero %}checked{% endif %}
+             class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+      <label for="syncToXero" class="ml-2 block text-sm text-gray-700 font-medium">
+        Automatically sync to Xero
+      </label>
+    </div>
+    <p class="text-xs text-gray-600 mt-1 ml-6">
+      Creates this client as a contact in your connected Xero organization
+    </p>
+  </div>
+</div>
+{% else %}
+<div class="border-t pt-4">
+  <div class="bg-gray-50 p-3 rounded-lg">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-700">Xero Integration</p>
+        <p class="text-xs text-gray-500">Connect to Xero to enable automatic client syncing</p>
+      </div>
+      <a href="/xero/connect/" target="_blank" 
+         class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">
+        Connect to Xero
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+      <!-- Buttons -->
+      <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+        <button type="button" onclick="closeModal()" 
+                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+          <span id="saveButtonText">
+            {% if modal_mode == 'edit' %}Update Client{% else %}Save Client{% endif %}
+          </span>
+        </button>
+      </div>
+    </form>
+    
+  </div>
+</div>
+
+
+<!-- Project Type Modal -->
+<div id="projectTypeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[70]">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
+    <!-- Close button -->
+    <button type="button" onclick="closeProjectTypeModal()" 
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none text-xl">
+      ✕
+    </button>
+
+    <!-- Title -->
+    <h2 id="projectTypeModalTitle" class="text-2xl font-semibold text-gray-800 mb-6">Add Project Type</h2>
+
+    <!-- Form -->
+    <form id="projectTypeForm" class="space-y-5">
+      <!-- Name -->
+      <div>
+        <label for="projectTypeName" class="block text-sm font-medium text-gray-700">Name *</label>
+        <input type="text" name="name" id="projectTypeName" 
+          class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 sm:text-sm" 
+          placeholder="Enter project type name" required>
+      </div>
+
+      <!-- Code -->
+      <div>
+        <label for="projectTypeCode" class="block text-sm font-medium text-gray-700">Code *</label>
+        <input type="text" name="code" id="projectTypeCode" 
+          class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 sm:text-sm" 
+          placeholder="Unique code" required>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="projectTypeDescription" class="block text-sm font-medium text-gray-700">Description</label>
+        <textarea name="description" id="projectTypeDescription" rows="3" 
+          class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 sm:text-sm"
+          placeholder="Add a short description..."></textarea>
+      </div>
+
+      <!-- Active checkbox -->
+      <div class="flex items-center space-x-2">
+        <input type="checkbox" name="is_active" id="projectTypeIsActive" checked
+          class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+        <label for="projectTypeIsActive" class="text-sm text-gray-700">Active</label>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <button type="button" onclick="closeProjectTypeModal()" 
+          class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:outline-none">
+          Cancel
+        </button>
+        <button type="submit" id="projectTypeSubmitBtn"
+          class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+          Create
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Edit Client Modal (Separate from Add Modal) -->
+<div id="editClientModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-5 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold text-gray-900">Edit Client</h2>
+      <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold" aria-label="Close modal">
+        ✕
+      </button>
+    </div>
+
+    <form id="editClientForm" method="POST" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+
+      <!-- Client Type -->
+      <div>
+        <label for="editClientType" class="block text-sm font-medium text-gray-700">
+          Client Type *
+          <span id="currentClientTypeIndicator" class="text-xs text-blue-600 font-normal hidden">
+            (Currently: <span id="currentClientTypeText"></span>)
+          </span>
+        </label>
+        <select id="editClientType" name="client_type" required 
+                class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+          <option value="">Select Client Type</option>
+          <option value="DC">Direct Client</option>
+          <option value="GC">General Contractor</option>
+        </select>
+      </div>
+
+      <!-- Company & Contact -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="editCompanyName" class="block text-sm font-medium text-gray-700">Company Name *</label>
+          <input type="text" id="editCompanyName" name="company_name" required
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter company name">
+        </div>
+        <div>
+          <label for="editContactName" class="block text-sm font-medium text-gray-700">Contact Name *</label>
+          <input type="text" id="editContactName" name="contact_name" required
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter contact person name">
+        </div>
+      </div>
+
+      <!-- Email & Phone -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="editEmail" class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" id="editEmail" name="email"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter email address">
+        </div>
+        <div>
+          <label for="editPhone" class="block text-sm font-medium text-gray-700">Phone</label>
+          <input type="text" id="editPhone" name="phone"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter phone number">
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div>
+        <label for="editAddress" class="block text-sm font-medium text-gray-700">Address</label>
+        <textarea id="editAddress" name="address" rows="2"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  placeholder="Enter full address"></textarea>
+      </div>
+
+      <!-- City, State, Zip -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="editCity" class="block text-sm font-medium text-gray-700">City</label>
+          <input type="text" id="editCity" name="city"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter city">
+        </div>
+        <div>
+          <label for="editState" class="block text-sm font-medium text-gray-700">State</label>
+          <input type="text" id="editState" name="state"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter state">
+        </div>
+        <div>
+          <label for="editZipCode" class="block text-sm font-medium text-gray-700">Zip Code</label>
+          <input type="text" id="editZipCode" name="zip_code"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                 placeholder="Enter zip code">
+        </div>
+      </div>
+
+      <!-- Contract Information (Read-only) -->
+      <div class="border-t pt-4">
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-gray-700">
+            Contract Document
+          </label>
+          
+          <!-- Current contract display -->
+          <div id="editCurrentContractInfo" class="hidden">
+            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-sm font-medium text-green-900">Contract File:</p>
+                  <a id="editCurrentContractLink" href="#" target="_blank" class="text-sm text-green-700 hover:text-green-900 underline flex items-center">
+                    <span id="editCurrentContractName"></span>
+                    <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+              <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">View/Download</span>
+            </div>
+          </div>
+
+          <!-- No contract display -->
+          <div id="editNoContractInfo" class="hidden">
+            <div class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <svg class="h-5 w-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <span class="text-sm text-gray-600">No contract uploaded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Types Section -->
+      <div class="border-t pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Project Types</h3>
+            <div id="currentProjectTypesIndicator" class="text-xs text-blue-600 hidden mt-1">
+              Currently assigned: <span id="currentProjectTypesText">Loading...</span>
+            </div>
+          </div>
+          <button type="button" onclick="openProjectTypeModal()" 
+                  class="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none transition">
+            + Add New Type
+          </button>
+        </div>
+        
+        <!-- Dropdown for project types selection -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Project Types for this Client</label>
+          
+          <!-- Custom multi-select dropdown -->
+          <div class="relative">
+            <button type="button" id="editProjectTypesDropdown" onclick="toggleEditProjectTypesDropdown()"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-left shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <span id="editSelectedProjectTypesText" class="text-gray-500">Select project types...</span>
+              <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </button>
+            
+            <!-- Dropdown menu -->
+            <div id="editProjectTypesDropdownMenu" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div id="editProjectTypesList" class="p-2 space-y-1">
+                <!-- Project types will be loaded dynamically -->
+              </div>
+              <div id="editNoProjectTypes" class="p-3 text-sm text-gray-500 italic hidden">
+                No project types available. Click "Add New Type" to create one.
+              </div>
+            </div>
+          </div>
+          
+          <!-- Selected project types display -->
+          <div id="editSelectedProjectTypesDisplay" class="mt-3 hidden">
+            <div class="text-sm font-medium text-gray-700 mb-2">Selected Project Types:</div>
+            <div id="editSelectedProjectTypesTags" class="flex flex-wrap gap-2">
+              <!-- Selected tags will appear here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <label for="editNotes" class="block text-sm font-medium text-gray-700">Notes</label>
+        <textarea id="editNotes" name="notes" rows="3"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm px-2 py-2 text-gray-900 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  placeholder="Enter additional notes about this client"></textarea>
+      </div>
+
+      <!-- Active Checkbox -->
+      <div class="flex items-center">
+        <input id="editIsActive" name="is_active" type="checkbox" checked
+               class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <label for="editIsActive" class="ml-2 block text-sm text-gray-700 font-medium">Active Client</label>
+      </div>
+
+      {% if request.session.xero_access_token %}
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
+          <svg class="h-4 w-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+          </svg>
+          Xero Integration
+        </h3>
+        
+        <!-- Current Sync Status Display -->
+        <div id="editXeroStatusDisplay" class="mb-3">
+          <!-- Will be populated by JavaScript -->
+        </div>
+        
+        <!-- Sync Options -->
+        <div class="bg-blue-50 p-3 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <input id="editSyncToXero" name="sync_to_xero" type="checkbox" 
+                     class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+              <label for="editSyncToXero" class="ml-2 block text-sm text-gray-700 font-medium">
+                Sync changes to Xero
+              </label>
+            </div>
+            <button type="button" id="editManualSyncBtn" 
+                    class="text-xs bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition hidden"
+                    onclick="manualSyncClient()">
+              Sync Now
+            </button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1 ml-6">
+            <span id="editSyncDescription">Updates this client contact in your connected Xero organization</span>
+          </p>
+        </div>
+      </div>
+      {% else %}
+      <div class="border-t pt-4">
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-700">Xero Integration</p>
+              <p class="text-xs text-gray-500">Connect to Xero to enable automatic client syncing</p>
+            </div>
+            <a href="/xero/connect/" target="_blank" 
+               class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">
+              Connect to Xero
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Buttons -->
+      <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+        <button type="button" onclick="closeEditModal()" 
+                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+          Update Client
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<!-- Delete Client Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 animate-fade-in">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Delete Client</h2>
+    <p id="deleteMessage" class="text-gray-700 mb-5">Are you sure you want to delete this client? This action cannot be undone.</p>
+    <form id="deleteForm" method="POST">
+      {% csrf_token %}
+      <div class="flex justify-end space-x-3">
+        <button type="button" onclick="closeDeleteModal()" 
+                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+          Delete
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Contract file handling functions
+function handleContractFileChange(input) {
+  const file = input.files[0];
+  const fileInfo = document.getElementById('contractFileInfo');
+  const fileName = document.getElementById('contractFileName');
+  const fileSize = document.getElementById('contractFileSize');
+  
+  if (file) {
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a PDF, DOC, or DOCX file.');
+      input.value = '';
+      fileInfo.classList.add('hidden');
+      return;
+    }
+    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB.');
+      input.value = '';
+      fileInfo.classList.add('hidden');
+      return;
+    }
+    
+    // Display file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileInfo.classList.remove('hidden');
+  } else {
+    fileInfo.classList.add('hidden');
+  }
+}
+
+function clearContractFile() {
+  const input = document.getElementById('contract');
+  const fileInfo = document.getElementById('contractFileInfo');
+  
+  input.value = '';
+  fileInfo.classList.add('hidden');
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Show current contract for edit mode
+function showCurrentContract(contractUrl, contractName) {
+  const currentContractInfo = document.getElementById('currentContractInfo');
+  const currentContractLink = document.getElementById('currentContractLink');
+  
+  if (contractUrl && contractName) {
+    currentContractLink.href = contractUrl;
+    currentContractLink.textContent = contractName;
+    currentContractInfo.classList.remove('hidden');
+  } else {
+    currentContractInfo.classList.add('hidden');
+  }
+}
+</script>
+
+<script>
+// Edit contract file handling functions
+function handleEditContractFileChange(input) {
+  const file = input.files[0];
+  const fileInfo = document.getElementById('editContractFileInfo');
+  const fileName = document.getElementById('editContractFileName');
+  const fileSize = document.getElementById('editContractFileSize');
+  const removeOption = document.getElementById('editRemoveContractOption');
+  const removeCheckbox = document.getElementById('editRemoveContract');
+  
+  if (file) {
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a PDF, DOC, or DOCX file.');
+      input.value = '';
+      fileInfo.classList.add('hidden');
+      return;
+    }
+    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB.');
+      input.value = '';
+      fileInfo.classList.add('hidden');
+      return;
+    }
+    
+    // Display file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileInfo.classList.remove('hidden');
+    
+    // Uncheck remove contract if user selects new file
+    if (removeCheckbox) {
+      removeCheckbox.checked = false;
+    }
+  } else {
+    fileInfo.classList.add('hidden');
+  }
+}
+
+function clearEditContractFile() {
+  const input = document.getElementById('editContract');
+  const fileInfo = document.getElementById('editContractFileInfo');
+  
+  input.value = '';
+  fileInfo.classList.add('hidden');
+}
+
+// Show current contract for edit mode
+function showEditCurrentContract(contractUrl, contractName) {
+  const currentContractInfo = document.getElementById('editCurrentContractInfo');
+  const currentContractLink = document.getElementById('editCurrentContractLink');
+  const removeOption = document.getElementById('editRemoveContractOption');
+  
+  if (contractUrl && contractName) {
+    currentContractLink.href = contractUrl;
+    currentContractLink.textContent = contractName;
+    currentContractInfo.classList.remove('hidden');
+    removeOption.classList.remove('hidden');
+  } else {
+    currentContractInfo.classList.add('hidden');
+    removeOption.classList.add('hidden');
+  }
+}
+
+// Handle remove contract checkbox
+document.getElementById('editRemoveContract')?.addEventListener('change', function() {
+  const fileInput = document.getElementById('editContract');
+  const fileInfo = document.getElementById('editContractFileInfo');
+  
+  if (this.checked) {
+    // Clear any selected new file if user chooses to remove
+    fileInput.value = '';
+    fileInfo.classList.add('hidden');
+  }
+});
+</script>
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { 
+  animation: fadeIn 0.2s ease-out; 
+}
+
+/* Custom scrollbar for modal */
+.max-h-[90vh]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-[90vh]::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.max-h-[90vh]::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.max-h-[90vh]::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ensure modals are properly layered */
+.z-[70] {
+  z-index: 70;
+}
+</style>

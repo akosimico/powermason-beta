@@ -1,0 +1,6 @@
+﻿Employee ID,First Name,Last Name,Email,Phone,Role,Status,Hire Date,Contract End Date,Department,Days Until Contract Expiry,User Account
+PM0001,micoxdXD,barnedo,mico@gmail.com,0993 631 1663,Project Manager,Active,"Sep 19, 2025",,Electrical,,No
+PM0002,test Project,Manager,testpm@gmail.com,(213) 213-12,Project Manager,Active,"Sep 19, 2025",,Electrical,,Yes
+PIC0001,Bogart,Mansinilya,shanleybarnedo@gmail.com,0993 293 2932,Project In Charge,Active,"Sep 01, 2025","Sep 22, 2025",,1,No
+SO0001,mee,mee,,(099) 329-32932,Safety Officer,Active,"Sep 19, 2025",,Electrical,,No
+QO0001,test,test,test@gmail.com,(098) 765-4321,Quality Officer,Active,"Jan 20, 2025","Sep 27, 2025",,6,No

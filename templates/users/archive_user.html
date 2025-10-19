@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-12 bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+  
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-6">
+    <!-- Warning Icon -->
+    <svg class="w-8 h-8 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"/>
+    </svg>
+    <h2 class="text-2xl font-semibold text-gray-800">Archive User</h2>
+  </div>
+
+  <!-- Description -->
+  <p class="text-gray-700 mb-6">
+    Are you sure you want to archive <span class="font-medium text-gray-900">{{ profile.user.username }}</span>?  
+    Archiving will:
+  </p>
+  <ul class="list-disc list-inside text-gray-700 mb-6 space-y-1">
+    <li>Set their role to <strong>View Only</strong>.</li>
+    <li>Hide them from active user lists.</li>
+    <li>Preserve their data for auditing.</li>
+  </ul>
+
+  <!-- Form -->
+  <form method="POST" class="flex justify-end gap-3">
+    {% csrf_token %}
+    <a href="{% url 'manage_user_profiles' %}" 
+       class="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium transition">
+      Cancel
+    </a>
+    <button type="submit" 
+            class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow transition">
+      Yes, Archive
+    </button>
+  </form>
+</div>
+{% endblock %}

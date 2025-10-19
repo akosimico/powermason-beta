@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow-md mt-6">
+  <h2 class="text-xl font-semibold mb-4">Update Progress for {{ task.task_name }}</h2>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    {{ form.progress_percent.label_tag }}  
+    {{ form.progress_percent }}
+
+    {{ form.remarks.label_tag }}
+    {{ form.remarks }}
+
+    <label class="block font-medium">Upload Proofs (PDF/Images)</label>
+    <input type="file" name="attachments" multiple
+           class="block w-full text-sm text-gray-600 
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-indigo-50 file:text-indigo-700
+                  hover:file:bg-indigo-100">
+
+    <div class="flex justify-end gap-3 pt-4">
+  <!-- Cancel Button -->
+  <button 
+    type="button"
+    onclick="history.back()"
+    class="inline-flex items-center px-5 py-2 bg-gray-100 text-gray-800 font-medium rounded-lg shadow-sm hover:bg-gray-200 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300">
+    &larr; Cancel
+  </button>
+
+  <!-- Submit Button -->
+  <button 
+    type="submit"
+    class="inline-flex items-center px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400">
+    Submit
+  </button>
+</div>
+
+  </form>
+</div>
+{% endblock %}

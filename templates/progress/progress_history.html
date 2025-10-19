@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Report Progress History</h1>
+        <button 
+            type="button"
+            onclick="history.back()"
+            class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md shadow hover:bg-gray-300 transition">
+            &larr; Back
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="flex flex-wrap gap-4 mb-6 items-end">
+        <div>
+            <label class="block text-sm font-medium mb-1">Project</label>
+            <select name="project" class="border rounded-md px-3 py-2 w-full">
+                <option value="">All Projects</option>
+                {% for p in projects %}
+                    <option value="{{ p.id }}" {% if selected_project == p.id|stringformat:"s" %}selected{% endif %}>
+                        {{ p.project_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">Status</label>
+            <select name="status" class="border rounded-md px-3 py-2 w-full">
+                <option value="">All Statuses</option>
+                <option value="P" {% if selected_status == "P" %}selected{% endif %}>Pending</option>
+                <option value="A" {% if selected_status == "A" %}selected{% endif %}>Approved</option>
+                <option value="R" {% if selected_status == "R" %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">Reporter</label>
+            <select name="reporter" class="border rounded-md px-3 py-2 w-full">
+                <option value="">All Reporters</option>
+                {% for r in reporters %}
+                    <option value="{{ r.id }}" {% if selected_reporter == r.id|stringformat:"s" %}selected{% endif %}>
+                        {{ r.full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 transition">
+                Filter
+            </button>
+            <a href="{% url 'progress_history' %}" class="bg-gray-300 text-black px-4 py-2 rounded-md shadow hover:bg-gray-400 transition">
+                Reset
+            </a>
+        </div>
+    </form>
+
+    <!-- History Table -->
+    <div class="border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <table class="w-full table-auto divide-y divide-gray-200 text-sm">
+            <thead class="bg-blue-100">
+                <tr>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Project</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Task</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Reported By</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Progress %</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Remarks</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Status</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Reviewed By</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Proof</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Date</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for update in updates %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-3 py-2 font-medium text-gray-900">{{ update.task.project.project_name }}</td>
+                    <td class="px-3 py-2 text-gray-900">{{ update.task.task_name }}</td>
+                    <td class="px-3 py-2 text-gray-700">{{ update.reported_by.full_name }}</td>
+                    <td class="px-3 py-2 font-semibold text-gray-900">{{ update.progress_percent }}%</td>
+                    <td class="px-3 py-2 text-gray-700">{{ update.remarks|default:"-" }}</td>
+                    <td class="px-3 py-2">
+                        <span class="px-2 inline-flex text-xs font-semibold rounded-full
+                            {% if update.status == 'A' %} bg-green-100 text-green-800
+                            {% elif update.status == 'R' %} bg-red-100 text-red-800
+                            {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+                            {% if update.status == "A" %}Approved{% elif update.status == "R" %}Rejected{% else %}Pending{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-gray-700">
+                        {% if update.reviewed_by %}
+                            {{ update.reviewed_by.full_name }}
+                        {% else %}
+                            <span class="text-gray-400 italic">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2">
+                        {% if update.attachments.all %}
+                            {% for file in update.attachments.all %}
+                                <a href="{{ file.file.url }}" target="_blank" class="text-blue-600 underline">Proof {{ forloop.counter }}</a><br>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-gray-400 italic">No proof</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2 text-gray-700">{{ update.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-gray-500">No progress reports found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

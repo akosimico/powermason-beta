@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% load role_tags %}
+{% load humanize %}
+
+
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Project List</h1>
+
+        <div class="mt-4 sm:mt-0 flex flex-wrap gap-2">
+            {% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
+            <!-- Add Project Dropdown -->
+            <div class="relative inline-block text-left">
+                <button type="button"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-medium transition flex items-center justify-between"
+                    id="addProjectButton">
+                    + Add Project
+                    <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <!-- Dropdown menu -->
+                <div id="addProjectDropdown"
+                    class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden">
+                    <div class="py-1">
+                        <a href="{% url 'project_create' project_type='GC' client_id='new' %}"
+                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                            General Contractor
+                        </a>
+                        <a href="{% url 'project_create' project_type='DC' client_id='new' %}"
+                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                            Direct Client
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Search Input -->
+            <input type="text" id="projectSearchInput" placeholder="Search projects..."
+                class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition flex-grow min-w-[200px]">
+        </div>
+    </div>
+
+    <!-- Project Table -->
+    <div class="border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <table class="w-full table-auto divide-y divide-gray-200 text-sm">
+            <thead class="bg-blue-100">
+                <tr>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Project ID</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Name</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Type</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Category</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Manager</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Start Date</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Target Completion</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-700">Status</th>
+                    <th class="px-3 py-2 text-center font-medium text-gray-700">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="projectTableBody" class="bg-white divide-y divide-gray-200">
+    {% for project in projects %}
+    <tr class="hover:bg-gray-50 transition-colors cursor-pointer"
+    data-url="{% url 'project_view' project_source=project.project_source pk=project.id %}"
+    onclick="window.location=this.dataset.url">
+
+        <td class="px-3 py-2 font-medium text-gray-900">{{ project.project_id }}</td>
+        <td class="px-3 py-2 text-gray-900">{{ project.project_name }}</td>
+        <td class="px-3 py-2 text-gray-700">{{ project.project_type }}</td>
+        <td class="px-3 py-2 text-gray-700">{{ project.project_category }}</td>
+        <td class="px-3 py-2 text-gray-700">
+            {% if project.project_manager %}
+            {{ project.project_manager.full_name }}
+            {% else %}
+            <span class="text-gray-400 italic">Unassigned</span>
+            {% endif %}
+        </td>
+        <td class="px-3 py-2 text-gray-700">{{ project.start_date }}</td>
+        <td class="px-3 py-2 text-gray-700">{{ project.target_completion_date }}</td>
+        <td class="px-3 py-2">
+            <span class="px-2 inline-flex text-xs font-semibold rounded-full
+                {% if project.status == 'CP' %} bg-green-100 text-green-800
+                {% elif project.status == 'OG' %} bg-blue-100 text-blue-800
+                {% elif project.status == 'PL' %} bg-gray-100 text-gray-800
+                {% elif project.status == 'CN' %} bg-red-100 text-red-800
+                {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+                {{ project.get_status_display }}
+            </span>
+        </td>
+        <td class="px-3 py-2 text-center">
+            {% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <!-- Delete -->
+                             <a href="{% url 'task_list' project.id %}" 
+                               class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700 transition">
+                                View Tasks
+                            </a>
+                        </div>
+                        {% elif user|has_role:"PM" %}
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <a href="{% url 'task_list' project.id %}" 
+                               class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700 transition">
+                                View Tasks
+                            </a>
+                        </div>
+                        {% endif %}
+
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="10" class="text-center py-4 text-gray-500">No projects found.</td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script src="{% static 'js/projects.js' %}"></script>
+{% endblock %}

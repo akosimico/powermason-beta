@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex items-center justify-center">
+  <div class="max-w-lg w-full bg-white shadow-md rounded-xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-gray-800">Employee Debug Info</h1>
+    <ul class="space-y-2">
+      <li class="flex justify-between border-b pb-2">
+        <span class="font-medium text-gray-600">Total Employees</span>
+        <span class="text-gray-900">{{ total }}</span>
+      </li>
+      <li class="flex justify-between border-b pb-2">
+        <span class="font-medium text-gray-600">Active</span>
+        <span class="text-green-600 font-semibold">{{ active }}</span>
+      </li>
+      <li class="flex justify-between border-b pb-2">
+        <span class="font-medium text-gray-600">Expiring Soon</span>
+        <span class="text-yellow-600 font-semibold">{{ expiring }}</span>
+      </li>
+      <li class="flex justify-between">
+        <span class="font-medium text-gray-600">Expired</span>
+        <span class="text-red-600 font-semibold">{{ expired }}</span>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

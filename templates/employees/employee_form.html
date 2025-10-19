@@ -1,0 +1,846 @@
+{% extends "base_employee.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+  <!-- Compact Header -->
+  <div class="bg-white border-b border-slate-200 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <nav class="flex items-center space-x-1 text-sm text-slate-500">
+          <a href="{% url 'employee:dashboard' %}" class="hover:text-slate-700">Dashboard</a>
+          <span>/</span>
+          <a href="{% url 'employee:list' %}" class="hover:text-slate-700">Team</a>
+          <span>/</span>
+          {% if employee %}
+            <span class="text-slate-900 font-medium">Edit Employee</span>
+          {% else %}
+            <span class="text-slate-900 font-medium">Add Employee</span>
+          {% endif %}
+        </nav>
+      </div>
+      
+      <a href="{% url 'employee:list' %}" 
+         class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <!-- Form Header -->
+      <div class="px-6 py-4 border-b border-slate-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {% if employee %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                {% else %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                {% endif %}
+              </svg>
+            </div>
+            <div>
+              {% if employee %}
+                <h1 class="text-xl font-bold text-slate-900">Edit Employee</h1>
+                <p class="text-sm text-slate-600">Update {{ employee.first_name }} {{ employee.last_name }}'s information</p>
+              {% else %}
+                <h1 class="text-xl font-bold text-slate-900">Add New Employee</h1>
+                <p class="text-sm text-slate-600">Complete the form below to add a new team member</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Employee Status Badge (for edit mode) -->
+          {% if employee %}
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                {% if employee.status == 'active' %}bg-green-100 text-green-800
+                {% elif employee.status == 'inactive' %}bg-red-100 text-red-800
+                {% elif employee.status == 'contract' %}bg-blue-100 text-blue-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ employee.get_status_display }}
+              </span>
+              <span class="text-sm text-slate-500">ID: {{ employee.employee_id }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="mx-6 mt-4 bg-{{ message.tags }}-50 border border-{{ message.tags }}-200 rounded-md p-3">
+            <div class="flex items-start">
+              <svg class="w-4 h-4 text-{{ message.tags }}-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                {% if message.tags == 'success' %}
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                {% else %}
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                {% endif %}
+              </svg>
+              <div class="text-sm">
+                <p class="font-medium text-{{ message.tags }}-800">{{ message }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Error Display -->
+      {% if form.non_field_errors %}
+      <div class="mx-6 mt-4 bg-red-50 border border-red-200 rounded-md p-3">
+        <div class="flex items-start">
+          <svg class="w-4 h-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <div class="text-sm">
+            <p class="font-medium text-red-800">Please fix these issues:</p>
+            <ul class="mt-1 text-red-700 space-y-1">
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Form Content -->
+      <form method="post" novalidate id="employeeForm" class="p-6" data-mode="{% if employee %}edit{% else %}add{% endif %}" data-employee-id="{% if employee %}{{ employee.id }}{% endif %}">
+        {% csrf_token %}
+        
+        <div class="space-y-6">
+          <!-- Personal Information Section -->
+          <div class="space-y-4">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-100">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <h3 class="font-semibold text-slate-900">Personal Information</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- First Name -->
+              <div>
+                <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  First Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="first_name" 
+                       id="{{ form.first_name.id_for_label }}" 
+                       value="{{ form.first_name.value|default:'' }}" 
+                       required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.first_name.errors|yesno:'border-red-500,' }}"
+                       placeholder="Enter first name">
+                {% if form.first_name.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Last Name -->
+              <div>
+                <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Last Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="last_name" 
+                       id="{{ form.last_name.id_for_label }}" 
+                       value="{{ form.last_name.value|default:'' }}" 
+                       required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.last_name.errors|yesno:'border-red-500,' }}"
+                       placeholder="Enter last name">
+                {% if form.last_name.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Email -->
+              <div>
+                <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Email Address
+                  <span id="email-required-indicator" class="text-red-500 hidden">*</span>
+                </label>
+                <input type="email" 
+                       name="email" 
+                       id="{{ form.email.id_for_label }}" 
+                       value="{{ form.email.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.email.errors|yesno:'border-red-500,' }}"
+                       placeholder="employee@company.com">
+                <p class="mt-1 text-xs text-slate-500">Required for Project Manager role</p>
+                {% if form.email.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Phone -->
+<div>
+  <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+    Phone Number
+  </label>
+  <input type="tel" 
+         name="phone" 
+         id="{{ form.phone.id_for_label }}" 
+         value="{{ form.phone.value|default:'' }}"
+         maxlength="13"
+         class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.phone.errors|yesno:'border-red-500,' }}"
+         placeholder="09XX XXX XXXX">
+  {% if form.phone.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+  {% endif %}
+</div>
+
+            </div>
+          </div>
+
+          <!-- Employment Information Section -->
+          <div class="space-y-4">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-100">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8z" />
+              </svg>
+              <h3 class="font-semibold text-slate-900">Employment Details</h3>
+            </div>
+
+            <!-- Employee ID (show only in edit mode) -->
+            {% if employee %}
+            <div class="bg-slate-50 rounded-md p-3 border border-slate-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">Employee ID</label>
+                  <p class="text-sm text-slate-900 font-mono">{{ employee.employee_id }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">Created</label>
+                  <p class="text-sm text-slate-600">{{ employee.created_at|date:"M d, Y" }}</p>
+                </div>
+                {% if employee.updated_at != employee.created_at %}
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">Last Updated</label>
+                  <p class="text-sm text-slate-600">{{ employee.updated_at|date:"M d, Y" }}</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Job Role -->
+              <div>
+                <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Job Role <span class="text-red-500">*</span>
+                </label>
+                <select name="role" 
+                        id="{{ form.role.id_for_label }}" 
+                        required
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.role.errors|yesno:'border-red-500,' }}">
+                  <option value="">Choose role</option>
+                  {% for value, display in form.role.field.choices %}
+                    {% if value %}
+                      <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ display }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                {% if form.role.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.role.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Employment Status -->
+              <div>
+                <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Status <span class="text-red-500">*</span>
+                </label>
+                <select name="status" 
+                        id="{{ form.status.id_for_label }}" 
+                        required
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.status.errors|yesno:'border-red-500,' }}">
+                  {% for value, display in form.status.field.choices %}
+                    <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ display }}</option>
+                  {% endfor %}
+                </select>
+                {% if form.status.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Hire Date -->
+              <div>
+                <label for="{{ form.hire_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Hire Date <span class="text-red-500">*</span>
+                </label>
+                <input type="date" 
+                       name="hire_date" 
+                       id="{{ form.hire_date.id_for_label }}" 
+                       value="{% if form.hire_date.value %}{{ form.hire_date.value|date:'Y-m-d' }}{% endif %}" 
+                       required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.hire_date.errors|yesno:'border-red-500,' }}">
+                {% if form.hire_date.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.hire_date.errors.0 }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Department -->
+              <div>
+                <label for="{{ form.department.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Department
+                </label>
+                <input type="text" 
+                       name="department" 
+                       id="{{ form.department.id_for_label }}" 
+                       value="{{ form.department.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.department.errors|yesno:'border-red-500,' }}"
+                       placeholder="e.g., Construction">
+                {% if form.department.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.department.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Contract End Date -->
+              <div>
+                <label for="{{ form.contract_end_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Contract End Date
+                </label>
+                <input type="date" 
+                       name="contract_end_date" 
+                       id="{{ form.contract_end_date.id_for_label }}" 
+                       value="{% if form.contract_end_date.value %}{{ form.contract_end_date.value|date:'Y-m-d' }}{% endif %}"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.contract_end_date.errors|yesno:'border-red-500,' }}"
+                       placeholder="Optional">
+                {% if form.contract_end_date.help_text %}
+                  <p class="mt-1 text-xs text-slate-500">{{ form.contract_end_date.help_text }}</p>
+                {% endif %}
+                {% if form.contract_end_date.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.contract_end_date.errors.0 }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Labor Count -->
+              <div id="labor-count-field" class="{% if not form.labor_count.value %}hidden{% endif %}">
+                <label for="{{ form.labor_count.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">
+                  Labor Count
+                </label>
+                <input type="number" 
+                       name="labor_count" 
+                       id="{{ form.labor_count.id_for_label }}" 
+                       value="{{ form.labor_count.value|default:'1' }}" 
+                       min="1"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 {{ form.labor_count.errors|yesno:'border-red-500,' }}">
+                {% if form.labor_count.help_text %}
+                  <p class="mt-1 text-xs text-slate-500">{{ form.labor_count.help_text }}</p>
+                {% endif %}
+                {% if form.labor_count.errors %}
+                  <p class="mt-1 text-sm text-red-600">{{ form.labor_count.errors.0 }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Manager Alert -->
+          <div id="pm-info" class="bg-blue-50 border border-blue-200 rounded-md p-3 {% if not employee or employee.role != 'project_manager' %}hidden{% endif %}">
+            <div class="flex items-start space-x-2">
+              <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="text-sm">
+                <p class="font-medium text-blue-900">Project Manager Account</p>
+                {% if employee %}
+                  <p class="text-blue-800">This employee has system access. Email changes will update their login credentials.</p>
+                {% else %}
+                  <p class="text-blue-800">A user account will be created automatically. Email address is required.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Change History (edit mode only) -->
+          {% if employee and employee.pk %}
+          <div class="bg-slate-50 rounded-md p-4 border border-slate-200">
+            <h4 class="text-sm font-medium text-slate-900 mb-2">Recent Changes</h4>
+            <div class="text-xs text-slate-600 space-y-1">
+              <p>Created: {{ employee.created_at|date:"M d, Y g:i A" }}</p>
+              {% if employee.created_at != employee.updated_at %}
+                <p>Last modified: {{ employee.updated_at|date:"M d, Y g:i A" }}</p>
+              {% endif %}
+              {% if employee.created_by %}
+                <p>Created by: {{ employee.created_by.get_full_name|default:employee.created_by.username }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-between items-center pt-6 border-t border-slate-200 mt-6">
+          <!-- Left side actions (edit mode only) -->
+          <div class="flex items-center space-x-3">
+            {% if employee %}
+              <a href="{% url 'employee:detail' employee.id %}"
+                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- Right side actions -->
+          <div class="flex items-center space-x-3">
+            <a href="{% url 'employee:list' %}"
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
+              Cancel
+            </a>
+            
+            <button type="submit" 
+                    id="submit-btn"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {% if employee %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                {% else %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                {% endif %}
+              </svg>
+              {% if employee %}
+                Update Employee
+              {% else %}
+                Create Employee
+              {% endif %}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('employeeForm');
+    const formMode = form.dataset.mode; // 'add' or 'edit'
+    const employeeId = form.dataset.employeeId;
+    const roleField = document.getElementById('{{ form.role.id_for_label }}');
+    const statusField = document.getElementById('{{ form.status.id_for_label }}');
+    const emailField = document.getElementById('{{ form.email.id_for_label }}');
+    const laborCountField = document.getElementById('labor-count-field');
+    const pmInfo = document.getElementById('pm-info');
+    const emailRequiredIndicator = document.getElementById('email-required-indicator');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Form-specific storage keys
+    const draftKey = formMode === 'edit' ? `employee_form_draft_${employeeId}` : 'employee_form_draft_new';
+    const autoSaveKey = formMode === 'edit' ? `employee_form_autosave_${employeeId}` : 'employee_form_autosave_new';
+
+    // Enhanced field validation with visual feedback
+    function validateField(field) {
+        const isValid = field.checkValidity() && field.value.trim() !== '';
+        
+        if (isValid) {
+            field.classList.remove('border-red-500', 'ring-red-500/20');
+            field.classList.add('border-green-500', 'ring-green-500/20');
+        } else {
+            field.classList.remove('border-green-500', 'ring-green-500/20');
+        }
+        
+        return isValid;
+    }
+
+    // Handle role-specific behavior with smooth animations
+    function handleRoleChange() {
+        const selectedRole = roleField.value;
+        const selectedStatus = statusField.value;
+        
+        // Handle Project Manager role
+        if (selectedRole === 'project_manager' || selectedRole === 'PM') {
+            pmInfo.classList.remove('hidden');
+            pmInfo.style.opacity = '0';
+            pmInfo.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                pmInfo.style.opacity = '1';
+                pmInfo.style.transform = 'translateY(0)';
+                pmInfo.style.transition = 'all 0.3s ease-out';
+            }, 10);
+            
+            emailField.setAttribute('required', 'required');
+            emailRequiredIndicator.classList.remove('hidden');
+        } else {
+            pmInfo.style.opacity = '0';
+            pmInfo.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                pmInfo.classList.add('hidden');
+            }, 300);
+            
+            emailField.removeAttribute('required');
+            emailRequiredIndicator.classList.add('hidden');
+        }
+        
+        // Handle labor count field for contract/temporary status
+        if (selectedStatus === 'contract' || selectedStatus === 'temporary') {
+            laborCountField.classList.remove('hidden');
+            laborCountField.style.opacity = '0';
+            laborCountField.style.transform = 'translateX(-10px)';
+            
+                            setTimeout(() => {
+                laborCountField.style.opacity = '1';
+                laborCountField.style.transform = 'translateX(0)';
+                laborCountField.style.transition = 'all 0.3s ease-out';
+            }, 10);
+        } else {
+            laborCountField.style.opacity = '0';
+            laborCountField.style.transform = 'translateX(-10px)';
+            
+            setTimeout(() => {
+                laborCountField.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    // Enhanced form submission with loading states
+    function handleSubmissionState() {
+        submitBtn.disabled = true;
+        const originalText = submitBtn.innerHTML;
+        
+        if (formMode === 'edit') {
+            submitBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Updating...
+            `;
+        } else {
+            submitBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating...
+            `;
+        }
+        
+        // Add pulsing effect to submit button
+        submitBtn.classList.add('animate-pulse');
+        
+        // Restore button after timeout (fallback)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('animate-pulse');
+        }, 10000);
+    }
+
+    // Auto-format phone number with enhanced UX
+    const phoneField = document.getElementById('{{ form.phone.id_for_label }}');
+if (phoneField) {
+    phoneField.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        // Handle different Philippine number formats
+        if (value.startsWith('63')) {
+            // International format starting with 63
+            if (value.length >= 12) {
+                value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})/, '+$1 $2 $3 $4');
+            } else if (value.length >= 9) {
+                value = value.replace(/(\d{2})(\d{3})(\d{3})/, '+$1 $2 $3');
+            } else if (value.length >= 5) {
+                value = value.replace(/(\d{2})(\d{3})/, '+$1 $2');
+            } else {
+                value = '+' + value;
+            }
+        } else if (value.startsWith('9')) {
+            // Mobile number starting with 9
+            if (value.length >= 10) {
+                value = value.replace(/(\d{3})(\d{3})(\d{4})/, '0$1 $2 $3');
+            } else if (value.length >= 7) {
+                value = value.replace(/(\d{3})(\d{3})/, '0$1 $2');
+            } else if (value.length >= 3) {
+                value = '0' + value.replace(/(\d{3})/, '$1 ');
+            } else {
+                value = '0' + value;
+            }
+        } else if (value.startsWith('0')) {
+            // Already starts with 0
+            if (value.length >= 11) {
+                value = value.replace(/(\d{4})(\d{3})(\d{4})/, '$1 $2 $3');
+            } else if (value.length >= 8) {
+                value = value.replace(/(\d{4})(\d{3})/, '$1 $2');
+            }
+        } else if (value.length > 0) {
+            // Assume it's a mobile number, add 09 prefix
+            if (value.length >= 9) {
+                value = value.replace(/(\d{2})(\d{3})(\d{4})/, '09$1 $2 $3');
+            } else if (value.length >= 6) {
+                value = value.replace(/(\d{2})(\d{3})/, '09$1 $2');
+            } else if (value.length >= 2) {
+                value = '09' + value.replace(/(\d{2})/, '$1 ');
+            } else {
+                value = '09' + value;
+            }
+        }
+        
+        e.target.value = value;
+        validateField(e.target);
+    });
+}
+
+    // Enhanced form validation with smooth error handling
+    function validateForm() {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        let firstErrorField = null;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('border-red-500', 'ring-4', 'ring-red-500/20');
+                field.classList.remove('border-green-500', 'ring-green-500/20');
+                
+                // Add shake animation for invalid fields
+                field.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    field.style.animation = '';
+                }, 500);
+                
+                if (!firstErrorField) firstErrorField = field;
+                isValid = false;
+            } else {
+                validateField(field);
+            }
+        });
+        
+        // Smooth scroll to first error
+        if (firstErrorField) {
+            firstErrorField.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+            });
+            
+            setTimeout(() => {
+                firstErrorField.focus();
+            }, 500);
+        }
+        
+        return isValid;
+    }
+
+    // Auto-save functionality (with different keys for add/edit)
+    let autoSaveTimeout;
+    function autoSave() {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => {
+            const formData = new FormData(form);
+            const formDataObj = {};
+            for (let [key, value] of formData.entries()) {
+                formDataObj[key] = value;
+            }
+            
+            // Use mode-specific storage key
+            sessionStorage.setItem(draftKey, JSON.stringify(formDataObj));
+            
+            // Show auto-save indicator
+            showNotification('Draft saved', 'success', 2000);
+        }, 2000);
+    }
+
+    // Enhanced notification system
+    function showNotification(message, type = 'info', duration = 3000) {
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+
+        const icons = {
+            success: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                      </svg>`,
+            error: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                   </svg>`,
+            warning: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                       <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                     </svg>`,
+            info: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                  </svg>`
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-y-2 opacity-0`;
+        notification.innerHTML = `
+            <div class="flex items-center space-x-2">
+                ${icons[type]}
+                <span class="text-sm font-medium">${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        
+        // Animate out and remove
+        setTimeout(() => {
+            notification.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => notification.remove(), 300);
+        }, duration);
+    }
+
+    // Event listeners with enhanced UX
+    if (roleField) {
+        roleField.addEventListener('change', handleRoleChange);
+        roleField.addEventListener('change', autoSave);
+    }
+    
+    if (statusField) {
+        statusField.addEventListener('change', handleRoleChange);
+        statusField.addEventListener('change', autoSave);
+    }
+
+    // Add validation and auto-save to all form fields
+    const allFields = form.querySelectorAll('input, select, textarea');
+    allFields.forEach(field => {
+        field.addEventListener('blur', () => validateField(field));
+        field.addEventListener('input', autoSave);
+        
+        // Enhanced focus states
+        field.addEventListener('focus', () => {
+            field.parentNode.classList.add('ring-4', 'ring-indigo-500/20');
+        });
+        
+        field.addEventListener('blur', () => {
+            field.parentNode.classList.remove('ring-4', 'ring-indigo-500/20');
+        });
+    });
+
+    // Enhanced keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (validateForm()) {
+                form.submit();
+            }
+        }
+        
+        // ESC to cancel
+        if (e.key === 'Escape') {
+            const cancelBtn = document.querySelector('a[href*="list"]');
+            if (cancelBtn) {
+                if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    cancelBtn.click();
+                }
+            }
+        }
+    });
+
+    // Form submission with enhanced UX
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            showNotification('Please fix the highlighted errors', 'error', 4000);
+            return false;
+        } else {
+            handleSubmissionState();
+            // Clear draft on successful submission
+            sessionStorage.removeItem(draftKey);
+        }
+    });
+
+    // Load draft data on page load (only for add mode or if explicitly requested)
+    if (formMode === 'add') {
+        const savedDraft = sessionStorage.getItem(draftKey);
+        if (savedDraft) {
+            try {
+                const draftData = JSON.parse(savedDraft);
+                let hasRestoredData = false;
+                
+                Object.keys(draftData).forEach(key => {
+                    const field = form.querySelector(`[name="${key}"]`);
+                    if (field && !field.value && draftData[key]) {
+                        field.value = draftData[key];
+                        hasRestoredData = true;
+                    }
+                });
+                
+                if (hasRestoredData) {
+                    showNotification('Draft data restored', 'info', 3000);
+                }
+            } catch (e) {
+                console.log('Could not load draft data');
+                sessionStorage.removeItem(draftKey);
+            }
+        }
+    }
+
+    // Warn about unsaved changes
+    let hasUnsavedChanges = false;
+    allFields.forEach(field => {
+        field.addEventListener('input', () => {
+            hasUnsavedChanges = true;
+        });
+    });
+
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges && formMode === 'add') {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            return e.returnValue;
+        }
+    });
+
+    // Initialize on page load
+    handleRoleChange();
+    
+    // Add shake animation to CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .group:focus-within .group-focus-within\\:text-indigo-500 {
+            color: rgb(99 102 241);
+        }
+        
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Show different success messages based on mode
+    form.addEventListener('submit', function() {
+        if (validateForm()) {
+            const successMessage = formMode === 'edit' 
+                ? 'Employee information updated successfully!' 
+                : 'Employee created successfully!';
+            
+            // This would typically be handled by Django messages framework
+            console.log(successMessage);
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/employees/form.js' %}"></script>
+{% endblock %}

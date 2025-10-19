@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xero Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status.connected {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status.disconnected {
+            background-color: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+        
+        .org-selector-wrapper {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .org-selector {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .org-selector:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        
+        .org-selector.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .org-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .org-type {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .org-active {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item-main {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .list-item-title {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .list-item-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .list-item-value {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .badge-active {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge-paid {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge-draft {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+        
+        .badge-authorised {
+            background-color: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .connect-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .connect-btn:hover {
+            background-color: #2563eb;
+        }
+        
+        .connect-btn.secondary {
+            background-color: #6b7280;
+        }
+        
+        .connect-btn.secondary:hover {
+            background-color: #4b5563;
+        }
+        
+        .org-info {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border-radius: 6px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .org-info h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .org-detail {
+            margin: 6px 0;
+            opacity: 0.9;
+        }
+        
+        .error {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            border-radius: 6px;
+            color: #dc2626;
+            margin-bottom: 24px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+        
+        .amount-positive {
+            color: #059669;
+        }
+        
+        .amount-negative {
+            color: #dc2626;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .org-selector-wrapper {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Xero Dashboard</h1>
+            {% if connected %}
+                <div class="status connected">
+                    <span>●</span> Connected
+                </div>
+            {% else %}
+                <div class="status disconnected">
+                    <span>●</span> Disconnected
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if error %}
+            <div class="error">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+        
+        {% if not connected %}
+            <div class="card">
+                <div class="empty-state">
+                    <h2>Connect to Xero</h2>
+                    <p>Connect your Xero account to view financial data and manage your business.</p>
+                    <div style="margin-top: 24px;">
+                        <a href="/xero/connect/" class="connect-btn">Connect to Xero</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            
+            <!-- Organization Selector -->
+            {% if available_orgs|length > 1 %}
+            <div class="card">
+                <h2>Select Organization</h2>
+                <div class="org-selector-wrapper">
+                    {% for org in available_orgs %}
+                    <div class="org-selector {% if current_org.tenantId == org.tenantId %}active{% endif %}" 
+                         onclick="switchOrganization('{{ org.tenantId }}', '{{ org.tenantName }}')">
+                        <div class="org-name">{{ org.tenantName }}</div>
+                        <div class="org-type">{{ org.tenantType }}</div>
+                        {% if current_org.tenantId == org.tenantId %}
+                        <div class="org-active">● Current</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Organization Info -->
+            {% if organization %}
+            <div class="card">
+                <div class="org-info">
+                    <h3>{{ organization.Name }}</h3>
+                    <div class="org-detail"><strong>Legal Name:</strong> {{ organization.LegalName }}</div>
+                    <div class="org-detail"><strong>Country:</strong> {{ organization.CountryCode }}</div>
+                    <div class="org-detail"><strong>Currency:</strong> {{ organization.BaseCurrency }}</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Financial Summary -->
+            <div class="card">
+                <h2>Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ financial_summary.total_contacts }}</div>
+                        <div class="stat-label">Contacts</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ financial_summary.total_invoices }}</div>
+                        <div class="stat-label">Invoices</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${{ financial_summary.total_revenue|floatformat:0 }}</div>
+                        <div class="stat-label">Revenue</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${{ financial_summary.outstanding_amount|floatformat:0 }}</div>
+                        <div class="stat-label">Outstanding</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Grid -->
+            <div class="grid">
+                <!-- Recent Contacts -->
+                <div class="card">
+                    <h2>Recent Contacts</h2>
+                    {% for contact in contacts %}
+                    <div class="list-item">
+                        <div class="list-item-main">
+                            <div class="list-item-title">{{ contact.Name }}</div>
+                            <div class="list-item-subtitle">{{ contact.EmailAddress|default:"No email" }}</div>
+                        </div>
+                        <div class="badge badge-active">{{ contact.ContactStatus }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <p>No contacts found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Recent Invoices -->
+                <div class="card">
+                    <h2>Recent Invoices</h2>
+                    {% for invoice in invoices %}
+                    <div class="list-item">
+                        <div class="list-item-main">
+                            <div class="list-item-title">{{ invoice.InvoiceNumber }}</div>
+                            <div class="list-item-subtitle">{{ invoice.Date|date:"M d, Y" }}</div>
+                        </div>
+                        <div>
+                            <div class="list-item-value">${{ invoice.Total|floatformat:2 }}</div>
+                            <div class="badge badge-{{ invoice.Status|lower }}">{{ invoice.Status }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <p>No invoices found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="card">
+                    <h2>Recent Transactions</h2>
+                    {% for transaction in bank_transactions %}
+                    <div class="list-item">
+                        <div class="list-item-main">
+                            <div class="list-item-title">{{ transaction.Reference|default:"Transaction" }}</div>
+                            <div class="list-item-subtitle">{{ transaction.Date|date:"M d, Y" }}</div>
+                        </div>
+                        <div class="list-item-value {% if transaction.Total < 0 %}amount-negative{% else %}amount-positive{% endif %}">
+                            ${{ transaction.Total|floatformat:2 }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <p>No transactions found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="card">
+                <div class="actions">
+                    <a href="/xero/test/" class="connect-btn secondary">Test API</a>
+                    <a href="/xero/sync-clients/" class="connect-btn secondary">Sync Clients</a>
+                    <a href="/xero/connect/" class="connect-btn">Reconnect</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        function switchOrganization(tenantId, orgName) {
+            // Show loading state
+            const selectors = document.querySelectorAll('.org-selector');
+            selectors.forEach(selector => {
+                selector.style.opacity = '0.5';
+                selector.style.pointerEvents = 'none';
+            });
+            
+            fetch('/xero/switch-org/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: 'tenant_id=' + encodeURIComponent(tenantId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to switch organization: ' + data.error);
+                    selectors.forEach(selector => {
+                        selector.style.opacity = '1';
+                        selector.style.pointerEvents = 'auto';
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while switching organizations');
+                selectors.forEach(selector => {
+                    selector.style.opacity = '1';
+                    selector.style.pointerEvents = 'auto';
+                });
+            });
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

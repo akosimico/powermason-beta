@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
+    <h1 class="text-3xl mb-6 text-gray-900">Project Costing Dashboard</h1>
+
+    <div class="border border-gray-200 rounded-xl shadow overflow-x-auto">
+        <table class="w-full table-auto text-sm">
+            <thead class="bg-blue-50 text-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Project ID</th>
+                    <th class="px-4 py-3 text-left font-medium">Name</th>
+                    <th class="px-4 py-3 text-center font-medium">Allocated</th>
+                    <th class="px-4 py-3 text-center font-medium">Spent</th>
+                    <th class="px-4 py-3 text-center font-medium">Remaining</th>
+                    <th class="px-4 py-3 text-center font-medium">Utilization</th>
+                    <th class="px-4 py-3 text-center font-medium">Status</th>
+                    <th class="px-4 py-3 text-center font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in projects_with_totals %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-2 font-medium text-gray-900">{{ item.project.project_id }}</td>
+                    <td class="px-4 py-2 text-gray-900">{{ item.project.project_name }}</td>
+
+                    <!-- Allocated -->
+                    <td class="px-4 py-2 text-center text-gray-800">
+                        ₱{{ item.total_allocated|floatformat:2|intcomma }}
+                    </td>
+
+                    <!-- Spent -->
+                    <td class="px-4 py-2 text-center {% if item.total_spent > item.total_allocated %}text-red-600 font-semibold{% else %}text-gray-800{% endif %}">
+                        ₱{{ item.total_spent|floatformat:2|intcomma }}
+                    </td>
+
+                    <!-- Remaining -->
+                    <td class="px-4 py-2 text-center">
+                        <span class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full
+                            {% if item.remaining < 0 %} bg-red-100 text-red-800
+                            {% elif item.remaining == 0 %} bg-gray-100 text-gray-800
+                            {% else %} bg-green-100 text-green-800 {% endif %}">
+                            ₱{{ item.remaining|floatformat:2|intcomma }}
+                            {% if item.remaining < 0 %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                                </svg>
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <!-- Utilization -->
+                    <td class="px-4 py-2 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if item.utilization >= 90 %}bg-red-100 text-red-800
+                            {% elif item.utilization >= 75 %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ item.utilization|floatformat:1 }}%
+                        </span>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-4 py-2 text-center">
+                        <span class="px-2.5 py-1 inline-flex text-xs font-medium rounded-full
+                        {% if item.project.status == 'CP' %} bg-green-100 text-green-700
+                        {% elif item.project.status == 'OG' %} bg-blue-100 text-blue-700
+                        {% elif item.project.status == 'PL' %} bg-gray-100 text-gray-700
+                        {% elif item.project.status == 'CN' %} bg-red-100 text-red-700
+                        {% else %} bg-yellow-100 text-yellow-700 {% endif %}">
+                            {{ item.project.get_status_display }}
+                        </span>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-4 py-2 text-center">
+                        <div class="flex flex-col space-y-2">
+                            {% if not item.project.approved_budget %}
+                                <a href="{% url 'approve_budget' item.project.id %}"
+                                   class="inline-block bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition text-xs">
+                                   Set Budget
+                                </a>
+                            {% else %}
+                                <a href="{% url 'project_detail_cost_dashboard' item.project.id %}"
+                                   class="inline-block bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 transition text-xs">
+                                    <i class="fas fa-chart-line mr-1"></i>View Details
+                                </a>
+                                <a href="{% url 'project_allocate_budget' item.project.id %}"
+                                   class="inline-block bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition text-xs">
+                                    Allocate
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-6 text-gray-500">No projects found.</td>
+                </tr>
+                {% endfor %}
+
+                {% if projects_with_totals %}
+                <tr class="bg-gray-100 font-semibold text-gray-900">
+                    <td colspan="2" class="px-4 py-3 text-left">Grand Total</td>
+                    <td class="px-4 py-3 text-center">₱{{ grand_total_allocated|floatformat:2|intcomma }}</td>
+                    <td colspan="5"></td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

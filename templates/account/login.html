@@ -1,0 +1,299 @@
+{% extends "base_auth.html" %}
+{% load socialaccount %}
+{% load static %}
+{% load i18n %}
+{% load allauth account %}
+
+{% block head_title %}
+    {% trans "Sign In" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div class="max-w-5xl w-full bg-white shadow-2xl rounded-2xl overflow-hidden flex flex-col md:flex-row">
+
+        <!-- Left Column: Illustration / Branding -->
+        <div class="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center p-8">
+            <div class="text-center">
+                <img src="{% static 'img/powermason_logo.png' %}" alt="Company Logo" class="h-32 w-auto mx-auto mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">Welcome Back!</h2>
+                <p class="text-gray-700 text-sm">Sign in to continue managing your projects efficiently.</p>
+            </div>
+        </div>
+
+        <!-- Right Column: Login Form -->
+        <div class="w-full md:w-1/2 p-8">
+            <!-- Logo (optional for mobile) -->
+            <div class="flex justify-center md:justify-start mb-6 md:hidden">
+                <img src="{% static 'img/powermason_logo.png' %}" alt="Company Logo" class="h-20 w-auto">
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 text-center md:text-left">{% trans "Sign In" %}</h1>
+
+            <!-- Error Messages Alert -->
+            {% if form.errors or form.non_field_errors %}
+                <div id="errorAlert" class="mb-6 flex items-start p-4 rounded-lg bg-red-100 border border-red-300 text-red-700">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-red-800 mb-2">Please correct the following errors:</h3>
+                        <ul class="text-sm space-y-1">
+                            {% if form.non_field_errors %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if form.login.errors %}
+                                {% for error in form.login.errors %}
+                                    <li>Email: {{ error }}</li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if form.password.errors %}
+                                {% for error in form.password.errors %}
+                                    <li>Password: {{ error }}</li>
+                                {% endfor %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <button onclick="document.getElementById('errorAlert').style.display='none'"
+                            class="ml-4 text-red-500 hover:text-red-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            {% endif %}
+
+            <!-- Success Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-6 flex items-center justify-between p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 border border-green-300 text-green-700{% elif message.tags == 'info' %}bg-blue-100 border border-blue-300 text-blue-700{% elif message.tags == 'warning' %}bg-yellow-100 border border-yellow-300 text-yellow-700{% else %}bg-red-100 border border-red-300 text-red-700{% endif %}">
+                        <span class="text-sm font-medium">{{ message }}</span>
+                        <button onclick="this.parentElement.style.display='none'"
+                                class="ml-4 {% if message.tags == 'success' %}text-green-500 hover:text-green-700{% elif message.tags == 'info' %}text-blue-500 hover:text-blue-700{% elif message.tags == 'warning' %}text-yellow-500 hover:text-yellow-700{% else %}text-red-500 hover:text-red-700{% endif %}">
+                            ✕
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Sign up prompt -->
+            {% if not SOCIALACCOUNT_ONLY %}
+                <p class="text-sm text-gray-500 mb-6 text-center md:text-left">
+                    {% blocktranslate %}Don't have an account? 
+                    <a href="{{ signup_url }}" class="text-blue-600 hover:text-blue-700 font-semibold">Sign up</a>.
+                    {% endblocktranslate %}
+                </p>
+
+                {% url 'account_login' as login_url %}
+                <form method="post" action="{{ login_url }}" class="space-y-4" id="loginForm">
+                    {% csrf_token %}
+
+                    <!-- Email Field -->
+                    <div>
+                        <input type="email" name="login" placeholder="Email address" id="emailInput"
+                               class="w-full px-4 py-3 border {% if form.login.errors %}border-red-500 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               value="{{ form.login.value|default:'' }}"
+                               required>
+                        <div id="emailError" class="text-xs text-red-600 mt-1 hidden">Please enter a valid email address.</div>
+                        {% if form.login.errors %}
+                            {% for error in form.login.errors %}
+                                <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="relative space-y-2">
+                        <input id="password" type="password" name="password" placeholder="Password"
+                               class="w-full px-4 py-3 border {% if form.password.errors %}border-red-500 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               required>
+
+                        <!-- Eye icon button -->
+                        <button type="button" id="togglePassword"
+                                class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 4.5C5 4.5 1.73 8 0 10c1.73 2 5 5.5 10 5.5s8.27-3.5 10-5.5c-1.73-2-5-5.5-10-5.5zM10 14a4 4 0 110-8 4 4 0 010 8z"/>
+                                <path d="M10 8a2 2 0 100 4 2 2 0 000-4z"/>
+                            </svg>
+                        </button>
+
+                        <div id="passwordError" class="text-xs text-red-600 mt-1 hidden">Password is required.</div>
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="text-right">
+                            <a href="{% url 'account_reset_password' %}" class="text-xs text-gray-500 hover:underline">
+                                {% trans "Forgot your password?" %}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" name="remember" class="rounded border-gray-300" 
+                               {% if form.remember.value %}checked{% endif %}>
+                        {% trans "Remember Me" %}
+                    </label>
+
+                    <!-- Sign In Button with Loading State -->
+                    <button type="submit" id="submitBtn"
+                            class="w-full bg-blue-600 text-white py-3 rounded-xl text-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="btnText">{% trans "Sign In" %}</span>
+                        <span id="btnSpinner" class="hidden">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Signing In...
+                        </span>
+                    </button>
+
+                    <!-- Help Text -->
+                    <div class="text-xs text-gray-500 mt-4 text-center">
+                        <p>Need help? Check that your email is verified and you're using the correct password.</p>
+                    </div>
+                </form>
+            {% endif %}
+
+            {% if SOCIALACCOUNT_ENABLED %}
+                <!-- Divider -->
+                <div class="flex items-center my-6">
+                    <hr class="flex-grow border-gray-300">
+                    <span class="px-3 text-gray-400 text-sm font-medium">or</span>
+                    <hr class="flex-grow border-gray-300">
+                </div>
+
+                <!-- Google Sign In -->
+                <a href="{% provider_login_url 'google' %}"
+                   class="flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-xl hover:bg-gray-50 transition text-gray-700 font-medium">
+                    <img src="{% static 'img/google_logo.png' %}" alt="Google" class="w-5 h-5">
+                    <span>Sign in with Google</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    // Password toggle functionality
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#password');
+    const eyeIcon = document.querySelector('#eyeIcon');
+
+    togglePassword.addEventListener('click', function () {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.classList.toggle('text-gray-600');
+    });
+
+    // Form validation and user feedback
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+
+    // Real-time email validation
+    emailInput.addEventListener('input', function() {
+        const email = this.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email && !emailRegex.test(email)) {
+            this.classList.add('border-red-500', 'bg-red-50');
+            this.classList.remove('border-gray-300');
+            emailError.classList.remove('hidden');
+        } else {
+            this.classList.remove('border-red-500', 'bg-red-50');
+            this.classList.add('border-gray-300');
+            emailError.classList.add('hidden');
+        }
+    });
+
+    // Real-time password validation
+    passwordInput.addEventListener('input', function() {
+        if (this.value.length === 0) {
+            passwordError.classList.remove('hidden');
+            this.classList.add('border-red-500', 'bg-red-50');
+        } else {
+            passwordError.classList.add('hidden');
+            this.classList.remove('border-red-500', 'bg-red-50');
+            this.classList.add('border-gray-300');
+        }
+    });
+
+    // Form submission handling
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Validate email
+        const email = emailInput.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            emailInput.classList.add('border-red-500', 'bg-red-50');
+            emailError.classList.remove('hidden');
+            emailError.textContent = email ? 'Please enter a valid email address.' : 'Email is required.';
+            isValid = false;
+        }
+
+        // Validate password
+        if (!passwordInput.value) {
+            passwordInput.classList.add('border-red-500', 'bg-red-50');
+            passwordError.classList.remove('hidden');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            // Shake animation for invalid form
+            form.classList.add('animate-shake');
+            setTimeout(() => {
+                form.classList.remove('animate-shake');
+            }, 500);
+            return;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        btnText.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+    });
+
+    // Auto-hide success messages
+    document.addEventListener('DOMContentLoaded', function() {
+        const successMessages = document.querySelectorAll('.bg-green-100');
+        successMessages.forEach(function(message) {
+            setTimeout(function() {
+                message.style.opacity = '0';
+                setTimeout(() => message.style.display = 'none', 300);
+            }, 5000);
+        });
+    });
+
+    // Add shake animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

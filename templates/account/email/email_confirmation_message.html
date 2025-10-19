@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Confirmation - Powermason</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .welcome-text {
+            font-size: 18px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .confirmation-button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .confirmation-button:hover {
+            background-color: #1d4ed8;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .expiration-notice {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .security-note {
+            font-size: 14px;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">Powermason</div>
+            <div class="welcome-text">Welcome to our platform!</div>
+        </div>
+
+        <div class="content">
+            <p>Hi <strong>{{ user.first_name|default:user.email }}</strong>,</p>
+            
+            <p>We're excited to have you on board! To complete your registration and start managing your projects efficiently, please confirm your email address by clicking the button below:</p>
+
+            <div class="button-container">
+                <a href="{{ activate_url }}" class="confirmation-button">Confirm Your Email Address</a>
+            </div>
+
+            <div class="expiration-notice">
+                <strong>⏰ Important:</strong> This confirmation link will expire in <strong>{{ expiration_days }} days</strong> for security reasons.
+            </div>
+
+            <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #2563eb;">{{ activate_url }}</p>
+
+            <div class="security-note">
+                <p><strong>Didn't create an account with us?</strong> Please ignore this email - no account has been created.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Need help?</strong> Reply to this email or contact our support team.</p>
+            <p>Best regards,<br>The Powermason Team</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p>
+                <strong>Powermason</strong> - Streamline your projects and track progress with ease<br>
+                Website: <a href="https://powermason.com" style="color: #2563eb;">https://powermason.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

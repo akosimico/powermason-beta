@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Navigation -->
+        <nav class="mb-6">
+            <div class="flex items-center text-sm text-gray-600">
+                <button type="button" 
+                        onclick="window.location.href = `/projects/view/none/{{ project.pk }}/`"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors mr-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Project
+                </button>
+                <div class="flex items-center">
+                    <span class="text-gray-500">Projects</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="font-semibold text-gray-900">{{ project.project_name }}</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="text-gray-500">Scope Budget Allocation</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Scope Budget Allocation</h1>
+                    <p class="text-gray-600 mt-1">Distribute approved budget across project scopes</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500">Approved Budget</div>
+                    <div class="text-2xl font-bold text-green-600">₱{{ project.approved_budget|floatformat:2 }}</div>
+                </div>
+            </div>
+            
+            <!-- Budget Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <div class="text-sm text-blue-600 font-medium">Total Allocated</div>
+                    <div class="text-xl font-bold text-blue-900">₱{{ total_allocated|floatformat:2 }}</div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4">
+                    <div class="text-sm text-green-600 font-medium">Remaining</div>
+                    <div class="text-xl font-bold text-green-900">₱{{ remaining_budget|floatformat:2 }}</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <div class="text-sm text-purple-600 font-medium">Utilization</div>
+                    <div class="text-xl font-bold text-purple-900">{{ budget_utilization|floatformat:1 }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scope Budget Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Allocate Budget by Scope</h2>
+                    <p class="text-sm text-gray-600 mt-1">Enter budget amounts for each scope. Total cannot exceed approved budget.</p>
+                </div>
+                
+                <div class="divide-y divide-gray-200">
+                    {% for scope_data in scopes %}
+                    <div class="p-6 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900">{{ scope_data.scope.name }}</h3>
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        {{ scope_data.scope.weight }}% weight
+                                    </span>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500">Currently Allocated:</span>
+                                        <span class="font-medium text-gray-900">₱{{ scope_data.allocated_amount|floatformat:2 }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Used by Tasks:</span>
+                                        <span class="font-medium text-gray-900">₱{{ scope_data.allocated_to_tasks|floatformat:2 }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Utilization:</span>
+                                        <span class="font-medium {% if scope_data.utilization_percentage > 100 %}text-red-600{% elif scope_data.utilization_percentage > 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                            {{ scope_data.utilization_percentage|floatformat:1 }}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ml-6">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-gray-500">₱</span>
+                                    <input type="number" 
+                                           name="amount_{{ scope_data.scope.id }}"
+                                           value="{{ scope_data.allocated_amount }}"
+                                           min="0" 
+                                           step="0.01"
+                                           class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="0.00">
+                                </div>
+                                {% if scope_data.allocated_to_tasks > scope_data.allocated_amount %}
+                                <div class="text-xs text-red-600 mt-1">
+                                    ⚠️ Tasks exceed allocation
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p>No scopes found for this project.</p>
+                        <p class="text-sm mt-1">Create scopes first before allocating budget.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    <span id="total-display">Total: ₱0.00</span>
+                    <span class="ml-4" id="remaining-display">Remaining: ₱{{ project.approved_budget|floatformat:2 }}</span>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" 
+                            onclick="window.location.href = `/projects/view/none/{{ project.pk }}/`"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Save Allocation
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[name^="amount_"]');
+    const totalDisplay = document.getElementById('total-display');
+    const remainingDisplay = document.getElementById('remaining-display');
+    const approvedBudget = {{ project.approved_budget }};
+    
+    function updateTotals() {
+        let total = 0;
+        inputs.forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        
+        const remaining = approvedBudget - total;
+        
+        totalDisplay.textContent = `Total: ₱${total.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        remainingDisplay.textContent = `Remaining: ₱${remaining.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        
+        // Color coding
+        if (remaining < 0) {
+            remainingDisplay.className = 'ml-4 text-red-600 font-medium';
+        } else if (remaining < approvedBudget * 0.1) {
+            remainingDisplay.className = 'ml-4 text-yellow-600 font-medium';
+        } else {
+            remainingDisplay.className = 'ml-4 text-green-600 font-medium';
+        }
+    }
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', updateTotals);
+    });
+    
+    // Initial calculation
+    updateTotals();
+});
+</script>
+{% endblock %}

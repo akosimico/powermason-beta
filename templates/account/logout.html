@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load allauth i18n %}
+
+{% block head_title %}
+    {% trans "Sign Out" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-6">
+    <div class="max-w-md w-full bg-white shadow-xl rounded-2xl p-10 text-center">
+        
+        <!-- Title -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">{% trans "Sign Out" %}</h1>
+        
+        <!-- Message -->
+        <p class="text-gray-600 mb-8 leading-relaxed">
+            {% trans "Are you sure you want to sign out?" %}
+        </p>
+
+        <!-- Sign Out Form -->
+        {% url 'account_logout' as action_url %}
+        <form method="post" action="{{ action_url }}" class="space-y-4">
+            {% csrf_token %}
+            {{ redirect_field }}
+
+            <button type="submit"
+                    class="w-full bg-red-600 text-white py-3 rounded-lg text-lg font-medium hover:bg-red-700 transition">
+                {% trans "Sign Out" %}
+            </button>
+        </form>
+
+        <!-- Optional Cancel Link -->
+        <a href="{% url 'dashboard' %}" 
+           class="mt-4 inline-block text-sm text-gray-500 hover:underline">
+            {% trans "Cancel" %}
+        </a>
+
+    </div>
+</div>
+{% endblock content %}

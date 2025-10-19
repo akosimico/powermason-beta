@@ -1,0 +1,159 @@
+ERROR 2025-09-18 09:33:26,441 redis 8212 6592 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:27,703 redis 8212 26008 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:28,545 redis 8212 18856 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:29,619 redis 8212 13516 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:30,148 redis 8212 17760 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:30,537 redis 8212 6592 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:31,131 redis 8212 19596 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:33:31,767 redis 8212 26008 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:32,648 redis 8212 18856 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:33,729 redis 8212 13516 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:34,243 redis 8212 17760 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:35,214 redis 8212 19596 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:33:35,610 redis 8212 6592 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:36,878 redis 8212 26008 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:37,738 redis 8212 18856 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:38,807 redis 8212 13516 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:39,320 redis 8212 17760 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:40,299 redis 8212 19596 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:33:40,716 redis 8212 6592 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:41,975 redis 8212 26008 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:42,804 redis 8212 18856 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:43,894 redis 8212 13516 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:44,456 redis 8212 17760 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:45,387 redis 8212 19596 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:33:45,819 redis 8212 6592 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:47,101 redis 8212 26008 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:47,907 redis 8212 18856 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:49,002 redis 8212 13516 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:49,548 redis 8212 17760 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:50,482 redis 8212 19596 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:33:50,888 redis 8212 6592 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:52,183 redis 8212 26008 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:53,020 redis 8212 18856 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:54,120 redis 8212 13516 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:54,666 redis 8212 17760 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:55,571 redis 8212 19596 Connection to Redis lost: Retry (5/20) in 1.00 second.
+ERROR 2025-09-18 09:33:55,956 redis 8212 6592 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:33:57,270 redis 8212 26008 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:33:58,075 redis 8212 18856 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:33:59,206 redis 8212 13516 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:33:59,754 redis 8212 17760 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:34:00,654 redis 8212 19596 Connection to Redis lost: Retry (6/20) in 1.00 second.
+ERROR 2025-09-18 09:34:01,071 redis 8212 6592 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:02,351 redis 8212 26008 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:03,143 redis 8212 18856 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:04,321 redis 8212 13516 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:04,839 redis 8212 17760 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:05,718 redis 8212 19596 Connection to Redis lost: Retry (7/20) in 1.00 second.
+ERROR 2025-09-18 09:34:06,152 redis 8212 6592 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:07,443 redis 8212 26008 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:08,235 redis 8212 18856 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:09,419 redis 8212 13516 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:09,921 redis 8212 17760 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:10,818 redis 8212 19596 Connection to Redis lost: Retry (8/20) in 1.00 second.
+ERROR 2025-09-18 09:34:11,256 redis 8212 6592 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:12,529 redis 8212 26008 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:13,328 redis 8212 18856 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:14,459 redis 8212 13516 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:15,004 redis 8212 17760 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:15,907 redis 8212 19596 Connection to Redis lost: Retry (9/20) in 1.00 second.
+ERROR 2025-09-18 09:34:16,345 redis 8212 6592 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:17,637 redis 8212 26008 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:18,404 redis 8212 18856 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:19,571 redis 8212 13516 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:20,103 redis 8212 17760 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:20,995 redis 8212 19596 Connection to Redis lost: Retry (10/20) in 1.00 second.
+ERROR 2025-09-18 09:34:21,434 redis 8212 6592 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:22,755 redis 8212 26008 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:23,486 redis 8212 18856 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:24,654 redis 8212 13516 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:25,203 redis 8212 17760 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:26,105 redis 8212 19596 Connection to Redis lost: Retry (11/20) in 1.00 second.
+ERROR 2025-09-18 09:34:26,540 redis 8212 6592 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:27,864 redis 8212 26008 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:28,598 redis 8212 18856 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:29,765 redis 8212 13516 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:30,309 redis 8212 17760 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:31,221 redis 8212 19596 Connection to Redis lost: Retry (12/20) in 1.00 second.
+ERROR 2025-09-18 09:34:31,643 redis 8212 6592 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:32,978 redis 8212 26008 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:33,697 redis 8212 18856 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:34,871 redis 8212 13516 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:35,400 redis 8212 17760 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:36,316 redis 8212 19596 Connection to Redis lost: Retry (13/20) in 1.00 second.
+ERROR 2025-09-18 09:34:36,717 redis 8212 6592 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:38,073 redis 8212 26008 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:38,814 redis 8212 18856 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:40,000 redis 8212 13516 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:40,499 redis 8212 17760 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:41,413 redis 8212 19596 Connection to Redis lost: Retry (14/20) in 1.00 second.
+ERROR 2025-09-18 09:34:41,817 redis 8212 6592 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:43,168 redis 8212 26008 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:43,926 redis 8212 18856 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:45,094 redis 8212 13516 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:45,609 redis 8212 17760 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:46,510 redis 8212 19596 Connection to Redis lost: Retry (15/20) in 1.00 second.
+ERROR 2025-09-18 09:34:46,912 redis 8212 6592 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:48,298 redis 8212 26008 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:49,032 redis 8212 18856 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:50,218 redis 8212 13516 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:50,703 redis 8212 17760 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:51,595 redis 8212 19596 Connection to Redis lost: Retry (16/20) in 1.00 second.
+ERROR 2025-09-18 09:34:51,998 redis 8212 6592 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:53,380 redis 8212 26008 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:54,100 redis 8212 18856 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:55,301 redis 8212 13516 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:55,813 redis 8212 17760 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:56,689 redis 8212 19596 Connection to Redis lost: Retry (17/20) in 1.00 second.
+ERROR 2025-09-18 09:34:57,094 redis 8212 6592 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:34:58,487 redis 8212 26008 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:34:59,173 redis 8212 18856 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:35:00,381 redis 8212 13516 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:35:00,911 redis 8212 17760 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:35:01,734 redis 8212 19596 Connection to Redis lost: Retry (18/20) in 1.00 second.
+ERROR 2025-09-18 09:35:02,185 redis 8212 6592 Connection to Redis lost: Retry (19/20) in 1.00 second.
+ERROR 2025-09-18 09:35:03,584 redis 8212 26008 Connection to Redis lost: Retry (19/20) in 1.00 second.
+ERROR 2025-09-18 09:35:04,272 redis 8212 18856 Connection to Redis lost: Retry (19/20) in 1.00 second.
+ERROR 2025-09-18 09:35:05,456 redis 8212 13516 Connection to Redis lost: Retry (19/20) in 1.00 second.
+ERROR 2025-09-18 09:35:06,016 redis 8212 17760 Connection to Redis lost: Retry (19/20) in 1.00 second.
+ERROR 2025-09-18 09:35:06,841 redis 8212 19596 Connection to Redis lost: Retry (19/20) in 1.00 second.
+CRITICAL 2025-09-18 09:35:07,294 redis 8212 6592 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+CRITICAL 2025-09-18 09:35:08,708 redis 8212 26008 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+CRITICAL 2025-09-18 09:35:09,378 redis 8212 18856 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+CRITICAL 2025-09-18 09:35:10,533 redis 8212 13516 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+CRITICAL 2025-09-18 09:35:11,096 redis 8212 17760 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+CRITICAL 2025-09-18 09:35:11,933 redis 8212 19596 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+
+ERROR 2025-09-18 09:36:11,032 redis 8212 9416 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:36:11,997 redis 8212 17368 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:36:12,652 redis 8212 9560 Connection to Redis lost: Retry (0/20) now.
+ERROR 2025-09-18 09:36:15,108 redis 8212 9416 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:36:16,090 redis 8212 17368 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:36:16,716 redis 8212 9560 Connection to Redis lost: Retry (1/20) in 1.00 second.
+ERROR 2025-09-18 09:36:20,200 redis 8212 9416 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:36:21,182 redis 8212 17368 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:36:21,811 redis 8212 9560 Connection to Redis lost: Retry (2/20) in 1.00 second.
+ERROR 2025-09-18 09:36:25,271 redis 8212 9416 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:36:26,284 redis 8212 17368 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:36:26,923 redis 8212 9560 Connection to Redis lost: Retry (3/20) in 1.00 second.
+ERROR 2025-09-18 09:36:30,328 redis 8212 9416 Connection to Redis lost: Retry (4/20) in 1.00 second.
+ERROR 2025-09-18 09:36:31,367 redis 8212 17368 Connection to Redis lost: Retry (4/20) in 1.00 second.
+INFO 2025-09-18 10:33:49,231 tasks 19636 19496 Test task executed successfully at 2025-09-18 02:33:49.230624+00:00
+INFO 2025-09-18 10:38:29,108 tasks 11772 17796 Test task executed successfully at 2025-09-18 02:38:29.108817+00:00
+INFO 2025-09-18 10:38:29,147 trace 11772 17796 Task employees.tasks.test_task[f230c485-cf15-4487-9231-c65cc5d7bd56] succeeded in 0.038475100009236485s: 'Test task executed successfully at 2025-09-18 02:38:29.108817+00:00'
+ERROR 2025-09-19 14:53:05,111 redis 10652 24852 Connection to Redis lost: Retry (0/20) now.
+CRITICAL 2025-09-19 14:53:09,193 redis 10652 24852 
+Retry limit exceeded while trying to reconnect to the Celery redis result store backend. The Celery application must be restarted.
+

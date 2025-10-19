@@ -1,0 +1,33 @@
+{% if notifications %}
+    {% for notification in notifications %}
+        {% with notif_status=notification.notificationstatus_set.first %}
+            <div class="border-b border-gray-100 p-4 hover:bg-gray-50 transition-colors
+                {% if not notif_status.is_read %}bg-blue-50 border-l-4 border-l-blue-500{% endif %}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-800 {% if not notif_status.is_read %}font-semibold{% endif %}">
+                            {{ notification.message }}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            {{ notification.created_at|timesince }} ago
+                        </p>
+                    </div>
+                    {% if notification.link %}
+                        <a href="{{ notification.link }}" 
+                           class="text-blue-600 hover:text-blue-800 text-xs ml-2 flex-shrink-0">
+                            View →
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endwith %}
+    {% endfor %}
+{% else %}
+    <div class="text-center py-8 text-gray-500">
+        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <p class="font-medium">All caught up!</p>
+        <p class="text-sm">No new notifications</p>
+    </div>
+{% endif %}

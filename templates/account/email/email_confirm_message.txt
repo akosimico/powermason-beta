@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Powermason - Confirm Your Email</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 30px;
+            line-height: 1.7;
+        }
+        
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: transform 0.2s ease;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+        
+        .security-note {
+            background-color: #f3f4f6;
+            border-left: 4px solid #fbbf24;
+            padding: 16px 20px;
+            margin: 30px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .security-note h4 {
+            color: #d97706;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .security-note p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .footer-links {
+            margin-bottom: 20px;
+        }
+        
+        .footer-links a {
+            color: #3b82f6;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 14px;
+        }
+        
+        .footer-text {
+            color: #6b7280;
+            font-size: 12px;
+            margin: 0;
+        }
+        
+        .alternative-link {
+            background-color: #f8f9fa;
+            border: 2px dashed #d1d5db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .alternative-link p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .alternative-link a {
+            color: #3b82f6;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 20px;
+                border-radius: 8px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .cta-button {
+                padding: 14px 28px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Powermason</div>
+            <p class="header-subtitle">Welcome to Your Project Management Platform</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Hi {{ user.first_name|default:"there" }}! 👋
+            </div>
+            
+            <div class="message">
+                <p>Welcome to <strong>Powermason</strong>! We're thrilled to have you join our community of project managers and teams who are streamlining their work and tracking progress with ease.</p>
+                
+                <p>To get started and access all the powerful features Powermason has to offer, please confirm your email address by clicking the button below:</p>
+            </div>
+            
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ activate_url }}" class="cta-button">
+                    ✓ Confirm My Email Address
+                </a>
+            </div>
+            
+            <!-- Security Note -->
+            <div class="security-note">
+                <h4>🔒 Security Notice</h4>
+                <p>This confirmation link will expire in <strong>{{ expiration_days }} days</strong> for your security. If you didn't create an account with Powermason, please ignore this email.</p>
+            </div>
+            
+            <!-- Alternative Link -->
+            <div class="alternative-link">
+                <p>Button not working? Copy and paste this link into your browser:</p>
+                <a href="{{ activate_url }}">{{ activate_url }}</a>
+            </div>
+            
+            <div class="message">
+                <p>Once your email is confirmed, you'll be automatically signed in and can start:</p>
+                <ul>
+                    <li>🎯 Creating and managing projects</li>
+                    <li>📊 Tracking progress and milestones</li>
+                    <li>👥 Collaborating with your team</li>
+                    <li>📈 Generating insightful reports</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="https://powermason.com">Visit Website</a>
+                <a href="https://powermason.com/support">Get Support</a>
+                <a href="https://powermason.com/privacy">Privacy Policy</a>
+            </div>
+            <p class="footer-text">
+                © 2024 Powermason. All rights reserved.<br>
+                You received this email because you signed up for a Powermason account.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

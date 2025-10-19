@@ -1,0 +1,341 @@
+{% load static %}
+{% load humanize %}
+
+<!-- Skeleton Loading for Dashboard -->
+<div id="dashboard-skeleton" class="container mx-auto px-4 py-6 animate-pulse">
+    <!-- Header Skeleton -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="h-8 bg-gray-300 rounded-lg w-64 mb-2"></div>
+                <div class="h-4 bg-gray-300 rounded w-96"></div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <div class="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                    <div class="h-4 bg-gray-300 rounded w-24"></div>
+                </div>
+                <div class="w-10 h-10 bg-gray-300 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards Skeleton -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+                    <div class="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+                <div class="w-12 h-12 bg-gray-300 rounded-lg"></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+                    <div class="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+                <div class="w-12 h-12 bg-gray-300 rounded-lg"></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+                    <div class="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+                <div class="w-12 h-12 bg-gray-300 rounded-lg"></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+                    <div class="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+                <div class="w-12 h-12 bg-gray-300 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Skeleton -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="h-6 bg-gray-300 rounded w-32 mb-4"></div>
+            <div class="h-64 bg-gray-300 rounded"></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="h-6 bg-gray-300 rounded w-32 mb-4"></div>
+            <div class="h-64 bg-gray-300 rounded"></div>
+        </div>
+    </div>
+
+    <!-- Recent Projects Skeleton -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="h-6 bg-gray-300 rounded w-40 mb-4"></div>
+        <div class="space-y-3">
+            <div class="h-16 bg-gray-300 rounded"></div>
+            <div class="h-16 bg-gray-300 rounded"></div>
+            <div class="h-16 bg-gray-300 rounded"></div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-6" id="dashboard-content" style="display: none;">
+    <!-- Dashboard Update Indicator -->
+    <div id="dashboard-update-indicator" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-blue-500/90 backdrop-blur-sm text-white rounded-full text-sm font-medium shadow-lg transition-opacity duration-300" style="opacity: 0;">
+        <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <span>Ready</span>
+        </div>
+    </div>
+
+
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Project Dashboard</h1>
+                <p class="text-gray-600 mt-1">Welcome back, {{ user.get_full_name|default:user.username }}! Here's your project overview.</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Last updated</p>
+                    <p class="text-sm font-medium text-gray-900" id="lastUpdated">{{ last_updated|date:"M d, Y H:i" }}</p>
+                </div>
+                <button onclick="refreshDashboard()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stats-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Projects</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ metrics.total_projects }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Active Projects</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ metrics.active_projects }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Completed</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ metrics.completed_projects }}</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Budget</p>
+                    <p class="text-3xl font-bold text-gray-900">₱{{ metrics.total_budget|floatformat:0|intcomma }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Progress Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Project Progress</h3>
+                <div class="flex space-x-2">
+                    <button onclick="filterProjectsByStatus('CN')" data-status="CN" class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">Construction</button>
+                    <button onclick="filterProjectsByStatus('PL')" data-status="PL" class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors">Planning</button>
+                    <button onclick="filterProjectsByStatus('CP')" data-status="CP" class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors">Completed</button>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Budget Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Budget Overview</h3>
+                <div class="text-sm text-gray-500">
+                    Total: ₱{{ metrics.total_budget|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="budgetChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar and Recent Projects -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Calendar -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Project Calendar</h3>
+                <div class="flex space-x-2">
+                    <button onclick="showAllProjects()" class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors">All Projects</button>
+                </div>
+            </div>
+            <div class="calendar-container">
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <!-- Recent Projects -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Recent Projects</h3>
+            <div class="space-y-4">
+                {% for project in recent_projects %}
+                <div class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ project.name }}</p>
+                        <p class="text-xs text-gray-500">{{ project.status_display }}</p>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        {{ project.updated_at|date:"M d" }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Data from Django Context -->
+<script type="application/json" id="dashboard-ajax-data">
+{
+    "projects": {{ projects_json|safe }},
+    "metrics": {{ metrics_json|safe }},
+    "statusCounts": {{ status_counts_json|safe }},
+    "taskStatusCounts": {{ task_status_counts_json|safe }},
+    "recentTasks": {{ recent_tasks_json|safe }},
+    "lastUpdated": "{{ last_updated }}",
+    "token": "{{ token }}",
+    "role": "{{ role }}"
+}
+</script>
+
+<script src="{% static 'js/dashboard-essential.js' %}"></script>
+<script>
+    // Initialize dashboard data from JSON script tag
+    try {
+        const dataScript = document.getElementById('dashboard-ajax-data');
+        window.dashboardData = JSON.parse(dataScript.textContent);
+        console.log('📊 Dashboard AJAX data loaded:', window.dashboardData);
+    } catch (error) {
+        console.error('Failed to parse dashboard AJAX data:', error);
+        window.dashboardData = {
+            projects: [],
+            metrics: {},
+            statusCounts: {},
+            taskStatusCounts: {},
+            recentTasks: [],
+            lastUpdated: "",
+            token: "",
+            role: ""
+        };
+    }
+    
+    console.log('📊 Dashboard AJAX data initialized:', window.dashboardData);
+    
+    // Initialize dashboard charts and components with data
+    console.log('🚀 Dashboard AJAX initialization starting...');
+    console.log('📊 Dashboard data available:', !!window.dashboardData);
+    console.log('📊 Projects count:', window.dashboardData?.projects?.length || 0);
+    
+    // Show skeleton loading for dashboard components
+    if (typeof showDashboardSkeleton === 'function') {
+        showDashboardSkeleton();
+    }
+    
+    // Initialize dashboard with proper timing
+    setTimeout(() => {
+        console.log('📈 Initializing dashboard components...');
+        
+        // The essential dashboard script will handle all initialization
+        // We just need to trigger it with our data
+        if (typeof initializeEssentialDashboard === 'function') {
+            initializeEssentialDashboard();
+        } else {
+            console.warn('⚠️ Essential dashboard functions not available yet, retrying...');
+            setTimeout(() => {
+                if (typeof initializeEssentialDashboard === 'function') {
+                    initializeEssentialDashboard();
+                }
+            }, 1000);
+        }
+    }, 500);
+    
+    // Initialize dashboard when AJAX content is loaded
+    document.addEventListener('ajaxContentLoaded', function() {
+        console.log('🏠 Dashboard AJAX content loaded, initializing...');
+        setTimeout(() => {
+            if (typeof initializeEssentialDashboard === 'function') {
+                initializeEssentialDashboard();
+            }
+        }, 100);
+    });
+    
+    // Fallback for direct page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏠 Dashboard page loaded via DOMContentLoaded, initializing...');
+            setTimeout(() => {
+                if (typeof initializeEssentialDashboard === 'function') {
+                    initializeEssentialDashboard();
+                }
+            }, 200);
+        });
+    } else {
+        // DOM already loaded, load immediately
+        console.log('🏠 Dashboard page already loaded, initializing immediately...');
+        setTimeout(() => {
+            if (typeof initializeEssentialDashboard === 'function') {
+                initializeEssentialDashboard();
+            }
+        }, 200);
+    }
+</script>

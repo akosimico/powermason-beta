@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}3-Week Look-Ahead - {{ project.project_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .week-card {
+        @apply bg-white rounded-lg shadow-md p-6 mb-6;
+    }
+
+    .week-header {
+        @apply flex items-center justify-between mb-4 pb-3 border-b-2;
+    }
+
+    .task-card {
+        @apply bg-gray-50 rounded-lg p-4 mb-3 border-l-4 hover:shadow-md transition-shadow;
+    }
+
+    .task-card.planned { border-left-color: #9CA3AF; }
+    .task-card.ongoing { border-left-color: #3B82F6; }
+    .task-card.completed { border-left-color: #10B981; }
+
+    .week-1 { border-top-color: #3B82F6; }
+    .week-2 { border-top-color: #F59E0B; }
+    .week-3 { border-top-color: #8B5CF6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">3-Week Look-Ahead Schedule</h1>
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ project.project_id }} - {{ project.project_name }}
+                </p>
+                <p class="mt-1 text-sm text-gray-500">
+                    <i class="fas fa-calendar mr-2"></i>
+                    {{ today|date:"F d, Y" }} - {{ week_3_end|date:"F d, Y" }}
+                </p>
+            </div>
+
+            <div class="flex space-x-3">
+                <a href="{% url 'task_gantt_view'  project.id %}"
+                   class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                    <i class="fas fa-chart-bar mr-2"></i>Gantt View
+                </a>
+                <a href="{% url 'task_list' project.id  %}"
+                   class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-list mr-2"></i>List View
+                </a>
+                <a href="{% url 'project_view'  project.project_source|lower project.id %}"
+                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Project
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Week 1 -->
+    <div class="week-card week-1">
+        <div class="week-header">
+            <div>
+                <h2 class="text-2xl font-bold text-blue-600">Week 1</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ week_1_start|date:"M d" }} - {{ week_1_end|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="text-right">
+                <span class="text-sm text-gray-600">{{ week_1_tasks.count }} task{{ week_1_tasks.count|pluralize }}</span>
+            </div>
+        </div>
+
+        {% if week_1_tasks.exists %}
+            {% for task in week_1_tasks %}
+            <div class="task-card {{ task.status|lower }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 mb-1">{{ task.task_name }}</h4>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>
+                                <i class="fas fa-folder mr-1"></i>
+                                {{ task.scope.name }}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar mr-1"></i>
+                                {{ task.start_date|date:"M d" }} - {{ task.end_date|date:"M d" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ task.duration_days }} days
+                            </span>
+                            {% if task.assigned_to %}
+                            <span>
+                                <i class="fas fa-user mr-1"></i>
+                                {{ task.assigned_to.full_name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ml-4 text-right">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if task.status == 'CP' %}bg-green-100 text-green-800
+                            {% elif task.status == 'OG' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                        <div class="mt-2 text-sm font-semibold text-gray-700">
+                            {{ task.progress }}%
+                        </div>
+                    </div>
+                </div>
+
+                {% if task.description %}
+                <p class="mt-2 text-sm text-gray-600">{{ task.description|truncatewords:20 }}</p>
+                {% endif %}
+
+                {% if task.dependencies.exists %}
+                <div class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-link mr-1"></i>
+                    Depends on: {{ task.dependencies.all|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-calendar-check text-3xl mb-2"></i>
+                <p>No tasks scheduled for this week</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Week 2 -->
+    <div class="week-card week-2">
+        <div class="week-header">
+            <div>
+                <h2 class="text-2xl font-bold text-orange-600">Week 2</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ week_2_start|date:"M d" }} - {{ week_2_end|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="text-right">
+                <span class="text-sm text-gray-600">{{ week_2_tasks.count }} task{{ week_2_tasks.count|pluralize }}</span>
+            </div>
+        </div>
+
+        {% if week_2_tasks.exists %}
+            {% for task in week_2_tasks %}
+            <div class="task-card {{ task.status|lower }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 mb-1">{{ task.task_name }}</h4>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>
+                                <i class="fas fa-folder mr-1"></i>
+                                {{ task.scope.name }}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar mr-1"></i>
+                                {{ task.start_date|date:"M d" }} - {{ task.end_date|date:"M d" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ task.duration_days }} days
+                            </span>
+                            {% if task.assigned_to %}
+                            <span>
+                                <i class="fas fa-user mr-1"></i>
+                                {{ task.assigned_to.full_name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ml-4 text-right">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if task.status == 'CP' %}bg-green-100 text-green-800
+                            {% elif task.status == 'OG' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                        <div class="mt-2 text-sm font-semibold text-gray-700">
+                            {{ task.progress }}%
+                        </div>
+                    </div>
+                </div>
+
+                {% if task.description %}
+                <p class="mt-2 text-sm text-gray-600">{{ task.description|truncatewords:20 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-calendar-check text-3xl mb-2"></i>
+                <p>No tasks scheduled for this week</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Week 3 -->
+    <div class="week-card week-3">
+        <div class="week-header">
+            <div>
+                <h2 class="text-2xl font-bold text-purple-600">Week 3</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ week_3_start|date:"M d" }} - {{ week_3_end|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="text-right">
+                <span class="text-sm text-gray-600">{{ week_3_tasks.count }} task{{ week_3_tasks.count|pluralize }}</span>
+            </div>
+        </div>
+
+        {% if week_3_tasks.exists %}
+            {% for task in week_3_tasks %}
+            <div class="task-card {{ task.status|lower }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 mb-1">{{ task.task_name }}</h4>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>
+                                <i class="fas fa-folder mr-1"></i>
+                                {{ task.scope.name }}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar mr-1"></i>
+                                {{ task.start_date|date:"M d" }} - {{ task.end_date|date:"M d" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ task.duration_days }} days
+                            </span>
+                            {% if task.assigned_to %}
+                            <span>
+                                <i class="fas fa-user mr-1"></i>
+                                {{ task.assigned_to.full_name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ml-4 text-right">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if task.status == 'CP' %}bg-green-100 text-green-800
+                            {% elif task.status == 'OG' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                        <div class="mt-2 text-sm font-semibold text-gray-700">
+                            {{ task.progress }}%
+                        </div>
+                    </div>
+                </div>
+
+                {% if task.description %}
+                <p class="mt-2 text-sm text-gray-600">{{ task.description|truncatewords:20 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-calendar-check text-3xl mb-2"></i>
+                <p>No tasks scheduled for this week</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Summary -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-blue-800">
+                    <strong>Total Upcoming Tasks:</strong> {{ week_1_tasks.count|add:week_2_tasks.count|add:week_3_tasks.count }}
+                </p>
+                <p class="text-sm text-blue-700 mt-1">
+                    This 3-week look-ahead helps you plan resources, materials, and coordinate activities for upcoming work.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

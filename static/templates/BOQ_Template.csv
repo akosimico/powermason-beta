@@ -1,0 +1,26 @@
+Project Name,Residential House Construction
+Project Type,Residential
+Location,Manila, Philippines
+Client,John Doe
+Contractor,PowerMason Construction
+Lot Size (sqm),150
+Floor Area (sqm),120
+Project Category,Private
+Complexity Level,Mid Range
+Role/Type,General Contractor
+Date Prepared,2024-01-15
+Prepared By,Project Manager
+Project Value (PHP),=SUM(G18:G25)
+Cost per sqm (PHP),=B13/B6
+Total Items,=COUNTA(A18:A25)
+,,,,,,,,,,,
+Item #,Description,Section/Category,UOM,Quantity,Unit Cost,Total Cost,Material Cost,Labor Cost,Equipment Cost,Subcontractor Cost,Dependencies,Remarks
+1,Excavation for Foundation,Foundation,cu.m,15,500,=E18*F18,300,150,50,0,,Standard excavation depth 1.5m
+2,Concrete Foundation,Foundation,cu.m,12,8000,=E19*F19,5000,2500,500,0,1,Ready-mix concrete
+3,Structural Steel Frame,Structure,kg,2000,120,=E20*F20,8000,3000,1000,0,2,Grade 40 steel
+4,Concrete Slab,Structure,sqm,120,1500,=E21*F21,800,500,200,0,3,6-inch thick slab
+5,Electrical Installation,MEP,lot,1,25000,=E22*F22,15000,8000,2000,0,4,Complete electrical system
+6,Plumbing Installation,MEP,lot,1,18000,=E23*F23,12000,5000,1000,0,4,Complete plumbing system
+7,Floor Tiles,Finishing,sqm,120,800,=E24*F24,600,150,50,0,4,Ceramic tiles
+8,Painting Works,Finishing,sqm,300,200,=E25*F25,100,80,20,0,7,Interior and exterior
+TOTAL,,,=SUM(E18:E25),,=SUM(G18:G25),=SUM(H18:H25),=SUM(I18:I25),=SUM(J18:J25),=SUM(K18:K25),,

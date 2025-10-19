@@ -1,0 +1,80 @@
+<!-- Reusable Skeleton Loading Components -->
+
+<!-- Dashboard Stat Card Skeleton -->
+{% block skeleton_stat_card %}
+<div class="skeleton-stat-card">
+    <div class="skeleton skeleton-stat-icon"></div>
+    <div class="skeleton skeleton-stat-number"></div>
+    <div class="skeleton skeleton-stat-label"></div>
+</div>
+{% endblock %}
+
+<!-- Project List Item Skeleton -->
+{% block skeleton_project_item %}
+<div class="skeleton-project-item">
+    <div class="skeleton skeleton-avatar large"></div>
+    <div class="skeleton-project-content">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text medium"></div>
+        <div class="skeleton-project-meta">
+            <div class="skeleton skeleton-badge"></div>
+            <div class="skeleton skeleton-badge"></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Budget Row Skeleton -->
+{% block skeleton_budget_row %}
+<div class="skeleton-budget-row">
+    <div class="skeleton skeleton-text"></div>
+    <div class="skeleton skeleton-text short"></div>
+    <div class="skeleton skeleton-text short"></div>
+    <div class="skeleton skeleton-progress-bar"></div>
+    <div class="skeleton skeleton-badge"></div>
+</div>
+{% endblock %}
+
+<!-- Chart Skeleton -->
+{% block skeleton_chart %}
+<div class="skeleton skeleton-chart"></div>
+{% endblock %}
+
+<!-- Calendar Skeleton -->
+{% block skeleton_calendar %}
+<div class="skeleton-calendar">
+    {% for i in "1234567891011121314151617181920212223242526272829303132333435" %}
+    <div class="skeleton skeleton-calendar-day"></div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+<!-- Map Skeleton -->
+{% block skeleton_map %}
+<div class="skeleton skeleton-map"></div>
+{% endblock %}
+
+<!-- Table Skeleton (5 rows) -->
+{% block skeleton_table %}
+<div class="skeleton-container">
+    {% for i in "12345" %}
+    <div class="skeleton-table-row">
+        <div class="skeleton skeleton-table-cell"></div>
+        <div class="skeleton skeleton-table-cell"></div>
+        <div class="skeleton skeleton-table-cell"></div>
+        <div class="skeleton skeleton-table-cell"></div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+<!-- Generic Card Skeleton -->
+{% block skeleton_card %}
+<div class="skeleton-card">
+    <div class="skeleton skeleton-title"></div>
+    <div class="skeleton skeleton-text"></div>
+    <div class="skeleton skeleton-text medium"></div>
+    <div class="skeleton skeleton-text short"></div>
+</div>
+{% endblock %}

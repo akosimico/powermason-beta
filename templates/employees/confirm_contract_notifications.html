@@ -1,0 +1,283 @@
+{% extends "base_employee.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+  <!-- Header -->
+  <div class="bg-white border-b border-slate-200 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <nav class="flex items-center space-x-1 text-sm text-slate-500">
+          <a href="{% url 'employee:dashboard' %}" class="hover:text-slate-700">Dashboard</a>
+          <span>/</span>
+          <a href="{% url 'employee:list' %}" class="hover:text-slate-700">Employees</a>
+          <span>/</span>
+          <span class="text-slate-900 font-medium">Send Contract Notifications</span>
+        </nav>
+      </div>
+
+      <a href="{% url 'employee:list' %}"
+         class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Employees
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-900">Contract Expiry Notifications</h1>
+            <p class="text-sm text-slate-600">Review and send notifications for expiring/expired contracts</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6">
+
+        {% if total_notifications > 0 %}
+          <!-- Summary Card -->
+          <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 class="text-lg font-semibold text-red-900">
+                  {{ total_notifications }} Contract{{ total_notifications|pluralize }} Need{{ total_notifications|pluralize:"s," }} Attention
+                </h3>
+                <p class="text-red-700">
+                  {% if expired_count > 0 %}
+                    {{ expired_count }} contract{{ expired_count|pluralize }} {% if expired_count == 1 %}has{% else %}have{% endif %} already expired{% if expiring_count > 0 %} and {{ expiring_count }} {% if expiring_count == 1 %}is{% else %}are{% endif %} expiring soon{% endif %}.
+                  {% else %}
+                    {{ expiring_count }} contract{{ expiring_count|pluralize }} {% if expiring_count == 1 %}is{% else %}are{% endif %} expiring within 30 days.
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statistics Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {% if expired_count > 0 %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-red-600 text-sm font-medium">Expired Contracts</p>
+                  <p class="text-2xl font-bold text-red-900">{{ expired_count }}</p>
+                </div>
+                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="text-red-600 text-xs mt-1">Requires immediate attention</p>
+            </div>
+            {% endif %}
+
+            {% if expiring_count > 0 %}
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-orange-600 text-sm font-medium">Expiring Soon</p>
+                  <p class="text-2xl font-bold text-orange-900">{{ expiring_count }}</p>
+                </div>
+                <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="text-orange-600 text-xs mt-1">Within 30 days</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Employee Details -->
+          {% if expiring_employees or expired_employees %}
+          <div class="space-y-6">
+            {% if expired_employees %}
+            <div>
+              <h3 class="text-lg font-semibold text-red-900 mb-3 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Expired Contracts ({{ expired_employees|length }})
+              </h3>
+              <div class="grid grid-cols-1 gap-3">
+                {% for employee in expired_employees %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm font-medium">
+                          {{ employee.first_name|first }}{{ employee.last_name|first }}
+                        </span>
+                      </div>
+                      <div>
+                        <p class="font-medium text-slate-900">{{ employee.full_name }}</p>
+                        <p class="text-sm text-slate-600">{{ employee.get_role_display }} • {{ employee.employee_id }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm font-medium text-red-900">Expired</p>
+                      <p class="text-xs text-red-600">{{ employee.contract_end_date|date:"M j, Y" }}</p>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if expiring_employees %}
+            <div>
+              <h3 class="text-lg font-semibold text-orange-900 mb-3 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Expiring Soon ({{ expiring_employees|length }})
+              </h3>
+              <div class="grid grid-cols-1 gap-3">
+                {% for employee in expiring_employees %}
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm font-medium">
+                          {{ employee.first_name|first }}{{ employee.last_name|first }}
+                        </span>
+                      </div>
+                      <div>
+                        <p class="font-medium text-slate-900">{{ employee.full_name }}</p>
+                        <p class="text-sm text-slate-600">{{ employee.get_role_display }} • {{ employee.employee_id }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm font-medium text-orange-900">{{ employee.days_until_contract_expiry }} day{{ employee.days_until_contract_expiry|pluralize }} left</p>
+                      <p class="text-xs text-orange-600">{{ employee.contract_end_date|date:"M j, Y" }}</p>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- Action Confirmation -->
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
+            <div class="flex items-start space-x-3">
+              <svg class="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 18.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div>
+                <h4 class="text-sm font-medium text-yellow-800">Confirm Action</h4>
+                <p class="text-sm text-yellow-700 mt-1">
+                  This will send email notifications to HR, Operations, and the affected employees about their contract status.
+                  Notifications will be sent to:
+                </p>
+                <ul class="list-disc list-inside text-sm text-yellow-700 mt-2 ml-4">
+                  <li>hr@powermason.com</li>
+                  <li>operations@powermason.com</li>
+                  <li>powermasonwebsite@gmail.com</li>
+                  <li>Each employee's email (if available)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <form method="post" class="mt-6">
+            {% csrf_token %}
+            <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+              <a href="{% url 'employee:list' %}"
+                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Cancel
+              </a>
+
+              <button type="submit"
+                      class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                      id="send-btn">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span id="send-text">Send {{ total_notifications }} Notification{{ total_notifications|pluralize }}</span>
+              </button>
+            </div>
+          </form>
+
+        {% else %}
+          <!-- No notifications needed -->
+          <div class="text-center py-12">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900 mb-2">All Contracts Up to Date</h3>
+            <p class="text-slate-600 mb-4">
+              No contracts are expiring within the next 30 days or have already expired.
+            </p>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 max-w-md mx-auto">
+              <p class="text-sm text-green-700">
+                <span class="font-medium">Good news!</span> All employee contracts are current and no immediate action is required.
+              </p>
+            </div>
+            <div class="mt-6">
+              <a href="{% url 'employee:list' %}"
+                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Employees
+              </a>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const sendBtn = document.getElementById('send-btn');
+    const sendText = document.getElementById('send-text');
+
+    if (form && sendBtn) {
+        form.addEventListener('submit', function() {
+            sendBtn.disabled = true;
+            sendText.textContent = 'Sending...';
+            sendBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Sending...</span>
+            `;
+        });
+    }
+});
+</script>
+
+{% endblock %}

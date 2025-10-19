@@ -1,0 +1,1210 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8" data-project-manpower="{{ project.number_of_laborers|default:0 }}">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Add New Task</h1>
+                    <p class="text-gray-600 mt-1">Create a new task for {{ project.project_name }}</p>
+                </div>
+            </div>
+            
+            <!-- Progress Indicator -->
+            <div class="flex items-center space-x-4">
+                <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="form-progress" class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div id="auto-save-status" class="flex items-center space-x-2 opacity-0 transition-all duration-500 transform">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span class="text-xs font-medium text-green-600">Auto-saved</span>
+                    </div>
+                    <span id="progress-text" class="text-sm font-medium text-gray-600">0% Complete</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <form method="post" id="task-form" class="space-y-0" novalidate>
+                {% csrf_token %}
+                
+                <!-- Form Sections -->
+                <div class="divide-y divide-gray-200">
+                    <!-- Section 1: Basic Information -->
+                    <div class="p-8 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</div>
+                            Basic Information
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Scope Selection -->
+                            <div class="lg:col-span-2">
+                                <label for="id_scope" class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Project Scope <span class="text-red-500">*</span>
+                                </label>
+                                
+                                <select name="scope" id="id_scope" required 
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200 appearance-none bg-white">
+                                    <option value="">Select a scope...</option>
+                                    {% for scope in budget_scopes %}
+                                        <option value="{{ scope.id }}" data-weight="{{ scope.weight }}">
+                                            {{ scope.name }} ({{ scope.weight }}% of project)
+                                        </option>
+                                    {% empty %}
+                                        <option value="" disabled>No budget planning scopes available</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Info message when no scopes are available -->
+                                {% if not budget_scopes %}
+                                <div class="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <div class="flex items-start space-x-3">
+                                        <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-amber-800">No Budget Planning Scopes Available</h4>
+                                            <p class="text-sm text-amber-700 mt-1">
+                                                You need to complete the budget planning phase first to create project scopes before creating tasks.
+                                                <a href="{% url 'budget_planning' project.id %}" class="underline font-medium hover:text-amber-800">
+                                                    Go to Budget Planning
+                                                </a>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div id="scope-info" class="mt-2 text-sm text-gray-600 opacity-0 transition-opacity duration-200"></div>
+                            </div>
+
+                            <!-- Task Name -->
+                            <div class="lg:col-span-2">
+                                <label for="id_task_name" class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Task Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="task_name" id="id_task_name" required
+                                       placeholder="Enter a descriptive task name..."
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200">
+                                <div class="mt-2 text-sm text-gray-500">
+                                    <span id="task-name-counter">0</span>/100 characters
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Timeline & Duration -->
+                    <div class="p-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</div>
+                            Timeline & Duration
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <!-- Start Date -->
+                            <div class="space-y-3">
+                                <label for="id_start_date" class="block text-sm font-semibold text-gray-700">
+                                    Start Date <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="date" name="start_date" id="id_start_date" required
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200">
+                                </div>
+                            </div>
+
+                            <!-- End Date -->
+                            <div class="space-y-3">
+                                <label for="id_end_date" class="block text-sm font-semibold text-gray-700">
+                                    End Date <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="date" name="end_date" id="id_end_date" required
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200">
+                                </div>
+                            </div>
+
+                            <!-- Duration (Auto-calculated) -->
+                            <div class="space-y-3">
+                                <label for="id_duration_days" class="block text-sm font-semibold text-gray-700">
+                                    Duration (Days)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" name="duration_days" id="id_duration_days" readonly
+                                           placeholder="Auto-calculated"
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed">
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500">Calculated from start and end dates</p>
+                            </div>
+
+                            <!-- Man Hours (Manual Input) -->
+                            <div class="space-y-3">
+                                <label for="id_manhours" class="block text-sm font-semibold text-gray-700">
+                                    Man Hours <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" name="manhours" id="id_manhours" required
+                                           placeholder="Enter manhours"
+                                           step="0.01" min="0"
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200">
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500">Total manhours required for this task</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Assignment & Weight -->
+                    <div class="p-8 bg-gradient-to-r from-purple-50 to-pink-50">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                            <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</div>
+                            Assignment & Priority
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Weight -->
+                            <div class="space-y-3">
+                                <label for="id_weight" class="block text-sm font-semibold text-gray-700">
+                                    Task Weight (%) <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" name="weight" id="id_weight" required
+                                           placeholder="0.00" step="0.01" min="0" max="100"
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200">
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                        <span class="text-gray-400">%</span>
+                                    </div>
+                                </div>
+                                <div id="weight-info" class="text-sm text-gray-600"></div>
+                            </div>
+
+                            <!-- Project Manager Assignment -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-gray-700">
+                                    Assign To Project Manager
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="project_manager_input"
+                                           placeholder="Search and select a PM..."
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all duration-200"
+                                           autocomplete="off">
+                                    <input type="hidden" name="assigned_to" id="project_manager_id">
+                                     <ul id="pm_suggestions" class="absolute bg-white border-2 border-gray-200 w-full mt-1 z-50 max-h-60 overflow-y-auto shadow-xl rounded-xl hidden"></ul>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                               
+                                <div id="assigned_pm_display" class="text-sm text-green-600 font-medium"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Materials -->
+                    <div class="p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                                <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</div>
+                                Materials Required
+                            </h3>
+                            <button type="button" id="add-material-btn" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                <span>Add Material</span>
+                            </button>
+                        </div>
+
+                        {{ material_formset.management_form }}
+                        <div id="material-forms">
+                            {% for form in material_formset %}
+                            <div class="material-form-row grid grid-cols-12 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                {{ form.id }}
+                                <div class="col-span-4">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Material</label>
+                                    {{ form.material }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                                    {{ form.quantity_needed }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Unit Cost</label>
+                                    {{ form.unit_cost }}
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                                    {{ form.notes }}
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    {{ form.DELETE }}
+                                    <button type="button" class="remove-material-btn px-2 py-1 text-xs text-white bg-red-600 rounded hidden">Remove</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Equipment -->
+                    <div class="p-8 bg-gradient-to-r from-cyan-50 to-blue-50">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                                <div class="w-8 h-8 bg-cyan-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">5</div>
+                                Equipment Required
+                            </h3>
+                            <button type="button" id="add-equipment-btn" class="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                <span>Add Equipment</span>
+                            </button>
+                        </div>
+
+                        {{ equipment_formset.management_form }}
+                        <div id="equipment-forms">
+                            {% for form in equipment_formset %}
+                            <div class="equipment-form-row grid grid-cols-12 gap-4 mb-4 p-4 bg-white rounded-lg">
+                                {{ form.id }}
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Equipment</label>
+                                    {{ form.equipment }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                                    {{ form.allocation_type }}
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Qty</label>
+                                    {{ form.quantity }}
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Days</label>
+                                    {{ form.days_needed }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Daily Rate</label>
+                                    {{ form.daily_rate }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                                    {{ form.notes }}
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    {{ form.DELETE }}
+                                    <button type="button" class="remove-equipment-btn px-2 py-1 text-xs text-white bg-red-600 rounded hidden">Remove</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Section 6: Manpower -->
+                    <div class="p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                                <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">6</div>
+                                Manpower/Labor Required
+                            </h3>
+                            <button type="button" id="add-manpower-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                <span>Add Worker</span>
+                            </button>
+                        </div>
+
+                        {{ manpower_formset.management_form }}
+                        <div id="manpower-forms">
+                            {% for form in manpower_formset %}
+                            <div class="manpower-form-row grid grid-cols-12 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                {{ form.id }}
+                                {{ form.worker }}
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Labor Type</label>
+                                    {{ form.labor_type }}
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                                    {{ form.description }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Workers</label>
+                                    {{ form.number_of_workers }}
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Daily Rate</label>
+                                    {{ form.daily_rate }}
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Days</label>
+                                    {{ form.days_needed }}
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                                    {{ form.notes }}
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    {{ form.DELETE }}
+                                    <button type="button" class="remove-manpower-btn px-2 py-1 text-xs text-white bg-red-600 rounded hidden">Remove</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="px-8 py-6 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            All fields marked with <span class="text-red-500 font-semibold">*</span> are required
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <a href="{% url 'task_list' project.id  %}"
+                           class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            <span>Cancel</span>
+                        </a>
+                        
+                        <button type="submit" name="save_task" id="submit-btn"
+                                class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span>Create Task</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 shadow-2xl flex items-center space-x-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+        <span class="text-gray-700 font-medium">Creating task...</span>
+    </div>
+</div>
+
+<style>
+    .form-error {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+    }
+    
+    .error-message {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .animate-shake {
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f3f4f6;
+        transform: translateX(2px);
+    }
+</style>
+
+<script>
+    const scopeRemaining = JSON.parse('{{ scope_remaining_json|escapejs }}');
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Form elements
+    const form = document.getElementById("task-form");
+    const startInput = document.getElementById("id_start_date");
+    const endInput = document.getElementById("id_end_date");
+    const daysInput = document.getElementById("id_duration_days");
+    const hoursInput = document.getElementById("id_manhours");
+    const weightInput = document.getElementById("id_weight");
+    const scopeSelect = document.getElementById("id_scope");
+    const taskNameInput = document.getElementById("id_task_name");
+    const pmInput = document.getElementById("project_manager_input");
+    const pmIdInput = document.getElementById("project_manager_id");
+    const suggestionsBox = document.getElementById("pm_suggestions");
+    const assignedDisplay = document.getElementById("assigned_pm_display");
+    const submitBtn = document.getElementById("submit-btn");
+    const progressBar = document.getElementById("form-progress");
+    const progressText = document.getElementById("progress-text");
+
+    // Auto-save functionality
+    let autoSaveTimer = null;
+    let formHasChanges = false;
+
+    function autoSave() {
+        try {
+            const formData = {
+                scope: scopeSelect ? scopeSelect.value : '',
+                task_name: taskNameInput ? taskNameInput.value : '',
+                start_date: startInput ? startInput.value : '',
+                end_date: endInput ? endInput.value : '',
+                weight: weightInput ? weightInput.value : '',
+                assigned_to: pmIdInput ? pmIdInput.value : '',
+                assigned_to_name: pmInput ? pmInput.value : '',
+                duration_days: daysInput ? daysInput.value : '',
+                manhours: hoursInput ? hoursInput.value : '',
+                timestamp: new Date().toISOString(),
+                project_id: "{{ project.id }}"
+            };
+            
+            // Check if there's any meaningful content to save
+            const hasContent = formData.task_name || formData.scope || formData.start_date || formData.end_date || formData.weight;
+            if (!hasContent) return;
+            
+            // Only save if there are actual changes
+            const currentData = JSON.stringify(formData);
+            const existingData = localStorage.getItem("task_form_draft_{{ project.id }}");
+            
+            if (currentData !== existingData) {
+                localStorage.setItem("task_form_draft_{{ project.id }}", currentData);
+                console.log("Auto-saved successfully");
+                showAutoSaveStatus();
+                formHasChanges = false;
+            }
+            
+        } catch (error) {
+            console.warn("Auto-save unavailable:", error);
+        }
+    }
+
+    function showAutoSaveStatus() {
+        console.log("Showing auto-save status indicator");
+        
+        const statusElement = document.getElementById("auto-save-status");
+        if (!statusElement) {
+            console.error("Auto-save status element not found!");
+            // Create a floating notification as fallback
+            showFloatingNotification();
+            return;
+        }
+        
+        // Make sure it's visible
+        statusElement.style.display = "flex";
+        statusElement.style.opacity = "1";
+        statusElement.style.transform = "scale(1.05)";
+        
+        const dot = statusElement.querySelector('.bg-green-500');
+        if (dot) {
+            dot.classList.add('animate-pulse');
+        }
+        
+        setTimeout(() => {
+            statusElement.style.transform = "scale(1)";
+        }, 200);
+        
+        setTimeout(() => {
+            statusElement.style.opacity = "0";
+            if (dot) {
+                dot.classList.remove('animate-pulse');
+            }
+        }, 3000);
+        
+        // Also show floating notification for better visibility
+        showFloatingNotification();
+    }
+
+    function showFloatingNotification() {
+        // Remove existing notification if any
+        const existing = document.getElementById('floating-autosave');
+        if (existing) {
+            existing.remove();
+        }
+        
+        // Create floating notification
+        const notification = document.createElement('div');
+        notification.id = 'floating-autosave';
+        notification.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="text-sm font-medium">Draft auto-saved</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Animate out after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    function loadDraft() {
+        try {
+            const draft = localStorage.getItem("task_form_draft_{{ project.id }}");
+            if (!draft) return;
+            
+            const data = JSON.parse(draft);
+            
+            // Check if draft is recent (within 7 days)
+            const draftAge = new Date() - new Date(data.timestamp);
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            
+            if (draftAge > sevenDays) {
+                localStorage.removeItem("task_form_draft_{{ project.id }}");
+                return;
+            }
+            
+            // Check if there's any meaningful content
+            const hasContent = data.task_name || data.scope || data.start_date || data.end_date || data.weight;
+            if (!hasContent) return;
+            
+            // Show elegant restore notification
+            showRestoreNotification(data);
+            
+        } catch (error) {
+            localStorage.removeItem("task_form_draft_{{ project.id }}");
+        }
+    }
+
+    function showRestoreNotification(data) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-white border border-blue-200 rounded-lg shadow-lg p-4 z-50 max-w-sm transform translate-x-full transition-transform duration-300';
+        notification.innerHTML = `
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-semibold text-gray-900">Restore Draft?</h4>
+                    <p class="text-xs text-gray-600 mt-1">Found unsaved work from ${formatTimeAgo(data.timestamp)}</p>
+                    <div class="flex space-x-2 mt-3">
+                        <button id="restore-btn" class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                            Restore
+                        </button>
+                        <button id="dismiss-btn" class="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded hover:bg-gray-300 transition-colors">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+                <button id="close-notification" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+        
+        notification.querySelector('#restore-btn').addEventListener('click', () => {
+            restoreFormData(data);
+            removeNotification(notification);
+        });
+        
+        notification.querySelector('#dismiss-btn').addEventListener('click', () => {
+            localStorage.removeItem("task_form_draft_{{ project.id }}");
+            removeNotification(notification);
+        });
+        
+        notification.querySelector('#close-notification').addEventListener('click', () => {
+            removeNotification(notification);
+        });
+        
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                removeNotification(notification);
+            }
+        }, 10000);
+    }
+
+    function removeNotification(notification) {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }
+
+    function restoreFormData(data) {
+        if (scopeSelect && data.scope) scopeSelect.value = data.scope;
+        if (taskNameInput && data.task_name) taskNameInput.value = data.task_name;
+        if (startInput && data.start_date) startInput.value = data.start_date;
+        if (endInput && data.end_date) endInput.value = data.end_date;
+        if (weightInput && data.weight) weightInput.value = data.weight;
+        if (pmIdInput && data.assigned_to) pmIdInput.value = data.assigned_to;
+        if (pmInput && data.assigned_to_name) pmInput.value = data.assigned_to_name;
+        
+        // Trigger updates
+        updateScopeInfo();
+        calculateDuration();
+        updateCharacterCounter();
+        validateWeight();
+        updateProgress();
+        
+        if (data.assigned_to_name && assignedDisplay) {
+            assignedDisplay.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Assigned to: <strong>${data.assigned_to_name}</strong></span>
+                </div>
+            `;
+        }
+        
+        showAutoSaveStatus();
+    }
+
+    function formatTimeAgo(timestamp) {
+        const now = new Date();
+        const past = new Date(timestamp);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return "just now";
+        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+    }
+
+    function trackFormChanges() {
+        formHasChanges = true;
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(autoSave, 2000);
+    }
+
+    // Progress tracking
+    function updateProgress() {
+        if (!progressBar || !progressText || !submitBtn) return;
+
+        const requiredFields = [scopeSelect, taskNameInput, startInput, endInput, weightInput, hoursInput].filter(f => f);
+        const completed = requiredFields.filter(field => field.value.trim()).length;
+        const percentage = Math.round((completed / requiredFields.length) * 100);
+
+        progressBar.style.width = percentage + '%';
+        progressText.textContent = percentage + '% Complete';
+        submitBtn.disabled = percentage < 100;
+    }
+
+    // Auto-calculate duration only (manhours must be entered manually)
+    function calculateDuration() {
+        if (!startInput || !endInput || !daysInput) return;
+
+        const start = new Date(startInput.value);
+        const end = new Date(endInput.value);
+
+        if (start && end && !isNaN(start) && !isNaN(end)) {
+            if (end < start) {
+                showFieldError(endInput, "End date cannot be earlier than start date");
+                daysInput.value = "";
+                return;
+            }
+
+            clearFieldError(endInput);
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+            daysInput.value = days;
+        } else {
+            daysInput.value = "";
+        }
+    }
+
+    // Task name character counter
+    function updateCharacterCounter() {
+        if (!taskNameInput) return;
+        
+        const count = taskNameInput.value.length;
+        const counter = document.getElementById("task-name-counter");
+        if (counter) counter.textContent = count;
+        
+        if (count > 100) {
+            if (counter) counter.parentElement.classList.add("text-red-500");
+            showFieldError(taskNameInput, "Task name cannot exceed 100 characters");
+        } else {
+            if (counter) counter.parentElement.classList.remove("text-red-500");
+            clearFieldError(taskNameInput);
+        }
+    }
+
+    // Scope selection info
+    function updateScopeInfo() {
+        if (!scopeSelect) return;
+        
+        const selectedOption = scopeSelect.options[scopeSelect.selectedIndex];
+        const infoDiv = document.getElementById("scope-info");
+        
+        if (selectedOption && selectedOption.value && infoDiv) {
+            const weight = selectedOption.dataset.weight;
+            infoDiv.innerHTML = `<div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Selected scope contributes <strong>${weight}%</strong> to the overall project</span>
+            </div>`;
+            infoDiv.style.opacity = "1";
+        } else if (infoDiv) {
+            infoDiv.style.opacity = "0";
+        }
+    }
+
+    // Weight validation
+    function validateWeight() {
+        if (!weightInput || !scopeSelect) return;
+        
+        const weight = parseFloat(weightInput.value);
+        const selectedScope = scopeSelect.value;
+        const infoDiv = document.getElementById("weight-info");
+
+        if (!infoDiv || !weight || isNaN(weight) || !selectedScope) {
+            if (infoDiv) infoDiv.innerHTML = "";
+            return;
+        }
+
+        const remaining = scopeRemaining[selectedScope] ?? 100;
+
+        if (weight < 0 || weight > 100) {
+            infoDiv.innerHTML = `<div class="text-red-500 flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span>Weight must be between 0% and 100%</span>
+            </div>`;
+            showFieldError(weightInput, "Invalid weight percentage");
+        } else if (weight > remaining) {
+            infoDiv.innerHTML = `<div class="text-red-500 flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span>This scope only has ${remaining}% remaining.</span>
+            </div>`;
+            showFieldError(weightInput, "Scope limit exceeded");
+        } else {
+            infoDiv.innerHTML = `<div class="text-green-600 flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Valid weight: ${weight}% (Remaining: ${remaining}%)</span>
+            </div>`;
+            clearFieldError(weightInput);
+        }
+    }
+
+    // Project Manager search functionality
+    async function fetchProjectManagers(query) {
+        try {
+            const response = await fetch(`/projects/search/project-managers/?q=${encodeURIComponent(query)}`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching PMs:', error);
+            return [];
+        }
+    }
+
+    // Error handling functions
+    function showFieldError(field, message) {
+        if (!field) return;
+        field.classList.add("form-error", "animate-shake");
+        
+        const existingError = field.parentElement.querySelector(".error-message");
+        if (existingError) existingError.remove();
+        
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "error-message";
+        errorDiv.textContent = message;
+        field.parentElement.appendChild(errorDiv);
+        
+        setTimeout(() => field.classList.remove("animate-shake"), 500);
+    }
+
+    function clearFieldError(field) {
+        if (!field) return;
+        field.classList.remove("form-error");
+        const errorMsg = field.parentElement.querySelector(".error-message");
+        if (errorMsg) errorMsg.remove();
+    }
+
+    // Event listeners with null checks
+    if (startInput) {
+        startInput.addEventListener("change", function() {
+            calculateDuration();
+            updateProgress();
+        });
+    }
+
+    if (endInput) {
+        endInput.addEventListener("change", function() {
+            calculateDuration();
+            updateProgress();
+        });
+    }
+
+    if (taskNameInput) {
+        taskNameInput.addEventListener("input", function() {
+            updateCharacterCounter();
+            updateProgress();
+        });
+    }
+
+    if (scopeSelect) {
+        scopeSelect.addEventListener("change", function() {
+            updateScopeInfo();
+            updateProgress();
+        });
+    }
+
+    if (weightInput) {
+        weightInput.addEventListener("input", function() {
+            validateWeight();
+            updateProgress();
+        });
+    }
+
+    if (hoursInput) {
+        hoursInput.addEventListener("input", function() {
+            updateProgress();
+        });
+    }
+
+    // Project Manager search
+    if (pmInput && suggestionsBox) {
+        pmInput.addEventListener("input", async function() {
+            const query = this.value.trim();
+            suggestionsBox.innerHTML = "";
+
+            if (!query) {
+                suggestionsBox.classList.add("hidden");
+                return;
+            }
+
+            const results = await fetchProjectManagers(query);
+            if (results.length === 0) {
+                suggestionsBox.innerHTML = `<li class="px-4 py-3 text-gray-500 italic">No project managers found</li>`;
+                suggestionsBox.classList.remove("hidden");
+                return;
+            }
+
+            results.forEach(pm => {
+                const li = document.createElement("li");
+                li.className = "px-4 py-3 cursor-pointer hover:bg-gray-50 transition-all duration-200 suggestion-item border-b border-gray-100 last:border-b-0";
+                
+                const avatarUrl = pm.avatar ? `/media/${pm.avatar}` : null;
+                
+                li.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                            ${avatarUrl ? 
+                                `<img src="${avatarUrl}" alt="${pm.full_name}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                                    ${pm.full_name.charAt(0).toUpperCase()}
+                                </div>`
+                            }
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-gray-900 truncate">${pm.full_name}</div>
+                            <div class="text-sm text-gray-500 truncate">${pm.email}</div>
+                        </div>
+                    </div>
+                `;
+                
+                li.addEventListener("click", function() {
+                    pmInput.value = pm.full_name;
+                    if (pmIdInput) pmIdInput.value = pm.id;
+                    
+                    if (assignedDisplay) {
+                        assignedDisplay.innerHTML = `
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                    ${avatarUrl ? 
+                                        `<img src="${avatarUrl}" alt="${pm.full_name}" class="w-full h-full object-cover">` :
+                                        `<div class="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-xs">
+                                            ${pm.full_name.charAt(0).toUpperCase()}
+                                        </div>`
+                                    }
+                                </div>
+                                <span>Assigned to: <strong>${pm.full_name}</strong> (${pm.email})</span>
+                            </div>
+                        `;
+                    }
+                    suggestionsBox.classList.add("hidden");
+                });
+                
+                suggestionsBox.appendChild(li);
+            });
+
+            suggestionsBox.classList.remove("hidden");
+        });
+    }
+
+    // Close suggestions when clicking outside
+    document.addEventListener("click", function(e) {
+        if (pmInput && suggestionsBox && !pmInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.classList.add("hidden");
+        }
+    });
+
+    // Form submission
+    if (form) {
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            const loadingOverlay = document.getElementById("loading-overlay");
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove("hidden");
+            }
+            
+            setTimeout(() => form.submit(), 1000);
+        });
+    }
+
+    // Auto-save every 2 minutes
+    setInterval(autoSave, 120000);
+
+    // Track changes on all form fields
+    const formFields = [scopeSelect, taskNameInput, startInput, endInput, weightInput, hoursInput, pmInput].filter(field => field !== null);
+    
+    formFields.forEach(field => {
+        if (field) {
+            field.addEventListener("input", trackFormChanges);
+            field.addEventListener("change", trackFormChanges);
+        }
+    });
+
+    // Clear draft on successful submission
+    if (form) {
+        form.addEventListener("submit", function() {
+            localStorage.removeItem("task_form_draft_{{ project.id }}");
+        });
+    }
+
+    // Initialize
+    loadDraft();
+    updateProgress();
+
+    // Set minimum date to today
+    // const today = new Date().toISOString().split('T')[0];
+    // if (startInput) startInput.setAttribute('min', today);
+    // if (endInput) endInput.setAttribute('min', today);
+
+    // ========================================
+    // DYNAMIC FORMSET ADD BUTTONS
+    // ========================================
+
+    function toggleRemoveButtons() {
+        const matCount = document.querySelectorAll('#material-forms .material-form-row').length;
+        document.querySelectorAll('.remove-material-btn').forEach(btn => btn.classList.toggle('hidden', matCount <= 1));
+        const eqCount = document.querySelectorAll('#equipment-forms .equipment-form-row').length;
+        document.querySelectorAll('.remove-equipment-btn').forEach(btn => btn.classList.toggle('hidden', eqCount <= 1));
+        const mpCount = document.querySelectorAll('#manpower-forms .manpower-form-row').length;
+        document.querySelectorAll('.remove-manpower-btn').forEach(btn => btn.classList.toggle('hidden', mpCount <= 1));
+    }
+
+    function wireRemoveHandlers() {
+        document.querySelectorAll('.remove-material-btn').forEach(btn => {
+            btn.onclick = function() {
+                const row = this.closest('.material-form-row');
+                const idInput = row.querySelector('input[name$="-id"]');
+                const totalForms = document.querySelector('#id_materials-TOTAL_FORMS');
+                if (idInput && idInput.value) {
+                    const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    if (del) { del.checked = true; row.style.display = 'none'; }
+                } else {
+                    row.remove();
+                    totalForms.value = Math.max(0, parseInt(totalForms.value) - 1);
+                }
+                toggleRemoveButtons();
+            };
+        });
+        document.querySelectorAll('.remove-equipment-btn').forEach(btn => {
+            btn.onclick = function() {
+                const row = this.closest('.equipment-form-row');
+                const idInput = row.querySelector('input[name$="-id"]');
+                const totalForms = document.querySelector('#id_equipment-TOTAL_FORMS');
+                if (idInput && idInput.value) {
+                    const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    if (del) { del.checked = true; row.style.display = 'none'; }
+                } else {
+                    row.remove();
+                    totalForms.value = Math.max(0, parseInt(totalForms.value) - 1);
+                }
+                toggleRemoveButtons();
+            };
+        });
+        document.querySelectorAll('.remove-manpower-btn').forEach(btn => {
+            btn.onclick = function() {
+                const row = this.closest('.manpower-form-row');
+                const idInput = row.querySelector('input[name$="-id"]');
+                const totalForms = document.querySelector('#id_manpower-TOTAL_FORMS');
+                if (idInput && idInput.value) {
+                    const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    if (del) { del.checked = true; row.style.display = 'none'; }
+                } else {
+                    row.remove();
+                    totalForms.value = Math.max(0, parseInt(totalForms.value) - 1);
+                }
+                toggleRemoveButtons();
+            };
+        });
+    }
+
+    // Material Add Button
+    const addMaterialBtn = document.getElementById('add-material-btn');
+    if (addMaterialBtn) {
+        addMaterialBtn.addEventListener('click', function() {
+            const formContainer = document.getElementById('material-forms');
+            const totalForms = document.querySelector('#id_materials-TOTAL_FORMS');
+            const formCount = parseInt(totalForms.value);
+
+            // Get the last form as template
+            const lastForm = formContainer.querySelector('.material-form-row:last-child');
+            const newForm = lastForm.cloneNode(true);
+
+            // Update form index
+            const formRegex = new RegExp('materials-(\\d+)-', 'g');
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, `materials-${formCount}-`);
+
+            // Clear values
+            newForm.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.type === 'checkbox') {
+                    field.checked = false;
+                } else {
+                    field.value = '';
+                }
+            });
+
+            // Append new form
+            formContainer.appendChild(newForm);
+
+            // Update total forms count
+            totalForms.value = formCount + 1;
+
+            wireRemoveHandlers();
+            toggleRemoveButtons();
+        });
+    }
+
+    // Equipment Add Button
+    const addEquipmentBtn = document.getElementById('add-equipment-btn');
+    if (addEquipmentBtn) {
+        addEquipmentBtn.addEventListener('click', function() {
+            const formContainer = document.getElementById('equipment-forms');
+            const totalForms = document.querySelector('#id_equipment-TOTAL_FORMS');
+            const formCount = parseInt(totalForms.value);
+
+            const lastForm = formContainer.querySelector('.equipment-form-row:last-child');
+            const newForm = lastForm.cloneNode(true);
+
+            const formRegex = new RegExp('equipment-(\\d+)-', 'g');
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, `equipment-${formCount}-`);
+
+            newForm.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.type === 'checkbox') {
+                    field.checked = false;
+                } else {
+                    field.value = '';
+                }
+            });
+
+            formContainer.appendChild(newForm);
+            totalForms.value = formCount + 1;
+
+            wireRemoveHandlers();
+            toggleRemoveButtons();
+        });
+    }
+
+    // Manpower Add Button
+    const addManpowerBtn = document.getElementById('add-manpower-btn');
+    if (addManpowerBtn) {
+        addManpowerBtn.addEventListener('click', function() {
+            const formContainer = document.getElementById('manpower-forms');
+            const totalForms = document.querySelector('#id_manpower-TOTAL_FORMS');
+            const formCount = parseInt(totalForms.value);
+
+            const lastForm = formContainer.querySelector('.manpower-form-row:last-child');
+            const newForm = lastForm.cloneNode(true);
+
+            const formRegex = new RegExp('manpower-(\\d+)-', 'g');
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, `manpower-${formCount}-`);
+
+            newForm.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.type === 'checkbox') {
+                    field.checked = false;
+                } else {
+                    field.value = '';
+                }
+            });
+
+            formContainer.appendChild(newForm);
+            totalForms.value = formCount + 1;
+
+            wireRemoveHandlers();
+            toggleRemoveButtons();
+        });
+    }
+
+    wireRemoveHandlers();
+    toggleRemoveButtons();
+});
+window.addEventListener('beforeunload', function() {
+    const existing = document.getElementById('floating-autosave');
+    if (existing) {
+        existing.remove();
+    }
+});
+</script>
+
+<!-- Task Form Resource Management -->
+<script src="{% static 'js/task_form_resources.js' %}"></script>
+{% endblock %}

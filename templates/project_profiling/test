@@ -1,0 +1,351 @@
+{% load static %}
+{% load role_tags %}
+
+<div id="sidebar" class="sidebar fixed md:relative w-64 h-screen bg-white shadow-lg md:shadow-none z-30 flex flex-col">
+
+    <!-- Logo -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+        <div class="flex items-center space-x-3">
+            <img src="{% static 'img/powermason_logo.png' %}" alt="Powermason Logo" class="h-12 w-12 rounded-lg">
+            <h1 class="text-2xl font-bold text-gray-800">Powermason</h1>
+        </div>
+        <button id="sidebarClose" class="md:hidden text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>{% if user.is_authenticated %}
+<!-- User Card -->
+<div class="flex items-center p-3 bg-gray-50 border-b border-gray-200 rounded-lg m-3 transition hover:bg-gray-100 space-x-3">
+    <a href="{% url 'profile' %}" class="flex items-center space-x-3 flex-1 min-w-0">
+        {% if user.userprofile.avatar %}
+            <img src="{{ user.userprofile.avatar.url }}" alt="Profile" class="h-10 w-10 rounded-full object-cover bg-gray-200 flex-shrink-0">
+        {% else %}
+            <img src="{% static 'img/default-avatar.jpg' %}" alt="Profile" class="h-10 w-10 rounded-full object-cover bg-gray-200 flex-shrink-0">
+        {% endif %}
+        <div class="truncate">
+            <p class="text-gray-700 text-sm truncate">
+                Hi,
+                <span class="font-semibold truncate">
+                    {% if user.first_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        {{ user.email|cut:"@gmail.com" }}
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+    </a>
+    <!-- Notification Bell -->
+    <div class="relative flex-shrink-0 ml-3">
+        <button id="notifToggle" class="relative">
+            <svg class="h-6 w-6 text-gray-500 hover:text-blue-600 transition" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {% if unread_count > 0 %}
+            <span
+                class="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                {{ unread_count }}
+            </span>
+            {% endif %}
+        </button>
+
+        <!-- Notification Dropdown -->
+        <div id="notifDropdown"
+            class="hidden fixed right-6 top-16 w-96 max-h-96 bg-white shadow-2xl rounded-2xl p-4 overflow-y-auto z-[9999] border border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-800 text-lg">Recent Updates</h3>
+                <a href="#" id="clearAllBtn" class="text-xs text-red-600 hover:underline">Clear all</a>
+                <a href="#" id="markAllReadBtn" class="text-xs text-blue-600 hover:underline">Mark all as read</a>
+            </div>
+            <ul class="space-y-3">
+                {% for notif in notifications %}
+                <li
+    class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition {% if not notif.is_read_for_user %}bg-blue-50 font-semibold{% endif %}">
+    
+    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-yellow-100 text-yellow-600 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+    </div>
+
+    <div class="flex-1 text-sm text-gray-700 leading-snug break-words">
+        {% if notif.link %}
+            <a href="{{ notif.link }}" class="hover:underline break-words">
+                {% autoescape off %}{{ notif.message|safe }}{% endautoescape %}
+            </a>
+        {% else %}
+            <span class="break-words">{% autoescape off %}{{ notif.message|safe }}{% endautoescape %}</span>
+        {% endif %}
+        <div class="text-xs text-gray-400 mt-1 whitespace-nowrap">
+            {{ notif.created_at|timesince }} ago
+        </div>
+    </div>
+</li>
+
+                {% empty %}
+                <li class="text-gray-500 text-sm text-center py-6">No notifications yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
+
+    <!-- Sidebar Menu -->
+    <nav class="p-4">
+        <ul class="space-y-1">
+
+            <!-- Dashboard -->
+            <li class="sidebar-menu-item rounded-lg">
+                <a href="{% url 'dashboard' %}" class="flex items-center p-3 text-gray-700 hover:text-blue-600 rounded-lg transition {% if request.resolver_match.url_name == 'dashboard_signed_with_role' %}
+           bg-blue-100 text-blue-700 font-semibold
+       {% else %}
+           text-gray-700 hover:bg-gray-100 hover:text-blue-600
+       {% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 5h16M4 12h16M4 18h16" />
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+            </li>
+            <!-- Project Profiling -->
+            {% if user|has_role:"PM" or user.is_superuser or user|has_role:"EG,OM" %}
+            <li class="sidebar-menu-item rounded-lg">
+
+                {% if user|has_role:"PM" %}
+                <!-- PM: Single link -->
+                <a href="{% url 'project_list_default' %}" class="flex items-center p-3 rounded-lg transition font-medium
+       {% if request.resolver_match.url_name == 'project_list' %}
+           bg-blue-100 text-gray-700 font-semibold
+       {% else %}
+           text-gray-700 hover:bg-gray-100 hover:text-blue-600
+       {% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 
+                   0 01-2 2H5a2 2 0 01-2-2v-6a2 2 
+                   0 012-2m14 0V9a2 2 0 
+                   00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 
+                   0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span class="flex-1">Project Profiling</span>
+                </a>
+
+                {% else %}
+                <!-- EG/OM: Dropdown -->
+                {% with url_name=request.resolver_match.url_name %}
+                <button type="button" class="flex items-center p-3 rounded-lg transition font-medium w-full
+        {% if url_name in 'project_list_general_contractor project_list_direct_client project_list general_projects_list direct_projects_list project_create' %}
+            bg-blue-100 text-gray-700 font-semibold
+        {% else %}
+            text-gray-700 hover:bg-gray-100 hover:text-blue-600
+        {% endif %}" onclick="toggleSubmenu('projectProfilingSubmenu','projectProfilingArrow')">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 
+                   0 01-2 2H5a2 2 0 01-2-2v-6a2 2 
+                   0 012-2m14 0V9a2 2 0 
+                   00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 
+                   0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+
+                    <span class="flex-1">Project Profiling</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-auto transition-transform duration-200"
+                        id="projectProfilingArrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <!-- Submenu -->
+<ul id="projectProfilingSubmenu"
+    class="ml-8 mt-2 {% if url_name in 'project_list_general_contractor project_list_direct_client project_list general_projects_list direct_projects_list project_create' %}block{% else %}hidden{% endif %} space-y-2">
+<li>
+                    <a href="{% url 'client_management' %}" class="flex items-center p-3 rounded-lg transition 
+                       {% if url_name == 'client_management' %}
+                          bg-blue-100 text-gray-700 font-semibold
+                       {% else %}
+                          text-gray-700 hover:bg-gray-100 hover:text-blue-600
+                       {% endif %}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Client Management
+                    </a>
+                </li>
+                
+    <!-- General Contractor -->
+    <li>
+        <a href="{% url 'project_list_general_contractor' token role %}" 
+           title="View General Contractor Projects"
+           class="flex items-center p-3 rounded-lg transition 
+            {% if url_name == 'project_list_general_contractor' or url_name == 'project_create' and project_type == 'GC' %}
+                bg-blue-100 text-gray-700 font-semibold
+            {% else %}
+                text-gray-700 hover:bg-gray-100 hover:text-blue-600
+            {% endif %}">
+            General Contractor
+        </a>
+    </li>
+
+    <!-- Direct Client -->
+    <li>
+        <a href="{% url 'project_list_direct_client' token role %}" 
+           title="View Direct Client Projects"
+           class="flex items-center p-3 rounded-lg transition 
+            {% if url_name == 'project_list_direct_client' or url_name == 'project_create' and project_type == 'DC' %}
+                bg-blue-100 text-gray-700 font-semibold
+            {% else %}
+                text-gray-700 hover:bg-gray-100 hover:text-blue-600
+            {% endif %}">
+            Direct Client
+        </a>
+    </li>
+
+</ul>
+
+        {% endwith %}
+        {% endif %}
+        </li>
+        {% endif %}
+
+
+
+        <!-- Progress Monitoring -->
+        <li class="sidebar-menu-item rounded-lg">
+            <a href="{% url 'progress_monitoring' token role%}" class="flex items-center p-3 text-gray-700 hover:text-blue-600 rounded-lg transition{% if request.resolver_match.url_name == 'progress_monitoring' %}
+           bg-blue-100 text-blue-700 font-semibold
+       {% else %}
+           text-gray-700 hover:bg-gray-100 hover:text-blue-600
+       {% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <span class="font-medium">Progress Monitoring</span>
+            </a>
+        </li>
+
+        {% if user.is_authenticated %}
+        {% if user.is_superuser or user|has_role:"EG" or user|has_role:"OM" %}
+        {% if token %}
+        <!-- Project Costing -->
+        <li class="sidebar-menu-item rounded-lg">
+            <a href="{% url 'project_costing_dashboard' token role %}" class="flex items-center p-3 text-gray-700 hover:text-blue-600 rounded-lg transition
+                 {% if request.resolver_match.url_name == 'project_costing_dashboard' %}
+    bg-blue-100 text-blue-700 font-semibold
+{% else %}
+    text-gray-700 hover:bg-gray-100 hover:text-blue-600
+{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-medium">Project Costing</span>
+            </a>
+        </li>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+
+        <!-- Reports -->
+        <li class="sidebar-menu-item rounded-lg">
+            <a href="#" class="flex items-center p-3 text-gray-700 hover:text-blue-600 rounded-lg transition
+              {% if request.resolver_match.url_name == 'reports' %}
+           bg-blue-100 text-blue-700 font-semibold
+       {% else %}
+           text-gray-700 hover:bg-gray-100 hover:text-blue-600
+       {% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="font-medium">Reports</span>
+            </a>
+        </li>
+
+    
+
+        </ul>
+    </nav>
+    
+    <!-- Footer Actions -->
+    <div class="flex flex-col p-4 border-t border-gray-200 space-y-2">
+        {% if user.is_authenticated and user.is_superuser or user|has_role:"EG,OM" %}
+        <a href="{% url 'manage_user_profiles' token=token %}"
+            class="flex items-center p-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z" />
+            </svg>
+            Manage Users
+        </a>
+        {% endif %}
+
+
+        <!-- Settings Link -->
+        <a href="{% url 'settings' %}" class="flex items-center w-full text-gray-700 hover:text-gray-900 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.517-.877 3.296.902 2.419 2.419a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.877 1.517-.902 3.296-2.419 2.419a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.517.877-3.296-.902-2.419-2.419a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.877-1.517.902-3.296 2.419-2.419.9.52 2.057.184 2.573-1.066z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Settings
+        </a>
+
+        <!-- Logout Link -->
+        <a href="{% url 'account_logout' %}"
+            class="flex items-center w-full text-red-600 hover:text-red-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-red-500" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0013.5 3H6.75A2.25 2.25 0 004.5 5.25v13.5A2.25 2.25 0 006.75 21h6.75a2.25 2.25 0 002.25-2.25V15M18 12H9m9 0l-3-3m3 3l-3 3" />
+            </svg>
+            Logout
+        </a>
+    </div>
+</div>
+
+<script>
+    function toggleSubmenu(submenuId, arrowId) {
+        const submenu = document.getElementById(submenuId);
+        const arrow = document.getElementById(arrowId);
+        submenu.classList.toggle("hidden");
+        arrow.classList.toggle("rotate-180");
+    }
+
+    // Auto-open submenu if current URL matches a child link
+    document.addEventListener("DOMContentLoaded", function () {
+        const currentUrl = window.location.href;
+        document.querySelectorAll("ul[id$='Submenu']").forEach(submenu => {
+            const links = submenu.querySelectorAll("a");
+            links.forEach(link => {
+                if (currentUrl.includes(link.getAttribute("href"))) {
+                    submenu.classList.remove("hidden"); // open submenu
+                    const arrow = document.querySelector(`#${submenu.id.replace("Submenu", "Arrow")}`);
+                    if (arrow) arrow.classList.add("rotate-180");
+                }
+            });
+        });
+    });
+</script>
+
+{% block extra_scripts %}
+<script src="{% static 'js/notifications.js' %}"></script>
+{% endblock %}

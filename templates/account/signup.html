@@ -1,0 +1,236 @@
+{% extends "base_auth.html" %}
+{% load static %}
+{% load socialaccount %}
+{% load i18n %}
+{% load allauth account %}
+
+{% block head_title %}
+    {% trans "Sign Up" %}
+{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div class="max-w-5xl w-full bg-white shadow-2xl rounded-2xl overflow-hidden flex flex-col md:flex-row">
+
+        <!-- Left Column: Illustration / Branding -->
+        <div class="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center p-8">
+            <div class="text-center">
+                <img src="{% static 'img/powermason_logo.png' %}" alt="Company Logo" class="h-32 w-auto mx-auto mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">Welcome to Powermason</h2>
+                <p class="text-gray-700 text-sm">Streamline your projects and track progress with ease.</p>
+            </div>
+        </div>
+
+        <!-- Right Column: Signup Form -->
+        <div class="w-full md:w-1/2 p-8">
+
+            <!-- 🔴 Toast Alert for Errors -->
+            {% if form.errors %}
+                <div id="errorToast" class="mb-6 flex items-center justify-between p-4 rounded-lg bg-red-100 border border-red-300 text-red-700">
+                    <span class="text-sm font-medium">
+                        {% if form.email.errors %}
+                            {{ form.email.errors|striptags }}
+                        {% elif form.non_field_errors %}
+                            {{ form.non_field_errors|striptags }}
+                        {% else %}
+                            Please correct the errors below.
+                        {% endif %}
+                    </span>
+                    <button onclick="document.getElementById('errorToast').style.display='none'"
+                            class="ml-4 text-red-500 hover:text-red-700">
+                        ✕
+                    </button>
+                </div>
+            {% endif %}
+
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 text-center md:text-left">{% trans "Create Account" %}</h1>
+
+            <p class="text-sm text-gray-500 mb-6 text-center md:text-left">
+                {% blocktranslate %}Already have an account? 
+                <a href="{{ login_url }}" class="text-blue-600 hover:text-blue-700 font-semibold">Sign in</a>.
+                {% endblocktranslate %}
+            </p>
+
+            {% if not SOCIALACCOUNT_ONLY %}
+                {% url 'account_signup' as action_url %}
+                <form id="signup-form" method="post" action="{{ action_url }}" class="space-y-4">
+                    {% csrf_token %}
+                    <!-- Name Fields Row -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- First Name Field -->
+                        <div>
+                            <input type="text" name="first_name" placeholder="First Name"
+                                   class="w-full px-4 py-3 border {% if form.first_name.errors %}border-red-500{% else %}border-gray-300{% endif %}
+                                   rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                   value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                                <p class="text-xs text-red-600 mt-1">{{ form.first_name.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Last Name Field -->
+                        <div>
+                            <input type="text" name="last_name" placeholder="Last Name"
+                                   class="w-full px-4 py-3 border {% if form.last_name.errors %}border-red-500{% else %}border-gray-300{% endif %}
+                                   rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                   value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                                <p class="text-xs text-red-600 mt-1">{{ form.last_name.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Helper text for both fields -->
+                    <p class="text-xs text-gray-500 mt-1">Enter your first and last name.</p>
+
+                    <!-- Email Field -->
+                    <div>
+                        <input type="email" name="email" placeholder="Email address"
+                               class="w-full px-4 py-3 border {% if form.email.errors %}border-red-500{% else %}border-gray-300{% endif %} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               value="{{ form.email.value|default:'' }}"
+                               required>
+                        {% if form.email.errors %}
+                            <p class="text-xs text-red-600 mt-1">{{ form.email.errors|striptags }}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-500 mt-1">
+                                Enter a valid email for verification and password resets.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="relative">
+                        <input id="password1" type="password" name="password1" placeholder="Password"
+                               class="w-full px-4 py-3 border {% if form.password1.errors %}border-red-500{% else %}border-gray-300{% endif %} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               required>
+                        <button type="button" id="togglePassword1"
+                                class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <!-- Eye Icon -->
+                            <svg id="eyeIcon1" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 4.5C5 4.5 1.73 8 0 10c1.73 2 5 5.5 10 5.5s8.27-3.5 10-5.5c-1.73-2-5-5.5-10-5.5zM10 14a4 4 0 110-8 4 4 0 010 8z"/>
+                                <path d="M10 8a2 2 0 100 4 2 2 0 000-4z"/>
+                            </svg>
+                        </button>
+                        {% if form.password1.errors %}
+                            <p class="text-xs text-red-600 mt-1">{{ form.password1.errors|striptags }}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-500 mt-1">
+                                At least 8 characters; cannot be entirely numeric.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Confirm Password Field -->
+                    <div class="relative">
+                        <input id="password2" type="password" name="password2" placeholder="Confirm Password"
+                               class="w-full px-4 py-3 border {% if form.password2.errors %}border-red-500{% else %}border-gray-300{% endif %} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               required>
+                        <button type="button" id="togglePassword2"
+                                class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <svg id="eyeIcon2" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 4.5C5 4.5 1.73 8 0 10c1.73 2 5 5.5 10 5.5s8.27-3.5 10-5.5c-1.73-2-5-5.5-10-5.5zM10 14a4 4 0 110-8 4 4 0 010 8z"/>
+                                <path d="M10 8a2 2 0 100 4 2 2 0 000-4z"/>
+                            </svg>
+                        </button>
+                        {% if form.password2.errors %}
+                            <p class="text-xs text-red-600 mt-1">{{ form.password2.errors|striptags }}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-500 mt-1">
+                                Enter the same password as above for verification.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button with Loading -->
+                    <button type="submit" id="signup-btn"
+                            class="w-full bg-blue-600 text-white py-3 rounded-xl text-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                        <span id="btn-text">{% trans "Sign Up" %}</span>
+                        <div id="loading-spinner" class="hidden ml-2">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if SOCIALACCOUNT_ENABLED %}
+                <div class="flex items-center my-6">
+                    <hr class="flex-grow border-gray-300">
+                    <span class="px-3 text-gray-400 text-sm font-medium">or</span>
+                    <hr class="flex-grow border-gray-300">
+                </div>
+
+                <a href="{% provider_login_url 'google' %}"
+                   class="flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-xl hover:bg-gray-50 transition text-gray-700 font-medium">
+                    <img src="{% static 'img/google_logo.png' %}" alt="Google" class="w-5 h-5">
+                    <span>Sign up with Google</span>
+                </a>
+            {% endif %}
+
+            {% if PASSKEY_SIGNUP_ENABLED %}
+                <hr class="my-6 border-gray-300">
+                <a href="{{ signup_by_passkey_url }}"
+                   class="block w-full border border-blue-600 text-blue-600 py-3 rounded-xl text-lg text-center font-semibold hover:bg-blue-50 transition">
+                    {% trans "Sign up using a passkey" %}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+function setupPasswordToggle(passwordId, toggleId) {
+    const password = document.getElementById(passwordId);
+    const toggle = document.getElementById(toggleId);
+
+    toggle.addEventListener('click', function() {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.classList.toggle('text-gray-600');
+    });
+}
+
+// Setup password toggles
+setupPasswordToggle('password1', 'togglePassword1');
+setupPasswordToggle('password2', 'togglePassword2');
+
+// Loading button functionality
+document.getElementById('signup-form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('signup-btn');
+    const btnText = document.getElementById('btn-text');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    btnText.textContent = 'Creating Account...';
+    loadingSpinner.classList.remove('hidden');
+    
+    // Note: The form will submit normally, but if there are validation errors
+    // and the page reloads, we should reset the button state
+    setTimeout(() => {
+        if (submitBtn.disabled) {
+            submitBtn.disabled = false;
+            btnText.textContent = 'Sign Up';
+            loadingSpinner.classList.add('hidden');
+        }
+    }, 5000); // Reset after 5 seconds if still loading
+});
+
+// Reset button state if there are form errors on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const errorToast = document.getElementById('errorToast');
+    if (errorToast) {
+        const submitBtn = document.getElementById('signup-btn');
+        const btnText = document.getElementById('btn-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        
+        submitBtn.disabled = false;
+        btnText.textContent = 'Sign Up';
+        loadingSpinner.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

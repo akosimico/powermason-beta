@@ -1,0 +1,309 @@
+
+{% load static %}
+<!-- Welcome Popup Component -->
+{% if user.is_authenticated and not user.userprofile.has_seen_welcome %}
+
+    <div id="welcome-popup-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform scale-95 transition-all duration-500 ease-out max-h-[90vh] overflow-y-auto">
+            <!-- Close Button -->
+            <button onclick="closeWelcomePopup()" 
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 p-2 rounded-full hover:bg-gray-100"
+                    aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Header -->
+            <div class="text-center pt-8 px-6">
+                <!-- Logo -->
+                <div class="mx-auto w-16 h-16 mb-4">
+                    <img src="{% static 'img/powermason_logo.png' %}" alt="Powermason" class="w-full h-full object-contain">
+                </div>
+
+                <!-- Title -->
+                <h2 id="welcome-title" class="text-xl font-bold text-gray-900 mb-2">
+                    Welcome to Powermason!
+                </h2>
+
+                <!-- Message -->
+                <p class="text-gray-600 text-sm mb-6">
+                    Your email is verified. Ready to streamline your project management?
+                </p>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="px-6 mb-6">
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100/50">
+                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-900 text-sm">Project Management</div>
+                            <div class="text-gray-600 text-xs">Track progress and manage tasks efficiently</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100/50">
+                        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-900 text-sm">Progress Monitoring</div>
+                            <div class="text-gray-600 text-xs">Real-time tracking with visual dashboards</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100/50">
+                        <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-900 text-sm">Team Collaboration</div>
+                            <div class="text-gray-600 text-xs">Seamless teamwork and communication</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="px-6 pb-6">
+                <div class="space-y-3">
+                    <button onclick="redirectToDashboard()" 
+                            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200">
+                        Get Started
+                    </button>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="showRoleBasedTour()" 
+                                class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm">
+                            Take Tour
+                        </button>
+                        <button onclick="completeProfile()" 
+                                class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm">
+                            Setup Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto Redirect Notice -->
+            <div class="mx-6 mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-amber-800 text-xs">
+                            Redirecting in <span id="countdown" class="font-bold">10</span>s
+                        </span>
+                    </div>
+                    <button onclick="cancelAutoRedirect()" class="text-amber-600 hover:text-amber-800 text-xs underline">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @media (prefers-reduced-motion: no-preference) {
+            .popup-fade-in {
+                animation: fadeIn 0.3s ease-out forwards;
+            }
+            
+            .popup-scale-up {
+                animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes scaleUp {
+            from { 
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Custom scrollbar for popup */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+    </style>
+
+    <script>
+        (function() {
+            'use strict';
+            
+            let popupElement = null;
+            let countdownActive = true;
+            let seconds = 10;
+            let countdownInterval = null;
+            
+            function initializePopup() {
+                popupElement = document.getElementById('welcome-popup-overlay');
+                if (!popupElement) return;
+                
+                showPopupWithAnimation();
+                setupEventListeners();
+                startCountdown();
+            }
+            
+            function showPopupWithAnimation() {
+                popupElement.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    popupElement.classList.add('popup-fade-in');
+                    const content = popupElement.querySelector('.bg-white');
+                    if (content) content.classList.add('popup-scale-up');
+                });
+            }
+            
+            function startCountdown() {
+                const countdownElement = document.getElementById('countdown');
+                if (!countdownElement) return;
+                
+                countdownInterval = setInterval(() => {
+                    if (!countdownActive) {
+                        clearInterval(countdownInterval);
+                        return;
+                    }
+                    
+                    seconds--;
+                    countdownElement.textContent = seconds;
+                    
+                    if (seconds <= 0) {
+                        clearInterval(countdownInterval);
+                        redirectToDashboard();
+                    }
+                }, 1000);
+            }
+            
+            function setupEventListeners() {
+                popupElement.addEventListener('click', function(e) {
+                    if (e.target === this) closeWelcomePopup();
+                });
+                
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeWelcomePopup();
+                });
+            }
+            
+            window.closeWelcomePopup = function() {
+                countdownActive = false;
+                if (countdownInterval) clearInterval(countdownInterval);
+                
+                popupElement.style.opacity = '0';
+                setTimeout(() => {
+                    popupElement.style.display = 'none';
+                    clearWelcomeFlag();
+                }, 200);
+            };
+            
+            window.cancelAutoRedirect = function() {
+                countdownActive = false;
+                if (countdownInterval) clearInterval(countdownInterval);
+                document.querySelector('.bg-amber-50').style.display = 'none';
+            };
+            
+            window.redirectToDashboard = function() {
+                closeWelcomePopup();
+                setTimeout(() => {
+        // Redirect to dashboard/home instead of reload
+        window.location.href = "{% url 'dashboard' %}";
+    }, 300);
+            };
+            
+            window.showRoleBasedTour = function() {
+                closeWelcomePopup();
+                setTimeout(() => {
+                    // Get user role from session/data and start appropriate tour
+                    const userRole = '{{ profile.role }}'; // Get from Django context
+                    startTourForRole(userRole);
+                }, 300);
+            };
+            
+            window.completeProfile = function() {
+                closeWelcomePopup();
+                setTimeout(() => window.location.href = '/accounts/profile/', 300);
+            };
+            
+            function startTourForRole(role) {
+                console.log('Starting tour for role:', role);
+                // This will be implemented with role-specific tour steps
+                switch(role) {
+                    case 'PM':
+                        console.log('Starting Project Manager tour');
+                        break;
+                    case 'OM':
+                        console.log('Starting Operations Manager tour');
+                        break;
+                    case 'EG':
+                        console.log('Starting Engineer tour');
+                        break;
+                    case 'VO':
+                        console.log('Starting Vendor/Other tour');
+                        break;
+                    default:
+                        console.log('Starting general tour');
+                }
+            }
+            
+            function clearWelcomeFlag() {
+                fetch('/clear-welcome-flag/', {
+                    method: 'POST',
+                    headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    }).catch(error => console.warn('Could not clear welcome flag:', error));
+}
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializePopup);
+            } else {
+                initializePopup();
+            }
+        })();
+    </script>
+{% endif %}

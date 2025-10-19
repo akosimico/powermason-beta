@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AJAX Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>AJAX Navigation Test</h1>
+    <p>This test will check if all AJAX navigation components are loaded correctly.</p>
+    
+    <div id="results">
+        <div class="test-item loading" id="ajax-nav">Loading AJAX Navigation...</div>
+        <div class="test-item loading" id="module-init">Loading Module Initializer...</div>
+        <div class="test-item loading" id="client-mgmt">Loading Client Management...</div>
+        <div class="test-item loading" id="dashboard">Loading Dashboard...</div>
+        <div class="test-item loading" id="materials">Loading Materials...</div>
+        <div class="test-item loading" id="equipment">Loading Equipment...</div>
+    </div>
+    
+    <div id="summary" style="margin-top: 20px; padding: 15px; border: 2px solid #007bff; border-radius: 5px; background-color: #f8f9fa;">
+        <h3>Test Summary</h3>
+        <p id="summary-text">Running tests...</p>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="powermason_capstone - Copy/powermason_capstone/static/js/module-initializer.js"></script>
+    <script src="powermason_capstone - Copy/powermason_capstone/static/js/materials-module.js"></script>
+    <script src="powermason_capstone - Copy/powermason_capstone/static/js/equipment-module.js"></script>
+    <script src="powermason_capstone - Copy/static/js/client_management.js"></script>
+    <script src="powermason_capstone - Copy/static/js/dashboard-complete.js"></script>
+    <script src="powermason_capstone - Copy/powermason_capstone/static/js/ajax-navigation.js"></script>
+
+    <script>
+        function updateTest(id, status, message) {
+            const element = document.getElementById(id);
+            element.className = `test-item ${status}`;
+            element.textContent = message;
+        }
+
+        function runTests() {
+            console.log('Running AJAX Navigation Tests...');
+            
+            let passed = 0;
+            let total = 6;
+            
+            // Test AJAX Navigation
+            if (typeof window.ajaxNavigation !== 'undefined') {
+                updateTest('ajax-nav', 'pass', '✅ AJAX Navigation System - LOADED');
+                passed++;
+            } else {
+                updateTest('ajax-nav', 'fail', '❌ AJAX Navigation System - NOT FOUND');
+            }
+            
+            // Test Module Initializer
+            if (typeof window.ModuleRegistry !== 'undefined') {
+                updateTest('module-init', 'pass', '✅ Module Initializer - LOADED');
+                passed++;
+            } else {
+                updateTest('module-init', 'fail', '❌ Module Initializer - NOT FOUND');
+            }
+            
+            // Test Client Management
+            if (typeof window.initializeClientManagement === 'function') {
+                updateTest('client-mgmt', 'pass', '✅ Client Management - LOADED');
+                passed++;
+            } else {
+                updateTest('client-mgmt', 'fail', '❌ Client Management - NOT FOUND');
+            }
+            
+            // Test Dashboard
+            if (typeof window.initializeDashboard === 'function') {
+                updateTest('dashboard', 'pass', '✅ Dashboard Module - LOADED');
+                passed++;
+            } else {
+                updateTest('dashboard', 'fail', '❌ Dashboard Module - NOT FOUND');
+            }
+            
+            // Test Materials
+            if (typeof window.initializeMaterials === 'function') {
+                updateTest('materials', 'pass', '✅ Materials Module - LOADED');
+                passed++;
+            } else {
+                updateTest('materials', 'fail', '❌ Materials Module - NOT FOUND');
+            }
+            
+            // Test Equipment
+            if (typeof window.initializeEquipment === 'function') {
+                updateTest('equipment', 'pass', '✅ Equipment Module - LOADED');
+                passed++;
+            } else {
+                updateTest('equipment', 'fail', '❌ Equipment Module - NOT FOUND');
+            }
+            
+            // Update summary
+            const summaryText = document.getElementById('summary-text');
+            if (passed === total) {
+                summaryText.innerHTML = `🎉 <strong>ALL TESTS PASSED!</strong><br>All ${total} AJAX navigation components loaded successfully.<br><br>You can now test actual navigation in your main application.`;
+                document.getElementById('summary').style.borderColor = '#28a745';
+                document.getElementById('summary').style.backgroundColor = '#d4edda';
+            } else {
+                summaryText.innerHTML = `⚠️ <strong>${passed}/${total} TESTS PASSED</strong><br>Some components failed to load. Check the browser console for errors.<br><br>Make sure all JavaScript files are in the correct directories.`;
+                document.getElementById('summary').style.borderColor = '#dc3545';
+                document.getElementById('summary').style.backgroundColor = '#f8d7da';
+            }
+            
+            console.log(`Test Results: ${passed}/${total} passed`);
+        }
+        
+        // Run tests after scripts load
+        setTimeout(runTests, 500);
+    </script>
+</body>
+</html>
+

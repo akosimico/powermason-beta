@@ -1,0 +1,2152 @@
+{% extends 'base.html' %}
+{% load role_tags %}
+{% load humanize %}
+{% load project_extras %}
+
+{% block content %}
+<style>
+    .number-format {
+        font-feature-settings: 'tnum';
+    }
+    .budget-overflow {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    .custom-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+    }
+    .slide-in {
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+        from { transform: translateY(-10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    /* Additional responsive styles */
+@media (max-width: 768px) {
+    #addExpenseModal .grid-cols-1 {
+        grid-template-columns: 1fr;
+    }
+    
+    #addExpenseModal .max-w-5xl {
+        max-width: 95vw;
+    }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+    #addExpenseModal .max-w-5xl {
+        max-width: 80vw;
+    }
+    
+    #addExpenseModal .max-h-[95vh] {
+        max-height: 85vh;
+    }
+}
+
+/* Enhanced focus states for accessibility */
+#addExpenseModal input:focus,
+#addExpenseModal select:focus,
+#addExpenseModal textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Loading state animation */
+#addExpenseBtn.loading {
+    position: relative;
+    color: transparent;
+}
+
+#addExpenseBtn.loading::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Smooth transitions */
+* {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+</style>
+
+<!-- Message Container -->
+<div id="messageContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center py-6 space-y-4 sm:space-y-0">
+                <!-- Title & Project Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-3">
+                        <h1 class="text-2xl font-bold text-gray-900 truncate">
+                            Budget Planning
+                        </h1>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            {{ project.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-sm mt-1">{{ project.project_name }} ({{ project.project_id }})</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ request.session.project_return_url|default:'/' }}"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Back to Project
+                    </a>
+                    
+                    <button onclick="showAddScopeModal()" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Scope
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Overview Cards -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Budget Overflow Alert -->
+        {% if remaining_budget < 0 %}
+        <div id="budgetOverflowAlert" class="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg budget-overflow">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">
+                        Budget Exceeded!
+                    </h3>
+                    <div class="mt-2 text-sm text-red-700">
+                        <p>
+                            Your planned budget (₱<span class="font-mono">{{ total_planned|floatformat:2|intcomma }}</span>) exceeds the approved budget 
+                            by ₱<span class="font-mono font-bold">{{ remaining_budget|floatformat:2|intcomma|slice:"1:" }}</span>. 
+                            Please review and adjust your budget allocations.
+                        </p>
+                    </div>
+                    <div class="mt-4">
+                        <div class="-mx-2 -my-1.5 flex">
+                            <button onclick="document.getElementById('budgetOverflowAlert').style.display='none'" 
+                                    class="bg-red-50 px-2 py-1.5 rounded-md text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-50 focus:ring-red-600">
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Approved Budget -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-500">Approved Budget</p>
+                        <p class="text-2xl font-bold text-gray-900 number-format">₱{{ project.approved_budget|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Planned -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-500">Total Planned</p>
+                        <p class="text-2xl font-bold text-blue-900 number-format">₱{{ total_planned|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remaining Budget -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 {% if remaining_budget < 0 %}border-red-300 bg-red-50{% endif %}">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-500">Remaining</p>
+                        <p class="text-2xl font-bold number-format {% if remaining_budget < 0 %}text-red-900{% else %}text-green-900{% endif %}">
+                            ₱{{ remaining_budget|floatformat:2|intcomma }}
+                        </p>
+                    </div>
+                    <div class="w-10 h-10 {% if remaining_budget < 0 %}bg-red-100{% else %}bg-green-100{% endif %} rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 {% if remaining_budget < 0 %}text-red-600{% else %}text-green-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {% if remaining_budget < 0 %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            {% else %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                            {% endif %}
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Utilization -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-500">Utilization</p>
+                        <p class="text-2xl font-bold text-purple-900">{{ budget_utilization|floatformat:1 }}%</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div class="{% if budget_utilization > 100 %}bg-red-600{% else %}bg-purple-600{% endif %} h-2 rounded-full transition-all duration-300" style="width: {{ budget_utilization|floatformat:1 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Breakdown -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Budget Breakdown by Scope</h2>
+                <span class="text-sm text-gray-500">{{ project_scopes|length }} scope{{ project_scopes|length|pluralize }}</span>
+            </div>
+
+            {% if project_scopes %}
+                <div class="divide-y divide-gray-200">
+                    {% for scope_name, scope_data in scopes.items %}
+                        <div class="p-6">
+                            <!-- Scope Header -->
+<div class="flex items-center justify-between mb-4">
+    <div class="flex items-center space-x-3">
+        <h3 class="text-lg font-medium text-gray-900">{{ scope_data.scope.name }}</h3>
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+            {{ scope_data.scope.weight }}% weight
+        </span>
+        {% if scope_data.scope.is_deleted %}
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                Deleted
+            </span>
+        {% endif %}
+    </div>
+    <div class="flex items-center space-x-3">
+        <span class="text-sm font-medium text-gray-900 number-format">₱{{ scope_data.total|floatformat:2|intcomma }}</span>
+        
+        {% if not scope_data.scope.is_deleted %}
+            <button onclick="showEditScopeModal('{{ scope_data.scope.id }}', '{{ scope_data.scope.name }}', '{{ scope_data.scope.weight }}')"
+                   class="inline-flex items-center px-2 py-1 border border-transparent rounded text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                   title="Edit scope">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </button>
+            
+            <button data-scope-id="{{ scope_data.scope.id }}" 
+        data-scope-name="{{ scope_data.scope.name }}" 
+        data-has-tasks="{% if scope_data.scope.has_tasks %}true{% else %}false{% endif %}"
+        onclick="showDeleteScopeModalFromData(this)"
+        class="inline-flex items-center px-2 py-1 border border-transparent rounded text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 transition-colors"
+        title="Delete scope">
+    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+    Delete
+</button>
+        {% else %}
+            <button onclick="restoreScope('{{ scope_data.scope.id }}')"
+                   class="inline-flex items-center px-2 py-1 border border-transparent rounded text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
+                   title="Restore scope">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Restore
+            </button>
+        {% endif %}
+        
+        <button onclick="showAddCategoryModal('{{ scope_data.scope.id }}', '{{ scope_data.scope.name }}')"
+               class="inline-flex items-center px-3 py-1 border border-transparent rounded text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m-6 0h6m0 0h6"/>
+            </svg>
+            Add Category
+        </button>
+    </div>
+</div>
+
+                            <!-- Categories -->
+{% if scope_data.categories %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for budget in scope_data.categories %}
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-gray-900">
+                            {{ budget.get_category_display }}
+                            {% if budget.category == 'OTH' and budget.category_other %}
+                                <span class="text-xs text-gray-400 font-normal ml-2">({{ budget.category_other }})</span>
+                            {% endif %}
+                        </h4>
+                    </div>
+                    <div class="flex space-x-1 ml-2">
+                        <button onclick="showEditBudgetModal('{{ budget.id }}', '{{ budget.get_category_display }}', '{{ budget.planned_amount }}')" 
+                               class="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded hover:bg-blue-50"
+                               title="Edit budget">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <button onclick="deleteBudget('{{ budget.id }}')" 
+                               class="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50"
+                               title="Delete budget">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-lg font-bold text-gray-900 number-format">₱{{ budget.planned_amount|floatformat:2|intcomma }}</p>
+                <div class="mt-2 flex justify-between items-center">
+    <a href="{% url 'allocate_fund_to_category' project.id budget.id %}" 
+       class="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline">
+        Manage Allocations →
+    </a>
+    <button onclick="showAddExpenseModal('{{ budget.id }}', '{{ budget.get_category_display }}')" 
+            class="text-xs text-green-600 hover:text-green-700 font-medium hover:underline">
+        Add Expense +
+    </button>
+</div>
+
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+                                <div class="text-center py-8">
+                                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    <p class="text-gray-500 text-sm">No budget categories defined for this scope yet</p>
+                                    <button onclick="showAddCategoryModal('{{ scope_data.scope.id }}', '{{ scope_data.scope.name }}')"
+                                           class="mt-3 inline-flex items-center px-4 py-2 border border-transparent rounded text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors">
+                                        Add First Category
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- No Scopes State -->
+                <div class="text-center py-12">
+                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 011-1h1m5 2v0m0 0v2m0-2h2m0 2v0"/>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Project Scopes Defined</h3>
+                    <p class="text-gray-500 mb-6">Start by creating project scopes like Civil Works, Electrical Works, etc.</p>
+                    <button onclick="showAddScopeModal()" 
+                           class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Create First Scope
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Add Expense Modal - Landscape Optimized -->
+<div id="addExpenseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-white">Add New Expense</h3>
+                        <p class="text-green-100 text-sm">Category: <span id="selectedCategoryName" class="font-medium"></span></p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAddExpenseModal()" 
+                        class="text-white hover:text-green-200 transition-colors p-2 rounded-lg hover:bg-white hover:bg-opacity-20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
+            <!-- Available Allocation Display -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6" id="allocationInfoDiv">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-blue-800">Available Allocation:</span>
+                    <span class="font-bold text-blue-900 text-lg number-format" id="availableAllocation">₱0.00</span>
+                </div>
+            </div>
+            
+            <form id="addExpenseForm" method="POST" action="{% url 'add_expense' project.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="category_id" id="expenseCategoryId">
+                
+                <!-- Two-column layout for landscape -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-4">
+                        <!-- Expense Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Expense Type <span class="text-red-500">*</span>
+                            </label>
+                            <select name="expense_type" id="expenseTypeSelect" 
+                                    class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200" 
+                                    required onchange="handleExpenseTypeChange()">
+                                <option value="">Select expense type...</option>
+                                <option value="material">Material Purchase</option>
+                                <option value="labor">Labor Payment</option>
+                                <option value="equipment">Equipment Rental</option>
+                                <option value="service">Service/Contractor</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Expense Type -->
+                        <div id="customExpenseField" class="hidden">
+                            <label for="expenseOther" class="block text-sm font-medium text-gray-700 mb-2">
+                                Specify Expense Type <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="expenseOther" 
+                                   name="expense_other"
+                                   class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
+                                   placeholder="Enter specific expense type">
+                            <p class="mt-1 text-xs text-gray-500">Provide a specific description of this expense type</p>
+                        </div>
+
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Amount <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 text-lg font-medium">₱</span>
+                                </div>
+                                <input type="number" name="amount" step="0.01" min="0" 
+                                       class="pl-12 w-full border border-gray-300 rounded-lg p-3 text-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200" 
+                                       placeholder="0.00" required oninput="checkExpenseAmount(this)">
+                            </div>
+                            <div id="expenseAmountWarning" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm text-red-700">Amount exceeds available allocation</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date of Expense -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="expense_date" 
+                                   class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200" 
+                                   required>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-4">
+                        <!-- Vendor/Supplier -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Vendor/Supplier
+                            </label>
+                            <input type="text" name="vendor" 
+                                   class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200" 
+                                   placeholder="Enter supplier name">
+                        </div>
+
+                        <!-- Invoice/Receipt Number -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Invoice/Receipt #
+                            </label>
+                            <input type="text" name="receipt_number" 
+                                   class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200" 
+                                   placeholder="Enter reference number">
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Description/Notes
+                            </label>
+                            <textarea name="description" rows="4" 
+                                      class="w-full border border-gray-300 rounded-lg p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 resize-none" 
+                                      placeholder="Enter details about this expense..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
+                <button type="button" onclick="closeAddExpenseModal()" 
+                        class="w-full sm:w-auto px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit" id="addExpenseBtn" form="addExpenseForm"
+                        class="w-full sm:w-auto px-6 py-3 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Expense
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Enhanced Add Scope Modal -->
+<div id="addScopeModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full modal-content">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 011-1h1m5 2v0m0 0v2m0-2h2m0 2v0"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-white">Create New Project Scope</h3>
+                        <p class="text-blue-100 text-sm">Define a new scope for budget allocation</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="addScopeForm" class="bg-white">
+                {% csrf_token %}
+                <div class="px-6 py-6 space-y-6">
+                    <!-- Scope Type Selection -->
+                    <div>
+                        <label for="scopeType" class="block text-sm font-medium text-gray-700 mb-2">
+                            Scope Type <span class="text-red-500">*</span>
+                        </label>
+                        <select id="scopeType" name="scope_type" required
+                                class="custom-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                onchange="handleScopeTypeChange()">
+                            <option value="">Select scope type...</option>
+                            <option value="civil_works">Civil Works</option>
+                            <option value="electrical">Electrical Works</option>
+                            <option value="mechanical">Mechanical Works</option>
+                            <option value="plumbing">Plumbing & Sanitary</option>
+                            <option value="interior">Interior Finishing</option>
+                            <option value="landscaping">Landscaping</option>
+                            <option value="security">Security Systems</option>
+                            <option value="other">Other (Custom)</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Scope Name (appears when "Other" is selected) -->
+                    <div id="customScopeField" class="hidden slide-in">
+                        <label for="customScopeName" class="block text-sm font-medium text-gray-700 mb-2">
+                            Custom Scope Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="customScopeName" 
+                               name="custom_name"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                               placeholder="Enter custom scope name">
+                        <p class="mt-1 text-xs text-gray-500">Provide a descriptive name for your custom scope</p>
+                    </div>
+
+                    <!-- Scope Name Display -->
+                    <div id="scopeNameField">
+                        <label for="scopeName" class="block text-sm font-medium text-gray-700 mb-2">
+                            Scope Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="scopeName" 
+                               name="name"
+                               required
+                               readonly
+                               class="block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                               placeholder="Select a scope type first">
+                    </div>
+
+                    <!-- Weight Input -->
+                    <div>
+                        <label for="scopeWeight" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weight Percentage <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" 
+                                   id="scopeWeight" 
+                                   name="weight"
+                                   step="0.01"
+                                   min="0.01"
+                                   max="100"
+                                   required
+                                   class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pr-8"
+                                   placeholder="0.00">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Percentage of total project progress this scope represents</p>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="scopeDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description (Optional)
+                        </label>
+                        <textarea id="scopeDescription" 
+                                  name="description"
+                                  rows="3"
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                  placeholder="Brief description of this scope's responsibilities..."></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                    <button type="submit" 
+                            id="createScopeBtn"
+                            class="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span id="createScopeBtnText">Create Scope</span>
+                    </button>
+                    <button type="button" 
+                            onclick="hideAddScopeModal()"
+                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Edit Scope Modal -->
+<div id="editScopeModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full modal-content">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-white">Edit Project Scope</h3>
+                        <p class="text-orange-100 text-sm">Modify scope details</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="editScopeForm" class="bg-white">
+                {% csrf_token %}
+                <div class="px-6 py-6 space-y-6">
+                    <input type="hidden" id="editScopeId" name="scope_id">
+                    
+                    <!-- Current Details Display -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Current Details</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Name:</span>
+                                <span id="currentScopeName" class="ml-2 font-medium text-gray-900"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Weight:</span>
+                                <span id="currentScopeWeight" class="ml-2 font-medium text-gray-900"></span>%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scope Name -->
+                    <div>
+                        <label for="editScopeName" class="block text-sm font-medium text-gray-700 mb-2">
+                            Scope Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="editScopeName" 
+                               name="name"
+                               required
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm">
+                    </div>
+
+                    <!-- Weight Input -->
+                    <div>
+                        <label for="editScopeWeight" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weight Percentage <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" 
+                                   id="editScopeWeight" 
+                                   name="weight"
+                                   step="0.01"
+                                   min="0.01"
+                                   max="100"
+                                   required
+                                   class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm pr-8">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Summary -->
+                    <div id="scopeChangeSummary" class="hidden bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="text-sm">
+                                <span class="font-medium text-blue-900">Changes:</span>
+                                <span id="scopeChanges" class="ml-1"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                    <button type="submit" 
+                            id="updateScopeBtn"
+                            class="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span id="updateScopeBtnText">Update Scope</span>
+                    </button>
+                    <button type="button" 
+                            onclick="hideEditScopeModal()"
+                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Add Category Modal - Matching Edit Modal Design -->
+<div id="addCategoryModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Header with Gradient Background -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-white">Add Budget Category</h3>
+                        <p class="text-green-100 text-sm">to <span id="selectedScopeName" class="font-medium"></span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" id="addCategoryForm" class="bg-white">
+                {% csrf_token %}
+                <div class="px-6 py-6 space-y-6">
+                    {{ form.scope.as_hidden }}
+                    
+                    <!-- Category Selection -->
+                    <div>
+                        <label for="id_category" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category <span class="text-red-500">*</span>
+                        </label>
+                        <select id="id_category" name="category" required
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm transition-colors"
+                                onchange="handleCategoryChange()">
+                            {% for value, label in form.category.field.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.category.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ form.category.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Custom Category Field (appears when "Other" is selected) -->
+                    <div id="customCategoryOtherField" class="hidden slide-in">
+                        <label for="id_category_other" class="block text-sm font-medium text-gray-700 mb-2">
+                            Specify Category <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="id_category_other"
+                               name="category_other"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm transition-colors">
+                        {% if form.category_other.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ form.category_other.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Planned Amount -->
+                    <div>
+                        <label for="id_planned_amount" class="block text-sm font-medium text-gray-700 mb-2">
+                            Planned Amount <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
+                            </div>
+                            <input type="number" 
+                                   id="id_planned_amount"
+                                   name="planned_amount"
+                                   step="0.01"
+                                   min="0"
+                                   required
+                                   class="pl-8 block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm transition-colors"
+                                   placeholder="0.00"
+                                   oninput="formatNumberInput(this); checkAddCategoryBudgetImpact();">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Enter the planned budget amount for this category</p>
+                    </div>
+
+                    <!-- Budget Impact Preview (similar to edit modal) -->
+                    <div id="addCategoryBudgetWarning" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-amber-800">Budget Impact</h3>
+                                <div class="mt-1 text-sm text-amber-700">
+                                    <p id="addCategoryBudgetWarningText"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Summary -->
+                    <div id="addCategorySummary" class="hidden bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="text-sm">
+                                <span class="font-medium text-blue-900">New Total:</span>
+                                <span id="addCategoryNewTotal" class="ml-1 number-format"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                    <button type="submit" 
+                            id="addCategoryBtn"
+                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto transition-colors">
+                        <span id="addCategoryBtnText">Add Category</span>
+                    </button>
+                    <button type="button" 
+                            onclick="hideAddCategoryModal()"
+                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Edit Budget Modal -->
+<div id="editBudgetModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-white">Edit Budget Category</h3>
+                        <p class="text-purple-100 text-sm">Modify <span id="editCategoryName" class="font-medium"></span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="editBudgetForm" class="bg-white">
+                {% csrf_token %}
+                <div class="px-6 py-6 space-y-6">
+                    <input type="hidden" id="editBudgetId" name="budget_id">
+                    
+                    <!-- Current Amount Display -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">Current Amount:</span>
+                            <span id="currentAmount" class="text-lg font-bold text-gray-900 number-format"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Budget Overflow Warning -->
+                    <div id="budgetWarning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Budget Overflow Warning</h3>
+                                <div class="mt-1 text-sm text-red-700">
+                                    <p id="budgetWarningText"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- New Amount Input -->
+                    <div>
+                        <label for="editPlannedAmount" class="block text-sm font-medium text-gray-700 mb-2">
+                            New Planned Amount <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
+                            </div>
+                            <input type="number" 
+                                   id="editPlannedAmount" 
+                                   name="planned_amount"
+                                   step="0.01"
+                                   min="0"
+                                   required
+                                   class="pl-8 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm number-format"
+                                   placeholder="0.00"
+                                   oninput="formatNumberInput(this); checkBudgetOverflow();">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Enter the updated budget amount for this category</p>
+                    </div>
+                    
+                    <!-- Change Summary -->
+                    <div id="changeSummary" class="hidden bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="text-sm">
+                                <span class="font-medium text-blue-900">Change:</span>
+                                <span id="changeAmount" class="ml-1 number-format"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                    <button type="submit" 
+                            id="updateBudgetBtn"
+                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:w-auto transition-colors">
+                        <span id="updateBtnText">Update Budget</span>
+                    </button>
+                    <button type="button" 
+                            onclick="hideEditBudgetModal()"
+                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Scope Confirmation Modal -->
+<div id="deleteScopeModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-white">Delete Project Scope</h3>
+                        <p class="text-red-100 text-sm">This action cannot be easily undone</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-6 py-6">
+                <!-- Scope Info -->
+                <div class="mb-4">
+                    <p class="text-gray-900 font-medium">You are about to delete:</p>
+                    <p class="text-lg font-semibold text-gray-900 mt-1" id="deleteScopeName"></p>
+                </div>
+
+                <!-- Warning Message -->
+                <div id="deleteWarningMessage" class="mb-6">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Confirmation Input for Hard Delete -->
+                <div id="confirmationField" class="hidden mb-4">
+                    <label for="deleteConfirmation" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type "DELETE" to confirm permanent deletion:
+                    </label>
+                    <input type="text" 
+                           id="deleteConfirmation"
+                           class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
+                           placeholder="Type DELETE here">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse space-y-3 sm:space-y-0 sm:space-x-3 sm:space-x-reverse">
+                <button type="button" 
+                        id="confirmDeleteBtn"
+                        onclick="confirmDeleteScope()"
+                        class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto transition-colors">
+                    <span id="deleteBtnText">Delete Scope</span>
+                </button>
+                <button type="button" 
+                        onclick="hideDeleteScopeModal()"
+                        class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function showDeleteScopeModalFromData(button) {
+    const scopeId = button.dataset.scopeId;
+    const scopeName = button.dataset.scopeName;
+    const hasTasks = button.dataset.hasTasks === 'true';
+    
+    showDeleteScopeModal(scopeId, scopeName, hasTasks);
+}
+
+// Global variables for budget calculation
+let approvedBudget = parseFloat('{{ project.approved_budget|default:0 }}') || 0;
+let currentTotalPlanned = parseFloat('{{ total_planned|default:0 }}') || 0;
+let categoryAllocations = {};
+
+// Scope type mapping
+const scopeTypeMapping = {
+    'civil_works': 'Civil Works',
+    'electrical': 'Electrical Works',
+    'mechanical': 'Mechanical Works',
+    'plumbing': 'Plumbing & Sanitary',
+    'interior': 'Interior Finishing',
+    'landscaping': 'Landscaping',
+    'security': 'Security Systems',
+    'other': ''
+};
+
+// Number formatting functions
+function formatNumberWithCommas(number) {
+    return parseFloat(number).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function formatNumberInput(input) {
+    // Remove existing commas and format
+    let value = input.value.replace(/,/g, '');
+    if (value && !isNaN(value)) {
+        input.value = value;
+    }
+}
+
+// Scope modal functions
+function handleScopeTypeChange() {
+    const scopeType = document.getElementById('scopeType').value;
+    const customField = document.getElementById('customScopeField');
+    const scopeNameField = document.getElementById('scopeName');
+    const customNameField = document.getElementById('customScopeName');
+    
+    if (scopeType === 'other') {
+        customField.classList.remove('hidden');
+        scopeNameField.readOnly = true;
+        scopeNameField.value = '';
+        scopeNameField.placeholder = 'Will be set from custom name';
+        customNameField.required = true;
+    } else {
+        customField.classList.add('hidden');
+        scopeNameField.readOnly = true;
+        scopeNameField.value = scopeTypeMapping[scopeType] || '';
+        scopeNameField.placeholder = 'Select a scope type first';
+        customNameField.required = false;
+        customNameField.value = '';
+    }
+}
+
+function showAddScopeModal() {
+    document.getElementById('addScopeModal').classList.remove('hidden');
+    // Reset form
+    document.getElementById('addScopeForm').reset();
+    document.getElementById('customScopeField').classList.add('hidden');
+    document.getElementById('scopeName').value = '';
+}
+
+function hideAddScopeModal() {
+    document.getElementById('addScopeModal').classList.add('hidden');
+    document.getElementById('addScopeForm').reset();
+}
+
+function showEditScopeModal(scopeId, scopeName, scopeWeight) {
+    const modal = document.getElementById('editScopeModal');
+    
+    // Set current values
+    document.getElementById('editScopeId').value = scopeId;
+    document.getElementById('currentScopeName').textContent = scopeName;
+    document.getElementById('currentScopeWeight').textContent = scopeWeight;
+    document.getElementById('editScopeName').value = scopeName;
+    document.getElementById('editScopeWeight').value = scopeWeight;
+    
+    // Store original values for comparison
+    document.getElementById('editScopeName').dataset.originalName = scopeName;
+    document.getElementById('editScopeWeight').dataset.originalWeight = scopeWeight;
+    
+    modal.classList.remove('hidden');
+}
+
+function hideEditScopeModal() {
+    document.getElementById('editScopeModal').classList.add('hidden');
+    document.getElementById('scopeChangeSummary').classList.add('hidden');
+}
+
+function showAddCategoryModal(scopeId, scopeName) {
+    console.log('showAddCategoryModal called with:', scopeId, scopeName);
+    
+    const modal = document.getElementById('addCategoryModal');
+    const scopeNameSpan = document.getElementById('selectedScopeName');
+    const scopeInput = document.querySelector('#addCategoryModal input[name="scope"]');
+    const customField = document.getElementById('customCategoryOtherField');
+    
+    scopeNameSpan.textContent = scopeName;
+    if (scopeInput) {
+        scopeInput.value = scopeId;
+        scopeInput.dataset.scopeId = scopeId;
+    }
+    
+    // Reset form and hide custom field
+    const form = modal.querySelector('form');
+    form.reset();
+    customField.classList.add('hidden');
+    
+    // Restore scope value after reset
+    if (scopeInput) {
+        scopeInput.value = scopeId;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function handleCategoryChange() {
+    const categorySelect = document.getElementById('id_category');
+    const customField = document.getElementById('customCategoryOtherField');
+    const categoryOtherInput = document.getElementById('id_category_other');
+    
+    if (!categorySelect || !customField || !categoryOtherInput) {
+        console.error('Required elements not found');
+        return;
+    }
+    
+    // Check if the selected value is "OTH"
+    if (categorySelect.value === 'OTH') {
+        customField.classList.remove('hidden');
+        categoryOtherInput.required = true;
+    } else {
+        customField.classList.add('hidden');
+        categoryOtherInput.required = false;
+        categoryOtherInput.value = '';
+    }
+}
+
+function hideAddCategoryModal() {
+    const modal = document.getElementById('addCategoryModal');
+    const customField = document.getElementById('customCategoryOtherField');
+    const form = modal.querySelector('form');
+    const categoryOtherInput = document.getElementById('id_category_other');
+    const budgetWarning = document.getElementById('addCategoryBudgetWarning');
+    const budgetSummary = document.getElementById('addCategorySummary');
+    const addBtn = document.getElementById('addCategoryBtn');
+    const addBtnText = document.getElementById('addCategoryBtnText');
+    
+    modal.classList.add('hidden');
+    customField.classList.add('hidden');
+    
+    // Hide budget impact elements
+    if (budgetWarning) budgetWarning.classList.add('hidden');
+    if (budgetSummary) budgetSummary.classList.add('hidden');
+    
+    if (categoryOtherInput) {
+        categoryOtherInput.required = false;
+        categoryOtherInput.value = '';
+    }
+    
+    // Reset button state
+    if (addBtn && addBtnText) {
+        addBtn.disabled = false;
+        addBtnText.textContent = 'Add Category';
+    }
+    
+    form.reset();
+    
+    // Reset the scope value after form reset
+    const scopeInput = document.querySelector('#addCategoryModal input[name="scope"]');
+    if (scopeInput && scopeInput.dataset.scopeId) {
+        scopeInput.value = scopeInput.dataset.scopeId;
+    }
+}
+
+// Budget modal functions
+function showEditBudgetModal(budgetId, categoryName, currentAmount) {
+    const modal = document.getElementById('editBudgetModal');
+    const categoryNameSpan = document.getElementById('editCategoryName');
+    const budgetIdInput = document.getElementById('editBudgetId');
+    const currentAmountSpan = document.getElementById('currentAmount');
+    const plannedAmountInput = document.getElementById('editPlannedAmount');
+    
+    // Set modal data
+    categoryNameSpan.textContent = categoryName;
+    budgetIdInput.value = budgetId;
+    currentAmountSpan.textContent = '₱' + formatNumberWithCommas(currentAmount);
+    plannedAmountInput.value = currentAmount;
+    
+    // Store original amount for comparison
+    plannedAmountInput.dataset.originalAmount = currentAmount;
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on amount input
+    setTimeout(() => {
+        plannedAmountInput.focus();
+        plannedAmountInput.select();
+    }, 100);
+}
+
+function hideEditBudgetModal() {
+    const modal = document.getElementById('editBudgetModal');
+    const changeSummary = document.getElementById('changeSummary');
+    const budgetWarning = document.getElementById('budgetWarning');
+    
+    modal.classList.add('hidden');
+    changeSummary.classList.add('hidden');
+    budgetWarning.classList.add('hidden');
+    document.getElementById('editBudgetForm').reset();
+}
+
+// Budget overflow checking
+function checkBudgetOverflow() {
+    const editPlannedAmountInput = document.getElementById('editPlannedAmount');
+    const originalAmount = parseFloat(editPlannedAmountInput.dataset.originalAmount || 0);
+    const newAmount = parseFloat(editPlannedAmountInput.value || 0);
+    const change = newAmount - originalAmount;
+    const newTotalPlanned = currentTotalPlanned + change;
+    const remaining = approvedBudget - newTotalPlanned;
+    
+    const changeSummary = document.getElementById('changeSummary');
+    const changeAmount = document.getElementById('changeAmount');
+    const budgetWarning = document.getElementById('budgetWarning');
+    const budgetWarningText = document.getElementById('budgetWarningText');
+    
+    // Show change summary
+    if (change !== 0 && !isNaN(change) && isFinite(change)) {
+        changeSummary.classList.remove('hidden');
+        const changeText = (change > 0 ? '+' : '') + '₱' + formatNumberWithCommas(Math.abs(change));
+        const changeColor = change > 0 ? 'text-green-900' : 'text-red-900';
+        changeAmount.textContent = changeText;
+        changeAmount.className = 'ml-1 number-format ' + changeColor;
+    } else {
+        changeSummary.classList.add('hidden');
+    }
+    
+    // Show budget overflow warning
+    if (remaining < 0) {
+        budgetWarning.classList.remove('hidden');
+        budgetWarningText.textContent = `This change will exceed the approved budget by ₱${formatNumberWithCommas(Math.abs(remaining))}. Total planned: ₱${formatNumberWithCommas(newTotalPlanned)} vs Approved: ₱${formatNumberWithCommas(approvedBudget)}`;
+    } else {
+        budgetWarning.classList.add('hidden');
+    }
+}
+
+// Expense modal functions
+function handleExpenseTypeChange() {
+    const expenseTypeSelect = document.getElementById('expenseTypeSelect');
+    const customField = document.getElementById('customExpenseField');
+    const expenseOtherInput = document.getElementById('expenseOther');
+    
+    if (!expenseTypeSelect || !customField || !expenseOtherInput) {
+        console.error('Required expense type elements not found');
+        return;
+    }
+    
+    // Check if the selected value is "other"
+    if (expenseTypeSelect.value === 'other') {
+        customField.classList.remove('hidden');
+        expenseOtherInput.required = true;
+    } else {
+        customField.classList.add('hidden');
+        expenseOtherInput.required = false;
+        expenseOtherInput.value = '';
+    }
+}
+
+function showAddExpenseModal(categoryId, categoryName) {
+    console.log('=== DEBUG showAddExpenseModal ===');
+    console.log('categoryId:', categoryId, '(type:', typeof categoryId, ')');
+    console.log('categoryName:', categoryName);
+    console.log('Current URL:', window.location.href);
+    
+    document.getElementById('expenseCategoryId').value = categoryId;
+    document.getElementById('selectedCategoryName').textContent = categoryName;
+    
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="expense_date"]').value = today;
+    
+    // Reset form and hide custom field
+    const form = document.getElementById('addExpenseForm');
+    form.reset();
+    document.getElementById('customExpenseField').classList.add('hidden');
+    document.getElementById('expenseOther').required = false;
+    
+    // Restore category and date after reset
+    document.getElementById('expenseCategoryId').value = categoryId;
+    document.querySelector('input[name="expense_date"]').value = today;
+    
+    // Fetch and display available allocation
+    fetchAvailableAllocation(categoryId);
+    
+    document.getElementById('addExpenseModal').classList.remove('hidden');
+}
+
+function closeAddExpenseModal() {
+    document.getElementById('addExpenseModal').classList.add('hidden');
+    document.getElementById('addExpenseForm').reset();
+    document.getElementById('customExpenseField').classList.add('hidden');
+    document.getElementById('expenseAmountWarning').classList.add('hidden');
+    document.getElementById('expenseOther').required = false;
+}
+
+function fetchAvailableAllocation(categoryId) {
+    const availableSpan = document.getElementById('availableAllocation');
+    const allocationDiv = document.getElementById('allocationInfoDiv');
+    
+    availableSpan.textContent = 'Loading...';
+    
+    const projectId = '{{ project.id }}';
+    const url = `/projects/${projectId}/categories/${categoryId}/allocation/`;
+    
+    console.log('Fetching allocation from URL:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            if (data.error) {
+                console.error('Allocation fetch error:', data.error);
+                availableSpan.textContent = '₱0.00';
+                categoryAllocations[categoryId] = 0;
+                updateAllocationInfo({allocated_amount: 0, spent_amount: 0, remaining_amount: 0});
+            } else {
+                const remainingAmount = data.remaining_amount;
+                categoryAllocations[categoryId] = remainingAmount;
+                availableSpan.textContent = '₱' + formatNumberWithCommas(remainingAmount);
+                
+                // Update allocation info display
+                updateAllocationInfo(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching allocation:', error);
+            availableSpan.textContent = '₱0.00';
+            categoryAllocations[categoryId] = 0;
+            updateAllocationInfo({allocated_amount: 0, spent_amount: 0, remaining_amount: 0});
+        });
+}
+
+function updateAllocationInfo(data) {
+    const allocationDiv = document.getElementById('allocationInfoDiv');
+
+    if (data.allocated_amount === 0) {
+        allocationDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-red-800">No Allocation Found:</span>
+                <span class="font-bold text-red-900">₱0.00</span>
+            </div>
+            <div class="text-xs text-red-600 mt-1">
+                Please allocate funds to this category first via "Manage Allocations"
+            </div>
+        `;
+        allocationDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-3 mb-4';
+    } else if (data.spent_amount > data.allocated_amount) {
+        // Notify user if spending exceeded allocation
+        allocationDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-red-800">Over Budget!</span>
+                <span class="font-bold text-red-900">₱${formatNumberWithCommas(data.remaining_amount)}</span>
+            </div>
+            <div class="text-xs text-red-600 mt-1">
+                Allocated: ₱${formatNumberWithCommas(data.allocated_amount)} | 
+                Spent: ₱${formatNumberWithCommas(data.spent_amount)} 
+                <br>
+                You have exceeded the allocated budget for this category!
+            </div>
+        `;
+        allocationDiv.className = 'bg-red-50 border border-red-400 rounded-lg p-3 mb-4';
+    } else {
+        // Normal display when within allocation
+        allocationDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-blue-800">Available Allocation:</span>
+                <span class="font-bold text-blue-900 number-format">₱${formatNumberWithCommas(data.remaining_amount)}</span>
+            </div>
+            <div class="text-xs text-blue-600 mt-1">
+                Allocated: ₱${formatNumberWithCommas(data.allocated_amount)} | 
+                Spent: ₱${formatNumberWithCommas(data.spent_amount)}
+            </div>
+        `;
+        allocationDiv.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4';
+    }
+}
+
+
+function checkExpenseAmount(input) {
+    const categoryId = document.getElementById('expenseCategoryId').value;
+    const expenseAmount = parseFloat(input.value || 0);
+    const availableAmount = categoryAllocations[categoryId] || 0;
+    const warningElement = document.getElementById('expenseAmountWarning');
+    const submitBtn = document.getElementById('addExpenseBtn');
+    
+    if (expenseAmount > availableAmount) {
+        warningElement.classList.remove('hidden');
+        if (availableAmount === 0) {
+            warningElement.textContent = 'No allocation available. Please allocate funds first.';
+            submitBtn.disabled = true;
+        } else {
+            warningElement.textContent = `Amount exceeds available allocation by ₱${formatNumberWithCommas(expenseAmount - availableAmount)}`;
+            submitBtn.disabled = false; // Allow over-allocation but warn
+        }
+        input.classList.add('border-red-500');
+    } else {
+        warningElement.classList.add('hidden');
+        input.classList.remove('border-red-500');
+        submitBtn.disabled = false;
+    }
+}
+
+// Message System Functions
+function showMessage(type, message) {
+    const container = document.getElementById('messageContainer');
+    const messageId = 'message-' + Date.now();
+    
+    // Create message element
+    const messageDiv = document.createElement('div');
+    messageDiv.id = messageId;
+    messageDiv.className = `transform transition-all duration-300 ease-in-out translate-x-full opacity-0`;
+    
+    // Set message content based on type
+    const iconAndContent = {
+        success: {
+            bg: 'bg-green-500',
+            icon: `<svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                   </svg>`,
+            hoverColor: 'text-green-200 hover:text-white'
+        },
+        error: {
+            bg: 'bg-red-500',
+            icon: `<svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                   </svg>`,
+            hoverColor: 'text-red-200 hover:text-white'
+        },
+        info: {
+            bg: 'bg-blue-500',
+            icon: `<svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                   </svg>`,
+            hoverColor: 'text-blue-200 hover:text-white'
+        }
+    };
+
+    const config = iconAndContent[type];
+    if (config) {
+        messageDiv.innerHTML = `
+            <div class="${config.bg} text-white px-6 py-4 rounded-lg shadow-lg flex items-center min-w-80">
+                ${config.icon}
+                <span class="font-medium">${message}</span>
+                <button onclick="removeMessage('${messageId}')" class="ml-4 ${config.hoverColor}">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+    }
+    
+    // Add to container
+    container.appendChild(messageDiv);
+    
+    // Animate in
+    setTimeout(() => {
+        messageDiv.classList.remove('translate-x-full', 'opacity-0');
+        messageDiv.classList.add('translate-x-0', 'opacity-100');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        removeMessage(messageId);
+    }, 5000);
+}
+
+function removeMessage(messageId) {
+    const messageElement = document.getElementById(messageId);
+    if (messageElement) {
+        messageElement.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+            messageElement.remove();
+        }, 300);
+    }
+}
+
+function checkAddCategoryBudgetImpact() {
+    const plannedAmountInput = document.getElementById('id_planned_amount');
+    const newAmount = parseFloat(plannedAmountInput.value || 0);
+    const newTotalPlanned = currentTotalPlanned + newAmount;
+    const remaining = approvedBudget - newTotalPlanned;
+    
+    const budgetWarning = document.getElementById('addCategoryBudgetWarning');
+    const budgetWarningText = document.getElementById('addCategoryBudgetWarningText');
+    const budgetSummary = document.getElementById('addCategorySummary');
+    const newTotalSpan = document.getElementById('addCategoryNewTotal');
+    
+    if (newAmount > 0) {
+        budgetSummary.classList.remove('hidden');
+        newTotalSpan.textContent = '₱' + formatNumberWithCommas(newTotalPlanned);
+        
+        if (remaining < 0) {
+            budgetWarning.classList.remove('hidden');
+            budgetWarningText.textContent = 'This will exceed the approved budget by ₱' + formatNumberWithCommas(Math.abs(remaining)) + '. New total: ₱' + formatNumberWithCommas(newTotalPlanned) + ' vs Approved: ₱' + formatNumberWithCommas(approvedBudget);
+            newTotalSpan.className = 'ml-1 number-format text-red-600 font-medium';
+        } else {
+            budgetWarning.classList.add('hidden');
+            newTotalSpan.className = 'ml-1 number-format text-green-600 font-medium';
+        }
+    } else {
+        budgetWarning.classList.add('hidden');
+        budgetSummary.classList.add('hidden');
+    }
+}
+
+// Functions for delete
+function deleteBudget(budgetId) {
+    const deleteUrl = `/projects/{{ project.id }}/budgets/${budgetId}/delete/`;
+    window.location.href = deleteUrl;
+}
+
+// Delete scope functions
+let currentScopeToDelete = null;
+let currentScopeHasTasks = false;
+
+function showDeleteScopeModal(scopeId, scopeName, hasTasks) {
+    currentScopeToDelete = scopeId;
+    currentScopeHasTasks = hasTasks;
+    
+    const modal = document.getElementById('deleteScopeModal');
+    const scopeNameElement = document.getElementById('deleteScopeName');
+    const warningMessage = document.getElementById('deleteWarningMessage');
+    const confirmationField = document.getElementById('confirmationField');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deleteBtnText = document.getElementById('deleteBtnText');
+    
+    scopeNameElement.textContent = scopeName;
+    
+    if (hasTasks) {
+        // Soft delete - scope has tasks
+        warningMessage.innerHTML = `
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-amber-800">Scope Has Active Tasks</h3>
+                        <div class="mt-2 text-sm text-amber-700">
+                            <p>This scope is currently being used in project tasks. It will be <strong>soft deleted</strong> (hidden from new selections but preserved for existing tasks).</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1">
+                                <li>Existing tasks will remain unchanged</li>
+                                <li>Scope will be hidden from future task creation</li>
+                                <li>Budget categories will be preserved</li>
+                                <li>You can restore this scope later if needed</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        confirmationField.classList.add('hidden');
+        confirmDeleteBtn.disabled = false;
+        deleteBtnText.textContent = 'Soft Delete Scope';
+    } else {
+        // Hard delete - no tasks
+        warningMessage.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Permanent Deletion</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>This scope has no associated tasks and will be <strong>permanently deleted</strong>.</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1">
+                                <li>All budget categories will be deleted</li>
+                                <li>All budget allocations will be removed</li>
+                                <li>This action cannot be undone</li>
+                                <li>Project progress calculations will be updated</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        confirmationField.classList.remove('hidden');
+        confirmDeleteBtn.disabled = true;
+        deleteBtnText.textContent = 'Permanently Delete';
+        
+        // Enable button only when "DELETE" is typed
+        document.getElementById('deleteConfirmation').addEventListener('input', function() {
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            if (this.value.toUpperCase() === 'DELETE') {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function hideDeleteScopeModal() {
+    const modal = document.getElementById('deleteScopeModal');
+    const confirmationInput = document.getElementById('deleteConfirmation');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    modal.classList.add('hidden');
+    confirmationInput.value = '';
+    confirmDeleteBtn.disabled = false;
+    confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    
+    currentScopeToDelete = null;
+    currentScopeHasTasks = false;
+}
+
+function confirmDeleteScope() {
+    if (!currentScopeToDelete) return;
+    
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deleteBtnText = document.getElementById('deleteBtnText');
+    
+    // Check confirmation for hard delete
+    if (!currentScopeHasTasks) {
+        const confirmationInput = document.getElementById('deleteConfirmation');
+        if (confirmationInput.value.toUpperCase() !== 'DELETE') {
+            showMessage('error', 'Please type "DELETE" to confirm');
+            return;
+        }
+    }
+    
+    // Show loading state
+    confirmDeleteBtn.disabled = true;
+    deleteBtnText.textContent = currentScopeHasTasks ? 'Soft Deleting...' : 'Deleting...';
+    
+    const data = {
+        scope_id: currentScopeToDelete,
+        force_delete: !currentScopeHasTasks
+    };
+    
+    fetch(`/projects/{{ project.id }}/scopes/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showMessage('error', data.error);
+        } else {
+            const actionType = currentScopeHasTasks ? 'soft deleted' : 'permanently deleted';
+            showMessage('success', data.message || `Scope ${actionType} successfully!`);
+            hideDeleteScopeModal();
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('error', 'An error occurred while deleting the scope');
+    })
+    .finally(() => {
+        // Reset button state
+        confirmDeleteBtn.disabled = false;
+        deleteBtnText.textContent = currentScopeHasTasks ? 'Soft Delete Scope' : 'Permanently Delete';
+    });
+}
+
+function restoreScope(scopeId) {
+    if (!confirm('Are you sure you want to restore this scope? It will become available for new tasks again.')) {
+        return;
+    }
+    
+    const data = {
+        scope_id: scopeId,
+        restore: true
+    };
+    
+    fetch(`/projects/{{ project.id }}/scopes/restore/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showMessage('error', data.error);
+        } else {
+            showMessage('success', data.message || 'Scope restored successfully!');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('error', 'An error occurred while restoring the scope');
+    });
+}
+
+// Event listeners and form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle custom scope name input
+    const customNameField = document.getElementById('customScopeName');
+    const scopeNameField = document.getElementById('scopeName');
+    
+    if (customNameField && scopeNameField) {
+        customNameField.addEventListener('input', function() {
+            scopeNameField.value = this.value;
+        });
+    }
+
+    // Edit planned amount change tracking
+    const editPlannedAmountInput = document.getElementById('editPlannedAmount');
+    if (editPlannedAmountInput) {
+        editPlannedAmountInput.addEventListener('input', function() {
+            checkBudgetOverflow();
+        });
+    }
+
+    // Scope editing change tracking
+    const editScopeNameInput = document.getElementById('editScopeName');
+    const editScopeWeightInput = document.getElementById('editScopeWeight');
+    
+    function trackScopeChanges() {
+        const nameOriginal = editScopeNameInput.dataset.originalName;
+        const weightOriginal = parseFloat(editScopeWeightInput.dataset.originalWeight);
+        const nameCurrent = editScopeNameInput.value;
+        const weightCurrent = parseFloat(editScopeWeightInput.value);
+        
+        const scopeChangeSummary = document.getElementById('scopeChangeSummary');
+        const scopeChanges = document.getElementById('scopeChanges');
+        
+        let changes = [];
+        
+        if (nameCurrent !== nameOriginal) {
+            changes.push(`Name: "${nameOriginal}" → "${nameCurrent}"`);
+        }
+        
+        if (weightCurrent !== weightOriginal && !isNaN(weightCurrent)) {
+            const weightChange = weightCurrent - weightOriginal;
+            changes.push(`Weight: ${weightOriginal}% → ${weightCurrent}% (${weightChange > 0 ? '+' : ''}${weightChange.toFixed(2)}%)`);
+        }
+        
+        if (changes.length > 0) {
+            scopeChangeSummary.classList.remove('hidden');
+            scopeChanges.textContent = changes.join(', ');
+        } else {
+            scopeChangeSummary.classList.add('hidden');
+        }
+    }
+    
+    if (editScopeNameInput && editScopeWeightInput) {
+        editScopeNameInput.addEventListener('input', trackScopeChanges);
+        editScopeWeightInput.addEventListener('input', trackScopeChanges);
+    }
+
+    // AJAX form submission for scope creation
+    const addScopeForm = document.getElementById('addScopeForm');
+    if (addScopeForm) {
+        addScopeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const createBtn = document.getElementById('createScopeBtn');
+            const createBtnText = document.getElementById('createScopeBtnText');
+            
+            // Show loading state
+            createBtn.disabled = true;
+            createBtnText.textContent = 'Creating...';
+            createBtn.classList.add('cursor-not-allowed');
+            
+            const formData = new FormData(this);
+            const scopeType = formData.get('scope_type');
+            let scopeName = formData.get('name');
+            
+            // If custom scope, use custom name
+            if (scopeType === 'other') {
+                scopeName = formData.get('custom_name');
+            }
+            
+            const data = {
+                name: scopeName,
+                weight: formData.get('weight'),
+                description: formData.get('description') || ''
+            };
+            
+            fetch(`/scheduling/{{ project.id }}/create-scope/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('error', data.error);
+                } else {
+                    showMessage('success', data.message || 'Scope created successfully!');
+                    hideAddScopeModal();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while creating the scope');
+            })
+            .finally(() => {
+                // Reset button state
+                createBtn.disabled = false;
+                createBtnText.textContent = 'Create Scope';
+                createBtn.classList.remove('cursor-not-allowed');
+            });
+        });
+    }
+
+    // AJAX form submission for scope editing
+    const editScopeForm = document.getElementById('editScopeForm');
+    if (editScopeForm) {
+        editScopeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const scopeId = document.getElementById('editScopeId').value;
+            const updateBtn = document.getElementById('updateScopeBtn');
+            const updateBtnText = document.getElementById('updateScopeBtnText');
+            
+            // Show loading state
+            updateBtn.disabled = true;
+            updateBtnText.textContent = 'Updating...';
+            updateBtn.classList.add('cursor-not-allowed');
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                weight: formData.get('weight')
+            };
+            
+            fetch(`/projects/{{ project.id }}/scopes/${scopeId}/edit/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('error', data.error);
+                } else {
+                    showMessage('success', data.message || 'Scope updated successfully!');
+                    hideEditScopeModal();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while updating the scope');
+            })
+            .finally(() => {
+                // Reset button state
+                updateBtn.disabled = false;
+                updateBtnText.textContent = 'Update Scope';
+                updateBtn.classList.remove('cursor-not-allowed');
+            });
+        });
+    }
+
+    // AJAX form submission for budget editing
+    const editBudgetForm = document.getElementById('editBudgetForm');
+    if (editBudgetForm) {
+        editBudgetForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const budgetId = document.getElementById('editBudgetId').value;
+            const plannedAmount = document.getElementById('editPlannedAmount').value;
+            const updateBtn = document.getElementById('updateBudgetBtn');
+            const updateBtnText = document.getElementById('updateBtnText');
+            
+            // Show loading state
+            updateBtn.disabled = true;
+            updateBtnText.textContent = 'Updating...';
+            updateBtn.classList.add('cursor-not-allowed');
+            
+            const data = {
+                planned_amount: plannedAmount
+            };
+            
+            fetch(`/projects/{{ project.id }}/budgets/${budgetId}/edit-ajax/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('error', data.error);
+                } else {
+                    showMessage('success', data.message || 'Budget updated successfully!');
+                    hideEditBudgetModal();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while updating the budget');
+            })
+            .finally(() => {
+                // Reset button state
+                updateBtn.disabled = false;
+                updateBtnText.textContent = 'Update Budget';
+                updateBtn.classList.remove('cursor-not-allowed');
+            });
+        });
+    }
+
+    // AJAX form submission for add expense
+    const addExpenseForm = document.getElementById('addExpenseForm');
+    if (addExpenseForm) {
+        addExpenseForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('addExpenseBtn');
+            const originalText = submitBtn.textContent;
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Adding...';
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('error', data.error);
+                } else {
+                    showMessage('success', data.message || 'Expense added successfully!');
+                    closeAddExpenseModal();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'An error occurred while adding the expense');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            });
+        });
+    }
+
+    // Format all existing numbers on the page
+    const numberElements = document.querySelectorAll('.number-format');
+    numberElements.forEach(element => {
+        const text = element.textContent;
+        const numberMatch = text.match(/₱([\d,]+\.?\d*)/);
+        if (numberMatch) {
+            const number = numberMatch[1].replace(/,/g, '');
+            const formatted = formatNumberWithCommas(number);
+            element.textContent = text.replace(numberMatch[1], formatted);
+        }
+    });
+});
+
+// Close modals when clicking outside
+const modals = ['addScopeModal', 'editScopeModal', 'addCategoryModal', 'editBudgetModal', 'deleteScopeModal', 'addExpenseModal'];
+modals.forEach(modalId => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                // Call the appropriate hide function
+                switch(modalId) {
+                    case 'addScopeModal': hideAddScopeModal(); break;
+                    case 'editScopeModal': hideEditScopeModal(); break;
+                    case 'addCategoryModal': hideAddCategoryModal(); break;
+                    case 'editBudgetModal': hideEditBudgetModal(); break;
+                    case 'deleteScopeModal': hideDeleteScopeModal(); break;
+                    case 'addExpenseModal': closeAddExpenseModal(); break;
+                }
+            }
+        });
+    }
+});
+
+// Enhanced UX: Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // ESC to close any open modal
+    if (e.key === 'Escape') {
+        hideAddScopeModal();
+        hideEditScopeModal();
+        hideAddCategoryModal();
+        hideEditBudgetModal();
+        hideDeleteScopeModal();
+        closeAddExpenseModal();
+    }
+    
+    // Ctrl+N for new scope (when no modal is open)
+    if (e.ctrlKey && e.key === 'n' && !document.querySelector('.fixed.inset-0:not(.hidden)')) {
+        e.preventDefault();
+        showAddScopeModal();
+    }
+});
+
+// Add comma formatting filter simulation
+String.prototype.addCommas = function() {
+    return this.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+</script>
+{% endblock %}

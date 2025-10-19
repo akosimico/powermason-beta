@@ -1,0 +1,20 @@
+Hi {{ user.first_name|default:user.email }},
+
+Welcome to Powermason! We're excited to have you on board.
+
+To complete your registration and start managing your projects efficiently, please confirm your email address by clicking the link below:
+
+{{ activate_url }}
+
+This link will expire in {{ expiration_days }} days for security reasons.
+
+If you didn't create an account with us, please ignore this email.
+
+Need help? Reply to this email or contact our support team.
+
+Best regards,
+The Powermason Team
+
+---
+Powermason - Streamline your projects and track progress with ease
+Website: https://powermason.com

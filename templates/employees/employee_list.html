@@ -1,0 +1,379 @@
+
+{% extends "base_employee.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+  <!-- Compact Header -->
+  <div class="bg-white border-b border-slate-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Team Members</h1>
+        <p class="text-sm text-slate-600">Manage your construction team</p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <a href="{% url 'employee:dashboard' %}" 
+           class="inline-flex items-center px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v3H8V5z" />
+          </svg>
+          Dashboard
+        </a>
+        <a href="{% url 'employee:export_csv' %}" 
+           class="inline-flex items-center px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export
+        </a>
+        <a href="{% url 'employee:create' %}" 
+           class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Add Employee
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Compact Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-slate-600">Total</p>
+            <p class="text-xl font-bold text-slate-900">{{ stats.total_employees }}</p>
+          </div>
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-slate-600">Active</p>
+            <p class="text-xl font-bold text-slate-900">{{ stats.active_employees }}</p>
+          </div>
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-slate-600">Managers</p>
+            <p class="text-xl font-bold text-slate-900">{{ stats.project_managers }}</p>
+          </div>
+          <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-slate-600">Expiring</p>
+            <p class="text-xl font-bold text-slate-900">{{ stats.expiring_contracts }}</p>
+          </div>
+          <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact Filters -->
+    <div class="bg-white rounded-lg border border-slate-200 p-4 mb-6">
+      <form method="get" class="flex flex-wrap items-end gap-4">
+        <div class="flex-1 min-w-64">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+          <input type="text" name="search" value="{{ filter_form.search.value|default:'' }}"
+                 placeholder="Search employees..."
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        
+        <div class="w-32">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+          <select name="role" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">All</option>
+            {% for value, display in filter_form.role.field.choices %}
+              {% if value %}
+                <option value="{{ value }}" {% if filter_form.role.value == value %}selected{% endif %}>{{ display }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="w-32">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+          <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">All</option>
+            {% for value, display in filter_form.status.field.choices %}
+              {% if value %}
+                <option value="{{ value }}" {% if filter_form.status.value == value %}selected{% endif %}>{{ display }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="w-36">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Contract</label>
+          <select name="contract_status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">All</option>
+            <option value="expiring" {% if filter_form.contract_status.value == 'expiring' %}selected{% endif %}>Expiring</option>
+            <option value="expired" {% if filter_form.contract_status.value == 'expired' %}selected{% endif %}>Expired</option>
+          </select>
+        </div>
+
+        <button type="submit" 
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Filter
+        </button>
+      </form>
+    </div>
+
+    <!-- Employee Table -->
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employee</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Role</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contract</th>
+              <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Access</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            {% for employee in employees %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-white text-xs font-medium">
+                      {{ employee.first_name|first }}{{ employee.last_name|first }}
+                    </span>
+                  </div>
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-slate-900">
+                      <a href="{% url 'employee:detail' employee.pk %}" class="hover:text-indigo-600">
+                        {{ employee.full_name }}
+                      </a>
+                    </div>
+                    <div class="text-xs text-slate-500">{{ employee.employee_id }}</div>
+                    {% if employee.email %}
+                      <div class="text-xs text-slate-500">{{ employee.email }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-800">
+                  {{ employee.get_role_display }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                {% if employee.status == 'active' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
+                    Active
+                  </span>
+                {% elif employee.status == 'inactive' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-800">
+                    <div class="w-1.5 h-1.5 bg-slate-500 rounded-full mr-1.5"></div>
+                    Inactive
+                  </span>
+                {% elif employee.status == 'on_leave' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <div class="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1.5"></div>
+                    On Leave
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                    <div class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></div>
+                    Terminated
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if employee.contract_end_date %}
+                  <div class="text-sm text-slate-900">{{ employee.contract_end_date|date:"M j, Y" }}</div>
+                  {% if employee.is_contract_expired %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mt-1">
+                      <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      Expired
+                    </span>
+                  {% elif employee.contract_expiring_soon %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 mt-1">
+                      <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                      </svg>
+                      {{ employee.days_until_contract_expiry }}d left
+                    </span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-sm text-slate-500">Permanent</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-center">
+                {% if employee.user_profile %}
+                  <svg class="w-5 h-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                {% else %}
+                  <svg class="w-5 h-5 text-slate-300 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end space-x-1">
+                  <a href="{% url 'employee:detail' employee.pk %}" 
+                     class="p-1.5 text-slate-400 hover:text-indigo-600 rounded"
+                     title="View Details">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </a>
+                  <a href="{% url 'employee:edit' employee.pk %}" 
+                     class="p-1.5 text-slate-400 hover:text-indigo-600 rounded"
+                     title="Edit">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </a>
+                  {% if employee.contract_expiring_soon or employee.is_contract_expired %}
+                    <button class="p-1.5 text-slate-400 hover:text-orange-600 rounded extend-contract-btn"
+                            data-employee-id="{{ employee.pk }}"
+                            data-employee-name="{{ employee.full_name }}"
+                            title="Extend Contract">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-4 py-12 text-center">
+                <div class="flex flex-col items-center">
+                  <svg class="w-12 h-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <h3 class="text-lg font-medium text-slate-900 mb-2">No employees found</h3>
+                  <p class="text-slate-500">Try adjusting your search filters.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Compact Pagination -->
+      {% if is_paginated %}
+      <div class="bg-white px-4 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-sm text-slate-700">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex items-center space-x-2">
+          {% if page_obj.has_previous %}
+            <a href="?{% for key, value in search_params.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.previous_page_number }}" 
+               class="p-2 text-slate-400 hover:text-slate-600 rounded">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          {% endif %}
+          
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <span class="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-50 rounded">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+              <a href="?{% for key, value in search_params.items %}{{ key }}={{ value }}&{% endfor %}page={{ num }}" 
+                 class="px-3 py-1 text-sm font-medium text-slate-600 hover:text-slate-900 rounded">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          
+          {% if page_obj.has_next %}
+            <a href="?{% for key, value in search_params.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.next_page_number }}" 
+               class="p-2 text-slate-400 hover:text-slate-600 rounded">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Compact Contract Extension Modal -->
+<div id="extendContractModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-900">Extend Contract</h3>
+        <button type="button" class="text-slate-400 hover:text-slate-600" id="closeModal">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+      
+      <form id="extendContractForm" class="space-y-4">
+        <div>
+          <label for="employeeName" class="block text-sm font-medium text-slate-700 mb-1">Employee</label>
+          <input type="text" id="employeeName" readonly 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50 text-slate-600">
+        </div>
+        
+        <div>
+          <label for="newEndDate" class="block text-sm font-medium text-slate-700 mb-1">New Contract End Date</label>
+          <input type="date" id="newEndDate" required 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" id="cancelExtend"
+                  class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700">
+            Extend Contract
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

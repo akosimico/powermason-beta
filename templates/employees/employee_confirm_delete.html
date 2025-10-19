@@ -1,0 +1,502 @@
+<!-- employees/templates/employees/employee_confirm_delete.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terminate Employee - {{ object.full_name }}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: {
+            50: '#eff6ff',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8',
+          }
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Header Section -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+            <a href="{% url 'employee:dashboard' %}" class="hover:text-primary-600 transition-colors">Dashboard</a>
+            <i class="fas fa-chevron-right text-xs"></i>
+            <a href="{% url 'employee:list' %}" class="hover:text-primary-600 transition-colors">Employees</a>
+            <i class="fas fa-chevron-right text-xs"></i>
+            <a href="{% url 'employee:detail' object.pk %}" class="hover:text-primary-600 transition-colors">{{ object.full_name }}</a>
+            <i class="fas fa-chevron-right text-xs"></i>
+            <span class="text-gray-900 font-medium">Terminate</span>
+          </nav>
+          <h1 class="text-3xl font-bold text-red-600 flex items-center">
+            <i class="fas fa-exclamation-triangle mr-3"></i>
+            Confirm Employee Termination
+          </h1>
+          <p class="mt-1 text-sm text-gray-600">This action will terminate the employee and cannot be undone</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Critical Warning Banner -->
+    <div class="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-6 mb-8 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl animate-pulse"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h3 class="text-lg font-bold text-red-800 mb-2">⚠️ Critical Action: Employee Termination</h3>
+          <div class="text-sm text-red-700 space-y-2">
+            <p class="font-semibold">This action will immediately:</p>
+            <ul class="list-disc list-inside space-y-1 ml-4">
+              <li>Set the employee status to "Terminated"</li>
+              <li>Deactivate their system access (if applicable)</li>
+              <li>Archive their user profile</li>
+              <li>Log the termination for audit purposes</li>
+            </ul>
+            <p class="font-semibold text-red-800 bg-red-100 p-2 rounded-lg border border-red-200 mt-3">
+              <i class="fas fa-info-circle mr-2"></i>
+              This action cannot be undone. The employee record will be preserved for historical purposes.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Information Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+          <i class="fas fa-user mr-3 text-gray-400"></i>
+          Employee Information
+        </h3>
+      </div>
+      
+      <div class="p-6">
+        <div class="flex items-start space-x-6">
+          <!-- Employee Avatar -->
+          <div class="flex-shrink-0">
+            <div class="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-inner">
+              <i class="fas fa-user text-gray-500 text-2xl"></i>
+            </div>
+          </div>
+          
+          <!-- Employee Details -->
+          <div class="flex-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Basic Information -->
+              <div class="space-y-4">
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Full Name</dt>
+                  <dd class="text-lg font-bold text-gray-900">{{ object.full_name }}</dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Employee ID</dt>
+                  <dd class="text-sm font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{{ object.employee_id }}</dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Job Role</dt>
+                  <dd class="text-sm">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                      {{ object.get_role_display }}
+                    </span>
+                  </dd>
+                </div>
+              </div>
+              
+              <!-- Employment Details -->
+              <div class="space-y-4">
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Current Status</dt>
+                  <dd class="text-sm">
+                    {% if object.status == 'active' %}
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Active
+                      </span>
+                    {% elif object.status == 'inactive' %}
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                        <div class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1.5"></div>
+                        Inactive
+                      </span>
+                    {% elif object.status == 'on_leave' %}
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1.5"></div>
+                        On Leave
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        <div class="w-1.5 h-1.5 bg-red-400 rounded-full mr-1.5"></div>
+                        {{ object.get_status_display }}
+                      </span>
+                    {% endif %}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Hire Date</dt>
+                  <dd class="text-sm text-gray-900">{{ object.hire_date|date:"F d, Y" }}</dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Department</dt>
+                  <dd class="text-sm text-gray-900">{{ object.department|default:"Not assigned" }}</dd>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Information -->
+            {% if object.email or object.phone %}
+            <div class="mt-6 pt-4 border-t border-gray-200">
+              <h4 class="text-sm font-medium text-gray-500 mb-3">Contact Information</h4>
+              <div class="flex items-center space-x-6 text-sm text-gray-600">
+                {% if object.email %}
+                <div class="flex items-center">
+                  <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                  <span>{{ object.email }}</span>
+                </div>
+                {% endif %}
+                {% if object.phone %}
+                <div class="flex items-center">
+                  <i class="fas fa-phone mr-2 text-gray-400"></i>
+                  <span>{{ object.phone }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Access Impact -->
+    {% if object.user_profile %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h4 class="text-lg font-semibold text-yellow-800 mb-2">System Access Impact</h4>
+          <div class="text-sm text-yellow-700 space-y-2">
+            <p class="font-medium">This employee currently has system access. Termination will:</p>
+            <div class="bg-yellow-100 border border-yellow-300 rounded-lg p-3 space-y-2">
+              <div class="flex items-center">
+                <i class="fas fa-user-times text-yellow-600 mr-2"></i>
+                <span><strong>Username:</strong> {{ object.user_profile.user.username }}</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-shield-alt text-yellow-600 mr-2"></i>
+                <span><strong>Current Role:</strong> {{ object.user_profile.get_role_display }}</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-clock text-yellow-600 mr-2"></i>
+                <span><strong>Last Login:</strong> 
+                  {% if object.user_profile.user.last_login %}
+                    {{ object.user_profile.user.last_login|timesince }} ago
+                  {% else %}
+                    Never
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+            <div class="mt-3 space-y-1">
+              <p class="flex items-start">
+                <i class="fas fa-times-circle text-red-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                <span>Immediately deactivate user account</span>
+              </p>
+              <p class="flex items-start">
+                <i class="fas fa-archive text-yellow-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                <span>Archive user profile (preserves audit trail)</span>
+              </p>
+              <p class="flex items-start">
+                <i class="fas fa-ban text-red-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                <span>Prevent all future system access</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Contract Information -->
+    {% if object.contract_end_date %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-file-contract text-blue-600"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h4 class="text-lg font-semibold text-blue-800 mb-2">Contract Information</h4>
+          <div class="text-sm text-blue-700 space-y-2">
+            <div class="flex items-center justify-between bg-blue-100 border border-blue-300 rounded-lg p-3">
+              <div>
+                <p class="font-medium">Contract End Date: <span class="font-bold">{{ object.contract_end_date|date:"F d, Y" }}</span></p>
+                {% if object.is_contract_expired %}
+                <p class="text-red-600 font-medium mt-1">
+                  <i class="fas fa-exclamation-circle mr-1"></i>
+                  Contract has already expired
+                </p>
+                {% elif object.contract_expiring_soon %}
+                <p class="text-orange-600 font-medium mt-1">
+                  <i class="fas fa-clock mr-1"></i>
+                  Contract expires in {{ object.days_until_contract_expiry }} days
+                </p>
+                {% else %}
+                <p class="text-green-600 font-medium mt-1">
+                  <i class="fas fa-check-circle mr-1"></i>
+                  {{ object.days_until_contract_expiry }} days remaining
+                </p>
+                {% endif %}
+              </div>
+              {% if object.is_contract_expired %}
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  Expired
+                </span>
+              {% elif object.contract_expiring_soon %}
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  Expiring Soon
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-blue-600">
+              <i class="fas fa-info-circle mr-1"></i>
+              Termination will be recorded regardless of contract status
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Confirmation Form -->
+    <div class="bg-white rounded-xl shadow-sm border-2 border-red-200 overflow-hidden">
+      <div class="px-6 py-4 bg-red-50 border-b border-red-200">
+        <h3 class="text-lg font-semibold text-red-800 flex items-center">
+          <i class="fas fa-clipboard-check mr-3 text-red-600"></i>
+          Final Confirmation Required
+        </h3>
+      </div>
+      
+      <div class="p-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-red-500 text-lg mt-0.5"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-red-800 font-medium">
+                By proceeding, you confirm that you have the authority to terminate this employee and understand that:
+              </p>
+              <ul class="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+                <li>This action is <strong>permanent and cannot be reversed</strong></li>
+                <li>The employee will lose immediate access to all systems</li>
+                <li>All termination procedures should be followed per company policy</li>
+                <li>The action will be logged for audit purposes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Checkbox -->
+        <div class="mb-6">
+          <label class="flex items-start space-x-3 cursor-pointer group">
+            <input type="checkbox" id="confirmTermination" 
+                   class="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+            <div class="text-sm">
+              <span class="font-medium text-gray-900 group-hover:text-red-600 transition-colors">
+                I understand and confirm that I want to terminate {{ object.full_name }}
+              </span>
+              <p class="text-gray-500 mt-1">
+                This will set their status to "Terminated" and deactivate system access.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+          <a href="{% url 'employee:detail' object.pk %}" 
+             class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Cancel & Return
+          </a>
+
+          <form method="post" class="inline" onsubmit="return validateTermination(event)">
+            {% csrf_token %}
+            <button type="submit" 
+                    id="terminateButton"
+                    disabled
+                    class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-400 cursor-not-allowed transition-all duration-200">
+              <i class="fas fa-user-times mr-2"></i>
+              Terminate Employee
+            </button>
+          </form>
+        </div>
+        
+        <p class="mt-3 text-xs text-gray-500 text-center">
+          <i class="fas fa-shield-alt mr-1"></i>
+          This action will be logged with your user account for security purposes
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('confirmTermination');
+    const terminateButton = document.getElementById('terminateButton');
+    
+    // Enable/disable terminate button based on checkbox
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            terminateButton.disabled = false;
+            terminateButton.className = terminateButton.className.replace(
+                'bg-gray-400 cursor-not-allowed',
+                'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer'
+            );
+        } else {
+            terminateButton.disabled = true;
+            terminateButton.className = terminateButton.className.replace(
+                'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer',
+                'bg-gray-400 cursor-not-allowed'
+            );
+        }
+    });
+});
+
+function validateTermination(event) {
+    const checkbox = document.getElementById('confirmTermination');
+    const terminateButton = document.getElementById('terminateButton');
+    
+    if (!checkbox.checked) {
+        event.preventDefault();
+        showNotification('Please confirm that you want to terminate this employee', 'error');
+        return false;
+    }
+    
+    // Final confirmation dialog
+    const employeeName = '{{ object.full_name|escapejs }}';
+    const confirmMessage = `Are you absolutely sure you want to TERMINATE ${employeeName}?\n\nThis action will:\n- Set status to "Terminated"\n- Deactivate system access\n- Cannot be undone\n\nType "TERMINATE" to confirm:`;
+    
+    const userConfirmation = prompt(confirmMessage);
+    
+    if (userConfirmation !== 'TERMINATE') {
+        event.preventDefault();
+        showNotification('Termination cancelled - confirmation text did not match', 'info');
+        return false;
+    }
+    
+    // Show loading state
+    const originalText = terminateButton.innerHTML;
+    terminateButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Terminating...';
+    terminateButton.disabled = true;
+    
+    // Show final warning notification
+    showNotification('Processing employee termination...', 'warning');
+    
+    return true;
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full max-w-sm`;
+    
+    const typeClasses = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        info: 'bg-blue-500 text-white',
+        warning: 'bg-yellow-500 text-white'
+    };
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        info: 'fas fa-info-circle',
+        warning: 'fas fa-exclamation-triangle'
+    };
+    
+    notification.className += ` ${typeClasses[type] || typeClasses.info}`;
+    notification.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <i class="${icons[type] || icons.info} flex-shrink-0 mt-0.5"></i>
+            <div class="flex-1">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <button class="flex-shrink-0 text-white hover:text-gray-200 transition-colors" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.classList.remove('translate-x-full'), 10);
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Add keyboard shortcut to focus checkbox (Alt+C)
+document.addEventListener('keydown', function(e) {
+    if (e.altKey && e.key === 'c') {
+        e.preventDefault();
+        document.getElementById('confirmTermination').focus();
+    }
+});
+
+// Prevent accidental form submission
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.type !== 'submit') {
+        e.preventDefault();
+    }
+});
+
+// Add visual feedback when hovering over critical elements
+const criticalElements = document.querySelectorAll('button[type="submit"], #confirmTermination');
+criticalElements.forEach(element => {
+    element.addEventListener('mouseenter', function() {
+        if (!this.disabled) {
+            this.style.transform = 'scale(1.02)';
+        }
+    });
+    
+    element.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+    });
+});
+
+// Auto-focus confirmation checkbox after page load
+setTimeout(() => {
+    const checkbox = document.getElementById('confirmTermination');
+    if (checkbox) {
+        checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}, 500);
+</script>
+{% endblock %}
