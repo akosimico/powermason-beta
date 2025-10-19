@@ -253,6 +253,19 @@ def general_projects_list(request):
         project_data__project_source="GC"
     ).order_by('-submitted_at')
     
+    # Get project managers for pending projects
+    pending_project_managers = {}
+    for pending_project in pending_projects:
+        if pending_project.project_data and isinstance(pending_project.project_data, dict):
+            manager_id = pending_project.project_data.get('project_manager_id')
+            if manager_id:
+                try:
+                    from authentication.models import UserProfile
+                    manager = UserProfile.objects.get(id=manager_id)
+                    pending_project_managers[pending_project.id] = manager
+                except UserProfile.DoesNotExist:
+                    pending_project_managers[pending_project.id] = None
+    
     # Calculate total approved budget
     total_budget = projects.aggregate(
         total=models.Sum('approved_budget')
@@ -261,6 +274,7 @@ def general_projects_list(request):
     return render(request, "project_profiling/general_project_list.html", {
         "projects": projects,
         "pending_projects": pending_projects,
+        "pending_project_managers": pending_project_managers,
         "url_name": resolve(request.path_info).url_name,  
         "project_type": "GC",
         "show_archived": show_archived,
@@ -339,6 +353,19 @@ def direct_projects_list(request):
         project_data__project_source="DC"
     ).order_by('-submitted_at')
     
+    # Get project managers for pending projects
+    pending_project_managers = {}
+    for pending_project in pending_projects:
+        if pending_project.project_data and isinstance(pending_project.project_data, dict):
+            manager_id = pending_project.project_data.get('project_manager_id')
+            if manager_id:
+                try:
+                    from authentication.models import UserProfile
+                    manager = UserProfile.objects.get(id=manager_id)
+                    pending_project_managers[pending_project.id] = manager
+                except UserProfile.DoesNotExist:
+                    pending_project_managers[pending_project.id] = None
+    
     # Calculate total approved budget
     total_budget = projects.aggregate(
         total=models.Sum('approved_budget')
@@ -347,6 +374,7 @@ def direct_projects_list(request):
     return render(request, "project_profiling/direct_project_list.html", {
         "projects": projects,
         "pending_projects": pending_projects,
+        "pending_project_managers": pending_project_managers,
         "url_name": resolve(request.path_info).url_name,  
         "project_type": "DC",
         "show_archived": show_archived,

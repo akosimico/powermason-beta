@@ -438,6 +438,9 @@ function loadClientDetails(clientId) {
     fetch(`/manage-client/api/clients/${clientId}/`)
         .then(response => response.json())
         .then(data => {
+            // Store client data globally for use in project redirects
+            window.currentClientData = data;
+            
             // Update header
             document.getElementById('detailsClientName').textContent = data.company_name;
             document.getElementById('detailsContactName').textContent = data.contact_name;
@@ -617,10 +620,17 @@ function redirectToProjectView(projectId) {
         return;
     }
 
-    const projectSource = 'client'; 
+    // Get the client type from the stored client data
+    if (!window.currentClientData || !window.currentClientData.client_type) {
+        console.error('Client data not available for project redirect');
+        alert('Client data not available. Please refresh and try again.');
+        return;
+    }
+
+    const projectSource = window.currentClientData.client_type; // 'DC' or 'GC'
     
-    // Build the URL according to your Django pattern: <str:token>/view/<str:role>/<str:project_source>/<int:pk>/
-    const url = `/projects/${token}/view/${role}/${projectSource}/${projectId}/`;
+    // Build the URL according to your Django pattern: view/<str:project_source>/<int:pk>/
+    const url = `/projects/view/${projectSource}/${projectId}/`;
     
     console.log('Redirecting to project view:', url);
     window.location.href = url;
