@@ -747,10 +747,12 @@ const philippinesBounds = [
 ];
 
 // Project status colors
+// Align marker colors with status card colors in the dashboard template
 const statusColors = {
-    'PL': '#3b82f6', // blue - Planned
-    'IP': '#f97316', // orange - In Progress
-    'CP': '#22c55e', // green - Completed
+    'PL': '#f59e0b', // amber/yellow - Planned
+    'OG': '#3b82f6', // blue - Ongoing/Active
+    'IP': '#3b82f6', // blue - In Progress (same as OG)
+    'CP': '#10b981', // green - Completed
     'CN': '#ef4444'  // red - Cancelled
 };
 
@@ -977,7 +979,7 @@ function addProjectMarker(project, lat, lng) {
     const markerIcon = L.divIcon({
         className: 'custom-project-marker',
         html: `
-            <div style="
+            <div class="pm-marker-bubble" style="
                 background-color: ${color};
                 width: 20px;
                 height: 20px;
@@ -990,6 +992,8 @@ function addProjectMarker(project, lat, lng) {
                 font-size: 10px;
                 color: white;
                 font-weight: bold;
+                transform-origin: center center;
+                will-change: transform;
             ">
                 ${getStatusIcon(status)}
             </div>
@@ -1001,20 +1005,80 @@ function addProjectMarker(project, lat, lng) {
     // Create marker
     const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(projectMap);
 
-    // Add click event
-    marker.on('click', function(e) {
-        showProjectPopup(project, e.latlng);
+    // Bind hover tooltip with professional layout (like the screenshot)
+    const statusText = getStatusText(status).toUpperCase();
+    const progress = Math.max(0, Math.min(100, Number(
+        typeof project.actual_progress === 'number' ? project.actual_progress : (project.progress || 0)
+    ) || 0));
+    const locationText = project.location || '';
+    const code = project.code || project.project_code || project.project_id || project.id || '';
+    const projType = project.type || project.project_type || project.category || '';
+    const targetCompletion = project.target_completion || project.end_date || project.completion_date || '';
+    const estCost = project.estimated_cost ?? (project.budget_total && project.budget_total.estimated);
+
+    const mapContainerEl = document.getElementById('projectMap');
+    const maxTooltipWidth = mapContainerEl ? Math.max(220, Math.min(320, mapContainerEl.offsetWidth - 24)) : 320;
+    const tooltipHtml = `
+        <div style="min-width:220px;max-width:${maxTooltipWidth}px;padding:10px 12px;border-radius:14px;background:#ffffff;box-shadow:0 10px 26px rgba(0,0,0,.14);border:1px solid rgba(0,0,0,.06);">
+            <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
+                <div style="font-weight:800;color:#111827;line-height:1.2;">${project.project_name || project.name || 'Unnamed Project'}</div>
+                <div style="font-size:11px;font-weight:700;color:#6b7280;">${statusText}</div>
+            </div>
+            ${code ? `<div style=\"font-size:12px;color:#6b7280;margin-top:2px;\">${code}</div>` : ''}
+            <div style="height:1px;background:#e5e7eb;margin:8px 0;"></div>
+            ${locationText ? `<div style=\"font-size:12px;color:#111827;\">
+                <span style=\"font-weight:700;\">Location:</span>
+                <div style=\"color:#374151;white-space:normal;word-break:break-word;overflow-wrap:anywhere;margin-top:2px;\">${locationText}</div>
+            </div>` : ''}
+            ${projType ? `<div style=\"font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Type:</span> <span style=\"color:#374151;\">${projType}</span></div>` : ''}
+            <div style="margin-top:6px;font-size:12px;color:#111827;">
+                <span style="font-weight:700;">Progress:</span>
+                <span style="color:${color};font-weight:800;"> ${progress}%</span>
+                <div style="margin-top:4px;background:#e5e7eb;height:6px;border-radius:9999px;overflow:hidden;">
+                    <div style="width:${progress}%;height:100%;background:${color};"></div>
+                </div>
+            </div>
+            ${project.start_date ? `<div style=\"margin-top:6px;font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Start Date:</span> <span style=\"color:#374151;\">${formatDate(project.start_date)}</span></div>` : ''}
+            ${targetCompletion ? `<div style=\"font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Target Completion:</span> <span style=\"color:#374151;\">${formatDate(targetCompletion)}</span></div>` : ''}
+            ${estCost !== undefined && estCost !== null ? `<div style=\"font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Estimated Cost:</span> <span style=\"color:#374151;\">${formatCurrency(estCost)}</span></div>` : ''}
+        </div>
+    `;
+    marker.bindTooltip(tooltipHtml, { direction: 'auto', offset: [0, -16], opacity: 0.98, sticky: true, className: 'leaflet-tooltip pm-tooltip' });
+
+    // Add click event - navigate directly to project view
+    marker.on('click', function() {
+        const typeCode = getProjectTypeCode(project);
+        const projectId = project.id || project.project_id;
+
+        let href = project.view_url || project.url || null;
+        if (!href && typeCode && projectId) {
+            href = `/projects/view/${typeCode}/${projectId}/`;
+        } else if (!href && projectId) {
+            href = `/projects/${projectId}/`;
+        }
+
+        if (href) {
+            window.location.href = href;
+        } else {
+            const center = this.getLatLng();
+            showProjectPopup(project, center);
+        }
     });
 
-    // Add hover effects
+    // Add hover effects (scale only the inner bubble, not the marker container)
     marker.on('mouseover', function() {
-        this.getElement().style.transform = 'scale(1.2)';
-        this.getElement().style.zIndex = '1000';
+        const el = this.getElement();
+        if (!el) return;
+        const bubble = el.querySelector('.pm-marker-bubble');
+        if (bubble) bubble.style.transform = 'scale(1.2)';
+        if (typeof this.bringToFront === 'function') this.bringToFront();
     });
 
     marker.on('mouseout', function() {
-        this.getElement().style.transform = 'scale(1)';
-        this.getElement().style.zIndex = '600';
+        const el = this.getElement();
+        if (!el) return;
+        const bubble = el.querySelector('.pm-marker-bubble');
+        if (bubble) bubble.style.transform = 'scale(1)';
     });
 
     projectMarkers.push(marker);
@@ -1083,7 +1147,8 @@ function closeProjectPopup() {
 function getStatusText(status) {
     switch(status) {
         case 'PL': return 'Planned';
-        case 'IP': return 'In Progress';
+        case 'IP': return 'Active';
+        case 'OG': return 'Active';
         case 'CP': return 'Completed';
         case 'CN': return 'Cancelled';
         default: return 'Unknown';
@@ -1103,6 +1168,13 @@ function formatDate(dateString) {
     }
 }
 
+// Currency formatter for professional tooltip display
+function formatCurrency(amount) {
+    const value = Number(amount);
+    if (isNaN(value)) return '';
+    return `₱${value.toLocaleString()}`;
+}
+
 function updateMapStats(totalProjects, mappedProjects, activeProjects) {
     const totalEl = document.getElementById('totalProjectsCount');
     const mappedEl = document.getElementById('mappedProjectsCount');
@@ -1111,6 +1183,33 @@ function updateMapStats(totalProjects, mappedProjects, activeProjects) {
     if (totalEl) totalEl.textContent = totalProjects;
     if (mappedEl) mappedEl.textContent = mappedProjects;
     if (activeEl) activeEl.textContent = activeProjects;
+}
+
+// Derive short project type code (e.g., GC, DC, EA) from various fields
+function getProjectTypeCode(project) {
+    // Only two valid codes: GC and DC
+    const VALID = ['GC', 'DC'];
+
+    // 1) Explicit short code
+    const explicit = (project.type_code || '').toString().trim().toUpperCase();
+    if (VALID.includes(explicit)) return explicit;
+
+    // 2) Prefix from a code like GC-001 / DC_032
+    const codeLike = (project.project_code || project.code || '').toString().trim();
+    const codePrefixMatch = codeLike.match(/^([A-Za-z]{2})(?:[-_\s]|\d)/);
+    if (codePrefixMatch && VALID.includes(codePrefixMatch[1].toUpperCase())) {
+        return codePrefixMatch[1].toUpperCase();
+    }
+
+    // 3) Keyword mapping from long names → GC or DC
+    const rawType = (project.type || project.project_type || project.category || '').toString();
+    const normalized = rawType.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+
+    if (/(GENERAL\s+(CONTRACT(ING|OR|ION)?|CONSTRUCTION))/.test(normalized)) return 'GC';
+    if (/(DESIGN|CONSTRUCT|BUILD|RESIDENTIAL|COMMERCIAL)/.test(normalized)) return 'DC';
+
+    // 4) Default: if nothing matches, prefer DC
+    return 'DC';
 }
 
 // ====================================================================
@@ -1326,6 +1425,9 @@ function initializeStatusCardFilters() {
                     c.style.transform = 'scale(1)';
                 });
                 showAllProjects();
+                if (typeof window.filterMapByStatus === 'function') {
+                    window.filterMapByStatus(null);
+                }
             } else {
                 activeFilter = status;
                 
@@ -1338,6 +1440,9 @@ function initializeStatusCardFilters() {
                 this.style.transform = 'scale(1.02)';
                 
                 filterProjectsByStatus(status);
+                if (typeof window.filterMapByStatus === 'function') {
+                    window.filterMapByStatus(status);
+                }
             }
         });
     });
@@ -1356,6 +1461,21 @@ function filterProjectsByStatus(status) {
     updateMapMarkersWithFilteredData(filteredProjects);
     showFilterIndicator(status, filteredProjects.length);
 }
+
+// Expose a simple helper so other scripts can trigger map-only filtering
+// Pass null to clear filter and show all markers
+window.filterMapByStatus = function(status) {
+    if (!window.dashboardData?.projects) return;
+    if (!projectMap) return;
+
+    if (!status) {
+        updateMapMarkersWithFilteredData(window.dashboardData.projects);
+        return;
+    }
+
+    const filtered = window.dashboardData.projects.filter(p => (p.status || 'PL') === status);
+    updateMapMarkersWithFilteredData(filtered);
+};
 
 function showAllProjects() {
     if (!window.dashboardData?.projects) return;
@@ -1419,6 +1539,16 @@ function updateMapMarkersWithFilteredData(projects) {
             }
         }
     });
+
+    // Refit map to current markers if any
+    try {
+        if (projectMarkers.length > 0) {
+            const group = new L.featureGroup(projectMarkers);
+            projectMap.fitBounds(group.getBounds().pad(0.15));
+        }
+    } catch (e) {
+        console.warn('Failed to fit bounds to filtered markers:', e);
+    }
 
     // Update map statistics
     updateMapStats(projects.length, projectMarkers.length, projects.filter(p => p.status === 'OG' || p.status === 'IP').length);
