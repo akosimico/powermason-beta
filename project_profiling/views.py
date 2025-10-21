@@ -1024,23 +1024,65 @@ def review_pending_project(request, project_id):
 
                 # --- Handle BOQ data and create budget entries ---
                 boq_items = project.project_data.get('boq_items', [])
+                boq_requirements = project.project_data.get('boq_requirements', [])
+                boq_materials = project.project_data.get('boq_materials', [])
+                boq_division_subtotals = project.project_data.get('boq_division_subtotals', {})
+                boq_suggested_roles = project.project_data.get('boq_suggested_roles', {})
+                boq_required_permits = project.project_data.get('boq_required_permits', [])
+                boq_project_info = project.project_data.get('boq_project_info', {})
+                boq_total_cost = project.project_data.get('boq_total_cost', 0)
+                
                 boq_items_processed = False
                 if boq_items:
                     try:
                         # Save BOQ data to the approved project
                         new_profile.boq_items = boq_items
                         new_profile.boq_file_processed = True
-                        new_profile.extracted_total_cost = sum(float(item.get('total_cost', 0)) for item in boq_items)
+                        new_profile.extracted_total_cost = sum(float(item.get('amount', 0)) for item in boq_items)
                         
-                        # Create cost breakdown
+                        # Save categorized BOQ data
+                        if boq_requirements:
+                            new_profile.boq_requirements = boq_requirements
+                            print(f"DEBUG: Saved {len(boq_requirements)} requirements to approved project")
+                        
+                        if boq_materials:
+                            new_profile.boq_materials = boq_materials
+                            print(f"DEBUG: Saved {len(boq_materials)} materials to approved project")
+                        
+                        # Save additional BOQ data
+                        if boq_division_subtotals:
+                            new_profile.boq_division_subtotals = boq_division_subtotals
+                            print(f"DEBUG: Saved division subtotals to approved project: {boq_division_subtotals}")
+                        
+                        if boq_suggested_roles:
+                            new_profile.boq_suggested_roles = boq_suggested_roles
+                            print(f"DEBUG: Saved suggested roles to approved project: {boq_suggested_roles}")
+                        
+                        if boq_required_permits:
+                            new_profile.boq_required_permits = boq_required_permits
+                            print(f"DEBUG: Saved required permits to approved project: {boq_required_permits}")
+                        
+                        if boq_project_info:
+                            new_profile.boq_project_info = boq_project_info
+                            print(f"DEBUG: Saved project info to approved project: {boq_project_info}")
+                        
+                        if boq_total_cost:
+                            new_profile.boq_total_cost = boq_total_cost
+                            print(f"DEBUG: Saved total cost to approved project: {boq_total_cost}")
+                        
+                        # Create cost breakdown by category
+                        requirements_cost = sum(float(item.get('amount', 0)) for item in boq_requirements)
+                        materials_cost = sum(float(item.get('amount', 0)) for item in boq_materials)
+                        
                         cost_breakdown = {
-                            'materials': sum(float(item.get('material_cost', 0)) for item in boq_items),
-                            'labor': sum(float(item.get('labor_cost', 0)) for item in boq_items),
-                            'equipment': sum(float(item.get('equipment_cost', 0)) for item in boq_items),
-                            'subcontractor': sum(float(item.get('subcontractor_cost', 0)) for item in boq_items),
+                            'requirements': requirements_cost,
+                            'materials': materials_cost,
+                            'total': new_profile.extracted_total_cost
                         }
                         new_profile.extracted_cost_breakdown = cost_breakdown
                         new_profile.save()
+                        
+                        print(f"DEBUG: BOQ Cost Breakdown - Requirements: ₱{requirements_cost:,.2f}, Materials: ₱{materials_cost:,.2f}")
                         
                         # Create project scopes and budget entries from BOQ data
                         create_project_scopes_and_budgets_from_boq(new_profile, boq_items)
@@ -1196,7 +1238,7 @@ def create_project_budgets_from_boq(project_staging, boq_items):
     # Add BOQ data to project_data
     project_staging.project_data['boq_items'] = boq_items
     project_staging.project_data['boq_processed'] = True
-    project_staging.project_data['boq_total_cost'] = sum(float(item.get('total_cost', 0)) for item in boq_items)
+    project_staging.project_data['boq_total_cost'] = sum(float(item.get('amount', 0)) for item in boq_items)
     
     # Calculate cost breakdown by category
     cost_breakdown = {
@@ -1229,8 +1271,8 @@ def create_project_scopes_and_budgets_from_boq(project_profile, boq_items):
     total_project_cost = 0
     
     for item in boq_items:
-        section_name = item.get('section', 'General Items').strip()
-        item_cost = float(item.get('total_cost', 0))
+        section_name = item.get('division', 'General Items').strip()  # Changed from 'section' to 'division'
+        item_cost = float(item.get('amount', 0))  # Changed from 'total_cost' to 'amount'
         total_project_cost += item_cost
         
         print(f"DEBUG: Item '{item.get('description', '')}' -> Section: '{section_name}', Cost: {item_cost}")
@@ -1314,7 +1356,7 @@ def create_project_scopes_and_budgets_from_boq(project_profile, boq_items):
             
             for item in data['items']:
                 try:
-                    item_cost = float(item.get('total_cost', 0))
+                    item_cost = float(item.get('amount', 0))
                     if item_cost > 0:
                         # Determine category based on item data - fix string/int comparison
                         category = 'MAT'  # Default to Materials
@@ -1598,8 +1640,14 @@ def project_create(request, project_type, client_id):
                         else:
                             cleaned_data[k] = serialize_field(v)
                     
-                    # Handle BOQ data from hidden form field
+                    # Handle BOQ data from hidden form fields
                     boq_items_data = request.POST.get('boq_items')
+                    boq_division_subtotals_data = request.POST.get('boq_division_subtotals')
+                    boq_suggested_roles_data = request.POST.get('boq_suggested_roles')
+                    boq_required_permits_data = request.POST.get('boq_required_permits')
+                    boq_project_info_data = request.POST.get('boq_project_info')
+                    boq_total_cost_data = request.POST.get('boq_total_cost')
+                    
                     if boq_items_data:
                         try:
                             import json
@@ -1607,18 +1655,59 @@ def project_create(request, project_type, client_id):
                             cleaned_data['boq_items'] = boq_items
                             cleaned_data['boq_file_processed'] = True
                             
+                            # Save all BOQ-related data
+                            if boq_division_subtotals_data:
+                                cleaned_data['boq_division_subtotals'] = json.loads(boq_division_subtotals_data)
+                                print(f"DEBUG: Saved division subtotals: {cleaned_data['boq_division_subtotals']}")
+                            
+                            if boq_suggested_roles_data:
+                                cleaned_data['boq_suggested_roles'] = json.loads(boq_suggested_roles_data)
+                                print(f"DEBUG: Saved suggested roles: {cleaned_data['boq_suggested_roles']}")
+                            
+                            if boq_required_permits_data:
+                                cleaned_data['boq_required_permits'] = json.loads(boq_required_permits_data)
+                                print(f"DEBUG: Saved required permits: {cleaned_data['boq_required_permits']}")
+                            
+                            if boq_project_info_data:
+                                cleaned_data['boq_project_info'] = json.loads(boq_project_info_data)
+                                print(f"DEBUG: Saved project info: {cleaned_data['boq_project_info']}")
+                            
+                            if boq_total_cost_data:
+                                cleaned_data['boq_total_cost'] = float(boq_total_cost_data)
+                                print(f"DEBUG: Saved total cost: {cleaned_data['boq_total_cost']}")
+                            
                             # Calculate total cost from BOQ items
-                            total_cost = sum(float(item.get('total_cost', 0)) for item in boq_items)
+                            total_cost = sum(float(item.get('amount', 0)) for item in boq_items)
                             cleaned_data['extracted_total_cost'] = total_cost
                             
-                            # Create cost breakdown
+                            # Categorize BOQ items by type (requirements vs materials)
+                            requirements = []
+                            materials = []
+                            
+                            for item in boq_items:
+                                is_requirement = item.get('is_requirement', False)
+                                if is_requirement:
+                                    requirements.append(item)
+                                else:
+                                    materials.append(item)
+                            
+                            # Save categorized BOQ data
+                            cleaned_data['boq_requirements'] = requirements
+                            cleaned_data['boq_materials'] = materials
+                            
+                            # Calculate cost breakdown by category
+                            requirements_cost = sum(float(item.get('amount', 0)) for item in requirements)
+                            materials_cost = sum(float(item.get('amount', 0)) for item in materials)
+                            
                             cost_breakdown = {
-                                'materials': sum(float(item.get('material_cost', 0)) for item in boq_items),
-                                'labor': sum(float(item.get('labor_cost', 0)) for item in boq_items),
-                                'equipment': sum(float(item.get('equipment_cost', 0)) for item in boq_items),
-                                'subcontractor': sum(float(item.get('subcontractor_cost', 0)) for item in boq_items),
+                                'requirements': requirements_cost,
+                                'materials': materials_cost,
+                                'total': total_cost
                             }
                             cleaned_data['extracted_cost_breakdown'] = cost_breakdown
+                            
+                            print(f"DEBUG: BOQ Categorization - Requirements: {len(requirements)}, Materials: {len(materials)}")
+                            print(f"DEBUG: Cost Breakdown - Requirements: ₱{requirements_cost:,.2f}, Materials: ₱{materials_cost:,.2f}")
                             
                             # Update the project's estimated cost with BOQ total
                             if 'estimated_cost' in cleaned_data:

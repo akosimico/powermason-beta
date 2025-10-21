@@ -249,155 +249,6 @@
                     </div>
                 </div>
 
-                <!-- BOQ (Bill of Quantities) Card -->
-                {% if project.project_data.boq_items or project.project_data.boq_file_processed %}
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                </svg>
-                                Bill of Quantities (BOQ)
-                            </h2>
-                            <p class="text-xs text-gray-500 mt-1">
-                                {% if project.project_data.boq_items %}
-                                    {{ project.project_data.boq_items|length }} item{{ project.project_data.boq_items|length|pluralize }} • 
-                                    Total: ₱{{ project.project_data.extracted_total_cost|floatformat:2|intcomma|default:"0.00" }}
-                                {% else %}
-                                    BOQ file processed but no items extracted
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        {% if project.project_data.boq_items or project.project_data.boq_file_processed %}
-                            <!-- BOQ Summary -->
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                    <div class="text-xs font-medium text-purple-600 uppercase tracking-wide">Total Items</div>
-                                    <div class="text-2xl font-bold text-purple-900">{{ project.project_data.boq_items|length }}</div>
-                                </div>
-                                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                                    <div class="text-xs font-medium text-green-600 uppercase tracking-wide">Total Cost</div>
-                                    <div class="text-2xl font-bold text-green-900">₱{{ project.project_data.extracted_total_cost|floatformat:2|intcomma|default:"0.00" }}</div>
-                                </div>
-                                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                    <div class="text-xs font-medium text-blue-600 uppercase tracking-wide">Lot Size</div>
-                                    <div class="text-2xl font-bold text-blue-900">{{ project.project_data.lot_size|floatformat:0|default:"0" }} m²</div>
-                                </div>
-                                <div class="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                                    <div class="text-xs font-medium text-orange-600 uppercase tracking-wide">Cost per m²</div>
-                                    <div class="text-2xl font-bold text-orange-900" id="costPerSqm">
-                                        ₱0.00
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Cost Breakdown -->
-                            {% if project.project_data.extracted_cost_breakdown %}
-                            <div class="mb-6">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {% with cost_breakdown=project.project_data.extracted_cost_breakdown %}
-                                        {% if cost_breakdown %}
-                                            {% for category, amount in cost_breakdown.items %}
-                                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <div class="text-xs font-medium text-gray-600 uppercase tracking-wide">{{ category|title }}</div>
-                                        <div class="text-lg font-semibold text-gray-900">₱{{ amount|floatformat:2|intcomma }}</div>
-                                    </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    {% endwith %}
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- BOQ Items with Pagination -->
-                            <div>
-                                <div class="flex justify-between items-center mb-3">
-                                    <h3 class="text-sm font-semibold text-gray-900">BOQ Items</h3>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-xs text-gray-500">Items per page:</span>
-                                        <select id="itemsPerPage" class="text-xs border border-gray-300 rounded px-2 py-1">
-                                            <option value="5">5</option>
-                                            <option value="10" selected>10</option>
-                                            <option value="20">20</option>
-                                            <option value="50">50</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Item</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Description</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Section</th>
-                                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">UOM</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Qty</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Unit Cost</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="boqItemsTableBody" class="bg-white divide-y divide-gray-200">
-                                            <!-- Initial items from Django template -->
-                                            {% for item in project.project_data.boq_items %}
-                                            <tr class="boq-item-row hover:bg-gray-50" style="display: none;">
-                                                <td class="px-3 py-2 text-sm font-medium text-gray-900">{{ item.item_number|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900">{{ item.description|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-500">{{ item.section|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-center">{{ item.uom|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-right">{{ item.quantity|floatformat:2|intcomma|default:"0" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-right">₱{{ item.unit_cost|floatformat:2|intcomma|default:"0.00" }}</td>
-                                                <td class="px-3 py-2 text-sm font-semibold text-gray-900 text-right">₱{{ item.total_cost|floatformat:2|intcomma|default:"0.00" }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <!-- Pagination Controls -->
-                                <div class="mt-4 flex items-center justify-between">
-                                    <div class="text-sm text-gray-700">
-                                        Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of 
-                                        <span id="totalItems">{{ project.project_data.boq_items|length }}</span> items
-                                    </div>
-                                    
-                                    <div class="flex items-center space-x-2">
-                                        <button id="prevPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            Previous
-                                        </button>
-                                        
-                                        <div id="pageNumbers" class="flex space-x-1">
-                                            <!-- Page numbers will be populated by JavaScript -->
-                                        </div>
-                                        
-                                        <button id="nextPage" class="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-8">
-                                <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                </svg>
-                                <p class="text-gray-500 text-sm mb-3">No BOQ data available</p>
-                                <p class="text-gray-400 text-xs">
-                                    {% if project.project_data.boq_file_processed %}
-                                        BOQ file was processed but no items were extracted
-                                    {% else %}
-                                        No BOQ files were uploaded for this project
-                                    {% endif %}
-                                </p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
 
                 <!-- Description Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -410,6 +261,123 @@
                         </p>
                     </div>
                 </div>
+
+                <!-- BOQ Section -->
+                {% if project.project_data.boq_items %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Bill of Quantities (BOQ)</h2>
+                    </div>
+                    <div class="p-6">
+                        <!-- BOQ Summary Cards -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
+                                <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-2">Total Tasks</div>
+                                <div class="text-xl lg:text-2xl font-bold text-blue-900 break-words" id="boq-total-tasks">0</div>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
+                                <div class="text-xs font-medium text-green-600 uppercase tracking-wide mb-2">Total Cost</div>
+                                <div class="text-lg lg:text-xl font-bold text-green-900 break-words" id="boq-total-cost">₱0.00</div>
+                            </div>
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
+                                <div class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-2">Lot Size</div>
+                                <div class="text-lg lg:text-xl font-bold text-purple-900 break-words">{{ project.project_data.lot_size|default:"0" }} m²</div>
+                            </div>
+                            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
+                                <div class="text-xs font-medium text-orange-600 uppercase tracking-wide mb-2">Floor Area</div>
+                                <div class="text-lg lg:text-xl font-bold text-orange-900 break-words" id="boq-floor-area">{{ project.project_data.floor_area|default:"0" }} m²</div>
+                            </div>
+                            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
+                                <div class="text-xs font-medium text-indigo-600 uppercase tracking-wide mb-2">Cost per m²</div>
+                                <div class="text-lg lg:text-xl font-bold text-indigo-900 break-words" id="boq-cost-per-sqm">₱0.00</div>
+                            </div>
+                        </div>
+
+                        <!-- Cost Breakdown by Division -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown by Division</h3>
+                            <div id="boq-cost-breakdown" class="space-y-2">
+                                <!-- Cost breakdown will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- BOQ Items Display -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-semibold text-gray-900">BOQ Items</h3>
+                                <div class="flex items-center space-x-3">
+                                    <button id="previewBOQBtn" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        Preview Items
+                                    </button>
+                                    <button id="downloadBOQBtn" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        Download BOQ
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- BOQ Items Container (Hidden by default) -->
+                            <div id="boqItemsContainer" class="hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="flex items-center space-x-2">
+                                            <label for="itemsPerPage" class="text-xs font-medium text-gray-500">Items per page:</label>
+                                            <select id="itemsPerPage" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                                <option value="10">10</option>
+                                                <option value="25" selected>25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Showing <span id="showingRange">0-0</span> of <span id="totalItems">0</span> items
+                                        </div>
+                                    </div>
+                                    <button id="hideBOQBtn" class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        Hide
+                                    </button>
+                                </div>
+                                <div id="boqItemsDisplay" class="space-y-4">
+                                    <!-- BOQ items will be populated by JavaScript -->
+                                </div>
+                                
+                                <!-- Pagination Controls -->
+                                <div id="paginationControls" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                                    <div class="flex items-center space-x-2">
+                                        <button id="prevPage" class="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Previous
+                                        </button>
+                                        <span id="pageInfo" class="text-xs text-gray-500">Page 1 of 1</span>
+                                        <button id="nextPage" class="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOQ Data Script -->
+                <script type="application/json" id="boq-data">
+                {
+                    "boq_items": {{ project.project_data.boq_items|default:"[]"|safe }},
+                    "division_subtotals": {{ project.project_data.boq_division_subtotals|default:"{}"|safe }},
+                    "boq_project_info": {{ project.project_data.boq_project_info|default:"{}"|safe }},
+                    "floor_area": {{ project.project_data.floor_area|default:0|floatformat:0 }},
+                    "lot_size": {{ project.project_data.lot_size|default:0|floatformat:0 }}
+                }
+                </script>
+                {% endif %}
 
             </div>
 
@@ -876,152 +844,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // BOQ Items Pagination
-    const boqItemsRaw = '{{ project.project_data.boq_items|default:"[]"|escapejs }}';
-    console.log('DEBUG: BOQ Items Raw:', boqItemsRaw);
-    console.log('DEBUG: BOQ Items Raw Type:', typeof boqItemsRaw);
-    console.log('DEBUG: BOQ Items Raw Length:', boqItemsRaw.length);
-    
-    let boqItems = [];
-    try {
-        // Check if it's already an array or needs parsing
-        if (typeof boqItemsRaw === 'string' && boqItemsRaw.startsWith('[')) {
-            boqItems = JSON.parse(boqItemsRaw);
-        } else if (Array.isArray(boqItemsRaw)) {
-            boqItems = boqItemsRaw;
-        } else {
-            console.error('DEBUG: Unexpected data format:', boqItemsRaw);
-            boqItems = [];
-        }
-        console.log('DEBUG: BOQ Items Parsed:', boqItems);
-        console.log('DEBUG: BOQ Items Length:', boqItems.length);
-        console.log('DEBUG: First Item:', boqItems[0]);
-    } catch (e) {
-        console.error('DEBUG: Error parsing BOQ items:', e);
-        boqItems = [];
-    }
-    
-    let currentPage = 1;
-    let itemsPerPage = 10;
-    
-    function renderBOQItems() {
-        console.log('DEBUG: renderBOQItems called');
-        const tableBody = document.getElementById('boqItemsTableBody');
-        console.log('DEBUG: tableBody element:', tableBody);
-        
-        // Get all existing rows
-        const allRows = tableBody.querySelectorAll('.boq-item-row');
-        const totalItems = allRows.length;
-        console.log('DEBUG: totalItems from DOM:', totalItems);
-        
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-        
-        console.log('DEBUG: Rendering items from', startIndex, 'to', endIndex);
-        
-        // Hide all rows first
-        allRows.forEach((row, index) => {
-            if (index >= startIndex && index < endIndex) {
-                row.style.display = '';
-                console.log('DEBUG: Showing row', index);
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Update pagination info
-        document.getElementById('showingStart').textContent = startIndex + 1;
-        document.getElementById('showingEnd').textContent = endIndex;
-        document.getElementById('totalItems').textContent = totalItems;
-        
-        // Update pagination buttons
-        const prevBtn = document.getElementById('prevPage');
-        const nextBtn = document.getElementById('nextPage');
-        
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === totalPages;
-        
-        // Update page numbers
-        const pageNumbers = document.getElementById('pageNumbers');
-        pageNumbers.innerHTML = '';
-        
-        const maxVisiblePages = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-        
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-        
-        for (let i = startPage; i <= endPage; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.className = `px-2 py-1 text-xs border rounded ${
-                i === currentPage 
-                    ? 'bg-blue-500 text-white border-blue-500' 
-                    : 'border-gray-300 hover:bg-gray-50'
-            }`;
-            pageBtn.textContent = i;
-            pageBtn.addEventListener('click', () => {
-                currentPage = i;
-                renderBOQItems();
-            });
-            pageNumbers.appendChild(pageBtn);
-        }
-    }
-    
-    // Event listeners for pagination
-    document.getElementById('prevPage').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderBOQItems();
-        }
-    });
-    
-    document.getElementById('nextPage').addEventListener('click', () => {
-        const totalPages = Math.ceil(boqItems.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderBOQItems();
-        }
-    });
-    
-    document.getElementById('itemsPerPage').addEventListener('change', (e) => {
-        itemsPerPage = parseInt(e.target.value);
-        currentPage = 1; // Reset to first page
-        renderBOQItems();
-    });
-    
-    // Initialize BOQ pagination if items exist
-    console.log('DEBUG: Initializing BOQ pagination');
-    
-    // Check if there are rows in the DOM
-    const tableBody = document.getElementById('boqItemsTableBody');
-    const allRows = tableBody ? tableBody.querySelectorAll('.boq-item-row') : [];
-    console.log('DEBUG: Found', allRows.length, 'BOQ rows in DOM');
-    
-    if (allRows.length > 0) {
-        console.log('DEBUG: Calling renderBOQItems');
-        renderBOQItems();
-    } else {
-        console.log('DEBUG: No BOQ items to render');
-        // Show a message in the table body
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-3 py-8 text-center text-gray-500">
-                        <div class="flex flex-col items-center">
-                            <svg class="w-8 h-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                            </svg>
-                            <p class="text-sm">No BOQ items found</p>
-                            <p class="text-xs text-gray-400 mt-1">Check if BOQ file was processed correctly</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }
-    }
 
     // Initialize contract file upload
     initializeContractUpload();
@@ -1173,6 +995,498 @@ function showNotification(message, type = 'success') {
 document.addEventListener('DOMContentLoaded', function() {
     initializeContractUpload();
 });
+
+// Function to open document library for permit uploads
+function openDocumentLibrary() {
+    // Get the current project ID from the URL or page data
+    const currentUrl = window.location.pathname;
+    const projectId = currentUrl.split('/').pop(); // Assuming project ID is the last part of URL
+    
+    // Open document library in a new window/tab
+    const documentLibraryUrl = `/project-profiling/document-library/${projectId}/`;
+    window.open(documentLibraryUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+}
+
+// Pagination variables
+let currentPage = 1;
+let itemsPerPage = 25;
+let allBOQItems = [];
+let currentBOQItems = [];
+
+// BOQ Data Processing and Display
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if BOQ section exists
+    const boqSection = document.querySelector('#boqItemsDisplay');
+    if (!boqSection) return;
+
+    // Get BOQ data from JSON script tag
+    const boqDataScript = document.getElementById('boq-data');
+    if (!boqDataScript) return;
+
+    let boqData;
+    try {
+        // Get the raw text content
+        let rawData = boqDataScript.textContent;
+        console.log('DEBUG: Raw BOQ Data:', rawData);
+        
+        // Clean up Python-style data to proper JSON
+        rawData = rawData
+            .replace(/'/g, '"')  // Replace single quotes with double quotes
+            .replace(/True/g, 'true')  // Replace Python True with JSON true
+            .replace(/False/g, 'false')  // Replace Python False with JSON false
+            .replace(/None/g, 'null');  // Replace Python None with JSON null
+        
+        console.log('DEBUG: Cleaned BOQ Data:', rawData);
+        
+        boqData = JSON.parse(rawData);
+        console.log('DEBUG: Parsed BOQ Data:', boqData);
+    } catch (e) {
+        console.error('DEBUG: Error parsing BOQ data:', e);
+        console.error('DEBUG: Raw data was:', boqDataScript.textContent);
+        return;
+    }
+
+    const boqItems = boqData.boq_items || [];
+    const divisionSubtotals = boqData.division_subtotals || {};
+    const boqProjectInfo = boqData.boq_project_info || {};
+    const floorArea = boqData.floor_area || boqProjectInfo.floor_area || 0;
+    const lotSize = boqData.lot_size || boqProjectInfo.lot_size || 0;
+
+    console.log('DEBUG: BOQ Items:', boqItems);
+    console.log('DEBUG: Division Subtotals:', divisionSubtotals);
+    console.log('DEBUG: BOQ Project Info:', boqProjectInfo);
+    console.log('DEBUG: Floor Area from data:', floorArea);
+    console.log('DEBUG: Lot Size from data:', lotSize);
+
+    // Store items globally for pagination
+    allBOQItems = boqItems;
+    currentBOQItems = boqItems;
+    
+    // Initialize BOQ display
+    initializeBOQDisplay(boqItems, divisionSubtotals, floorArea);
+    
+    // Initialize pagination
+    initializePagination();
+    
+    // Initialize preview and download buttons
+    initializeBOQButtons();
+});
+
+// Initialize BOQ display
+function initializeBOQDisplay(boqItems, divisionSubtotals, floorArea = 0) {
+    console.log('DEBUG: initializeBOQDisplay called with', boqItems.length, 'items');
+    
+    if (!boqItems || boqItems.length === 0) {
+        console.log('DEBUG: No BOQ items, showing empty state');
+        document.getElementById('boqItemsDisplay').innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm">No BOQ items found</p>
+                <p class="text-xs text-gray-400 mt-1">Check if BOQ file was processed correctly</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Update summary cards
+    updateBOQSummaryCards(boqItems, divisionSubtotals, floorArea);
+    
+    // Update cost breakdown
+    updateCostBreakdown(divisionSubtotals);
+    
+    // Render BOQ items with pagination
+    renderBOQItemsPaginated();
+}
+
+// Update BOQ summary cards
+function updateBOQSummaryCards(boqItems, divisionSubtotals, floorArea = 0) {
+    // Calculate total tasks (unique tasks)
+    const uniqueTasks = new Set(boqItems.map(item => item.task || 'General Items'));
+    document.getElementById('boq-total-tasks').textContent = uniqueTasks.size;
+    
+    // Calculate total cost
+    const totalCost = boqItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    document.getElementById('boq-total-cost').textContent = peso(totalCost);
+    
+    // Update floor area display
+    const floorAreaElement = document.getElementById('boq-floor-area');
+    if (floorAreaElement) {
+        floorAreaElement.textContent = `${floorArea} m²`;
+        console.log('DEBUG: Updated floor area display to:', floorArea);
+    }
+    
+    // Calculate cost per square meter
+    console.log('DEBUG: Floor Area for calculation:', floorArea);
+    if (floorArea > 0) {
+        const costPerSqm = totalCost / floorArea;
+        console.log('DEBUG: Cost per sqm calculation:', totalCost, '/', floorArea, '=', costPerSqm);
+        document.getElementById('boq-cost-per-sqm').textContent = peso(costPerSqm);
+    } else {
+        console.log('DEBUG: Floor area is 0 or not available');
+        document.getElementById('boq-cost-per-sqm').textContent = '₱0.00';
+    }
+}
+
+// Update cost breakdown by division
+function updateCostBreakdown(divisionSubtotals) {
+    const breakdownContainer = document.getElementById('boq-cost-breakdown');
+    if (!breakdownContainer) return;
+    
+    if (!divisionSubtotals || Object.keys(divisionSubtotals).length === 0) {
+        breakdownContainer.innerHTML = '<div class="text-sm text-gray-500 italic">No division breakdown available</div>';
+        return;
+    }
+    
+    let html = '';
+    Object.entries(divisionSubtotals).forEach(([division, subtotal]) => {
+        html += `
+            <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-gray-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="font-medium text-gray-900">${division}</span>
+                </div>
+                <span class="font-semibold text-gray-900">₱${peso(subtotal)}</span>
+            </div>
+        `;
+    });
+    
+    breakdownContainer.innerHTML = html;
+}
+
+// Render BOQ items in hierarchical structure
+function renderBOQItemsHierarchical(boqItems) {
+    const boqDisplay = document.getElementById('boqItemsDisplay');
+    if (!boqDisplay) return;
+    
+    const grouped = groupItemsByDivision(boqItems);
+    
+    let html = '';
+    Object.entries(grouped).forEach(([division, data]) => {
+        html += `
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-semibold text-gray-900">${division}</h4>
+                        <span class="text-sm font-medium text-gray-600">₱${peso(data.subtotal)}</span>
+                    </div>
+                </div>
+                <div class="divide-y divide-gray-200">
+        `;
+        
+        const taskGroups = {};
+        data.items.forEach(item => {
+            const task = item.task || 'General Items';
+            if (!taskGroups[task]) {
+                taskGroups[task] = [];
+            }
+            taskGroups[task].push(item);
+        });
+        
+        Object.entries(taskGroups).forEach(([task, taskItems]) => {
+            const taskSubtotal = taskItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            
+            html += `
+                <div class="bg-gray-25 px-4 py-2 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-sm font-medium text-gray-700 pl-4">${task}</h5>
+                        <span class="text-xs font-medium text-gray-600">₱${peso(taskSubtotal)}</span>
+                    </div>
+                </div>
+                <div class="divide-y divide-gray-100">
+            `;
+            
+            taskItems.forEach(item => {
+                const isRequirement = item.is_requirement;
+                const typeColor = isRequirement ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200';
+                const typeText = isRequirement ? 'Requirement' : 'Material';
+                const typeTextColor = isRequirement ? 'text-orange-700' : 'text-blue-700';
+                
+                html += `
+                    <div class="px-4 py-3 ${typeColor} border-l-4 ${isRequirement ? 'border-orange-400' : 'border-blue-400'}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="text-xs font-medium text-gray-500">${item.code}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isRequirement ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                                        ${typeText}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-900 mb-2">${item.description}</p>
+                                <div class="grid grid-cols-3 gap-4 text-xs text-gray-600">
+                                    <div>
+                                        <span class="font-medium">Qty:</span> ${peso(item.quantity)} ${item.uom}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Unit Cost:</span> ₱${peso(item.unit_cost)}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Amount:</span> ₱${peso(item.amount)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    boqDisplay.innerHTML = html;
+}
+
+// Group items by division
+function groupItemsByDivision(boqItems) {
+    const grouped = {};
+    
+    boqItems.forEach(item => {
+        const division = item.division || 'General Items';
+        if (!grouped[division]) {
+            grouped[division] = {
+                items: [],
+                subtotal: 0
+            };
+        }
+        
+        grouped[division].items.push(item);
+        grouped[division].subtotal += parseFloat(item.amount) || 0;
+    });
+    
+    return grouped;
+}
+
+// Format number as peso
+function peso(num) {
+    if (num === null || num === undefined || num === '') return '0.00';
+    const number = parseFloat(num);
+    if (isNaN(number)) return '0.00';
+    return number.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Initialize pagination
+function initializePagination() {
+    const itemsPerPageSelect = document.getElementById('itemsPerPage');
+    const prevButton = document.getElementById('prevPage');
+    const nextButton = document.getElementById('nextPage');
+    
+    if (!itemsPerPageSelect || !prevButton || !nextButton) return;
+    
+    // Items per page change handler
+    itemsPerPageSelect.addEventListener('change', function() {
+        itemsPerPage = parseInt(this.value);
+        currentPage = 1;
+        renderBOQItemsPaginated();
+    });
+    
+    // Previous page handler
+    prevButton.addEventListener('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderBOQItemsPaginated();
+        }
+    });
+    
+    // Next page handler
+    nextButton.addEventListener('click', function() {
+        const totalPages = Math.ceil(allBOQItems.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderBOQItemsPaginated();
+        }
+    });
+}
+
+// Render BOQ items with pagination
+function renderBOQItemsPaginated() {
+    const boqDisplay = document.getElementById('boqItemsDisplay');
+    if (!boqDisplay) return;
+    
+    const totalItems = allBOQItems.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    
+    // Update pagination info
+    document.getElementById('totalItems').textContent = totalItems;
+    document.getElementById('showingRange').textContent = `${startIndex + 1}-${endIndex}`;
+    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+    
+    // Update button states
+    const prevButton = document.getElementById('prevPage');
+    const nextButton = document.getElementById('nextPage');
+    prevButton.disabled = currentPage <= 1;
+    nextButton.disabled = currentPage >= totalPages;
+    
+    // Get items for current page
+    const pageItems = allBOQItems.slice(startIndex, endIndex);
+    
+    if (pageItems.length === 0) {
+        boqDisplay.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm">No BOQ items found</p>
+                <p class="text-xs text-gray-400 mt-1">Check if BOQ file was processed correctly</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Render items for current page
+    renderBOQItemsHierarchical(pageItems);
+}
+
+// Render BOQ items in hierarchical structure (updated for pagination)
+function renderBOQItemsHierarchical(boqItems) {
+    const boqDisplay = document.getElementById('boqItemsDisplay');
+    if (!boqDisplay) return;
+    
+    const grouped = groupItemsByDivision(boqItems);
+    
+    let html = '';
+    Object.entries(grouped).forEach(([division, data]) => {
+        html += `
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-semibold text-gray-900">${division}</h4>
+                        <span class="text-sm font-medium text-gray-600">₱${peso(data.subtotal)}</span>
+                    </div>
+                </div>
+                <div class="divide-y divide-gray-200">
+        `;
+        
+        const taskGroups = {};
+        data.items.forEach(item => {
+            const task = item.task || 'General Items';
+            if (!taskGroups[task]) {
+                taskGroups[task] = [];
+            }
+            taskGroups[task].push(item);
+        });
+        
+        Object.entries(taskGroups).forEach(([task, taskItems]) => {
+            const taskSubtotal = taskItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            
+            html += `
+                <div class="bg-gray-25 px-4 py-2 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-sm font-medium text-gray-700 pl-4">${task}</h5>
+                        <span class="text-xs font-medium text-gray-600">₱${peso(taskSubtotal)}</span>
+                    </div>
+                </div>
+                <div class="divide-y divide-gray-100">
+            `;
+            
+            taskItems.forEach(item => {
+                const isRequirement = item.is_requirement;
+                const typeColor = isRequirement ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200';
+                const typeText = isRequirement ? 'Requirement' : 'Material';
+                const typeTextColor = isRequirement ? 'text-orange-700' : 'text-blue-700';
+                
+                html += `
+                    <div class="px-4 py-3 ${typeColor} border-l-4 ${isRequirement ? 'border-orange-400' : 'border-blue-400'}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="text-xs font-medium text-gray-500">${item.code}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isRequirement ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                                        ${typeText}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-900 mb-2">${item.description}</p>
+                                <div class="grid grid-cols-3 gap-4 text-xs text-gray-600">
+                                    <div>
+                                        <span class="font-medium">Qty:</span> ${peso(item.quantity)} ${item.uom}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Unit Cost:</span> ₱${peso(item.unit_cost)}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Amount:</span> ₱${peso(item.amount)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    boqDisplay.innerHTML = html;
+}
+
+// Initialize BOQ preview and download buttons
+function initializeBOQButtons() {
+    const previewBtn = document.getElementById('previewBOQBtn');
+    const downloadBtn = document.getElementById('downloadBOQBtn');
+    const hideBtn = document.getElementById('hideBOQBtn');
+    const boqContainer = document.getElementById('boqItemsContainer');
+    
+    if (!previewBtn || !downloadBtn || !hideBtn || !boqContainer) return;
+    
+    // Preview button handler
+    previewBtn.addEventListener('click', function() {
+        boqContainer.classList.remove('hidden');
+        previewBtn.classList.add('hidden');
+        renderBOQItemsPaginated();
+    });
+    
+    // Hide button handler
+    hideBtn.addEventListener('click', function() {
+        boqContainer.classList.add('hidden');
+        previewBtn.classList.remove('hidden');
+    });
+    
+    // Download button handler
+    downloadBtn.addEventListener('click', function() {
+        downloadBOQData();
+    });
+}
+
+// Download BOQ data as Excel file
+function downloadBOQData() {
+    if (!allBOQItems || allBOQItems.length === 0) {
+        alert('No BOQ data available to download');
+        return;
+    }
+    
+    // Get current project ID from URL
+    const currentUrl = window.location.pathname;
+    const projectId = currentUrl.split('/').pop();
+    
+    // Create download URL
+    const downloadUrl = `/project-profiling/export-boq/${projectId}/`;
+    
+    // Open download in new window
+    window.open(downloadUrl, '_blank');
+}
 </script>
 
 {% endblock %}

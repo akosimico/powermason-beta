@@ -2,7 +2,8 @@
 Views for file preview and data extraction functionality
 """
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -15,6 +16,13 @@ import tempfile
 
 from authentication.utils.decorators import verified_email_required, role_required
 from .file_processing import FileProcessor, extract_cost_summary
+from .boq_template import (
+    create_hierarchical_boq_template,
+    create_electrical_boq_template,
+    create_mechanical_boq_template,
+    create_civil_boq_template,
+    create_architectural_boq_template
+)
 from .cost_learning import CostLearningEngine
 
 
@@ -645,6 +653,75 @@ def export_boq_to_excel(request, project_id):
         }, status=500)
 
 
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_boq_template(request):
+    try:
+        content = create_hierarchical_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="BOQ_Hierarchical_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_electrical_boq_template(request):
+    try:
+        content = create_electrical_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Electrical_BOQ_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_mechanical_boq_template(request):
+    try:
+        content = create_mechanical_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Mechanical_BOQ_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_civil_boq_template(request):
+    try:
+        content = create_civil_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Civil_BOQ_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_architectural_boq_template(request):
+    try:
+        content = create_architectural_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Architectural_BOQ_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 @method_decorator([login_required, verified_email_required, role_required('EG', 'OM')], name='dispatch')
 class BOQUploadAPIView(View):
     """
@@ -662,6 +739,9 @@ class BOQUploadAPIView(View):
                     'error': 'No file uploaded'
                 }, status=400)
             
+            # Preview-only mode (force no saving even if project_type provided)
+            preview_only = request.POST.get('preview') in ['1', 'true', 'True']
+
             # Get project type ID (optional)
             project_type_id = request.POST.get('project_type_id')
             project_type = None
@@ -706,8 +786,8 @@ class BOQUploadAPIView(View):
                     'error': cost_data.get('error', 'Failed to extract cost data')
                 }, status=400)
             
-            # If project type is specified, add to learning database
-            if project_type:
+            # If project type is specified, add to learning database (unless preview-only)
+            if project_type and not preview_only:
                 try:
                     # Add BOQ data to cost learning
                     cost_history = CostLearningEngine.add_boq_data_to_learning(
@@ -737,7 +817,7 @@ class BOQUploadAPIView(View):
                 # Return extracted data without adding to learning database
                 return JsonResponse({
                     'success': True,
-                    'message': 'BOQ file processed successfully. Cost data extracted.',
+                    'message': 'BOQ file processed successfully. Cost data extracted (preview-only).',
                     'cost_data': {
                         'total_cost': str(cost_data.get('total_cost', 0)),
                         'lot_size': str(cost_data.get('lot_size', 0)),
@@ -767,3 +847,22 @@ class BOQUploadAPIView(View):
                 'success': False,
                 'error': f'Error processing BOQ file: {str(e)}'
             }, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET", "POST"])
+def boq_preview_test(request):
+    if request.method == "GET":
+        return render(request, "project_profiling/boq_preview_test.html")
+    file = request.FILES.get('file')
+    if not file:
+        return JsonResponse({'success': False, 'error': 'No file uploaded'}, status=400)
+    try:
+        file_content = file.read()
+        ext = os.path.splitext(file.name)[1].lower()
+        data = extract_cost_summary(file_content, ext)
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

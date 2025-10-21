@@ -14,13 +14,22 @@ from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
+PDF_PLUMBER_AVAILABLE = False
+PDF_PYPDF2_AVAILABLE = False
+try:
+    import pdfplumber
+    PDF_PLUMBER_AVAILABLE = True
+except ImportError:
+    PDF_PLUMBER_AVAILABLE = False
 try:
     import PyPDF2
-    import pdfplumber
-    PDF_AVAILABLE = True
+    PDF_PYPDF2_AVAILABLE = True
 except ImportError:
-    PDF_AVAILABLE = False
-    logger.warning("PDF processing libraries not available. Install PyPDF2 and pdfplumber for PDF support.")
+    PDF_PYPDF2_AVAILABLE = False
+
+PDF_AVAILABLE = PDF_PLUMBER_AVAILABLE or PDF_PYPDF2_AVAILABLE
+if not PDF_AVAILABLE:
+    logger.warning("PDF processing not available. Install pdfplumber (and its dependency pypdf) or PyPDF2.")
 
 try:
     import openpyxl
@@ -35,7 +44,7 @@ class FileProcessor:
     Main file processor for extracting project data from uploaded files
     """
     
-    SUPPORTED_EXTENSIONS = ['.pdf', '.xlsx', '.xls']
+    SUPPORTED_EXTENSIONS = ['.xlsx', '.xls']
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     
     def __init__(self, file: UploadedFile):
@@ -95,7 +104,7 @@ class FileProcessor:
         if not PDF_AVAILABLE:
             return {
                 'success': False,
-                'error': 'PDF processing not available. Please install required libraries.',
+                'error': 'PDF processing not available',
                 'data': {}
             }
         
@@ -118,35 +127,49 @@ class FileProcessor:
                 }
             }
             
-            # Try pdfplumber first (better for tables)
-            try:
-                with pdfplumber.open(self.file) as pdf:
+            # Try pdfplumber first (better for tables) if available, else fallback to PyPDF2 if available
+            used_text = False
+            if PDF_PLUMBER_AVAILABLE:
+                try:
+                    with pdfplumber.open(self.file) as pdf:
+                        full_text = ""
+                        for page in pdf.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                full_text += page_text + "\n"
+                            # Extract tables
+                            tables = page.extract_tables()
+                            for table in tables:
+                                if table and len(table) > 1:
+                                    extracted_data['tables'].append({
+                                        'page': pdf.pages.index(page) + 1,
+                                        'data': table
+                                    })
+                        extracted_data['text_content'] = full_text
+                        used_text = True
+                except Exception as e:
+                    logger.warning(f"pdfplumber failed: {str(e)}")
+
+            if not used_text and PDF_PYPDF2_AVAILABLE:
+                try:
+                    self.file.seek(0)
+                    pdf_reader = PyPDF2.PdfReader(self.file)
                     full_text = ""
-                    for page in pdf.pages:
+                    for page in pdf_reader.pages:
                         page_text = page.extract_text()
                         if page_text:
                             full_text += page_text + "\n"
-                        
-                        # Extract tables
-                        tables = page.extract_tables()
-                        for table in tables:
-                            if table and len(table) > 1:  # Skip empty tables
-                                extracted_data['tables'].append({
-                                    'page': pdf.pages.index(page) + 1,
-                                    'data': table
-                                })
-                    
                     extracted_data['text_content'] = full_text
-                    
-            except Exception as e:
-                logger.warning(f"pdfplumber failed, trying PyPDF2: {str(e)}")
-                # Fallback to PyPDF2
-                self.file.seek(0)
-                pdf_reader = PyPDF2.PdfReader(self.file)
-                full_text = ""
-                for page in pdf_reader.pages:
-                    full_text += page.extract_text() + "\n"
-                extracted_data['text_content'] = full_text
+                    used_text = True
+                except Exception as e:
+                    logger.warning(f"PyPDF2 failed: {str(e)}")
+
+            if not used_text:
+                return {
+                    'success': False,
+                    'error': 'Failed to read PDF content',
+                    'data': {}
+                }
             
             # Parse extracted text for project data
             extracted_data['project_data'] = self._parse_text_for_project_data(extracted_data['text_content'])
@@ -578,6 +601,223 @@ def extract_from_standard_template(excel_file) -> Dict[str, Any]:
         }
 
 
+def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
+    """
+    Extract data from the hierarchical BOQ template generated by boq_template.py
+    Assumptions:
+      - Project info:
+          A4: label "Project Name"   B4: value
+          A5: label "Lot Size (sqm)" B5: value
+          E2: label "Total Amount (PHP)"  F2: total value
+      - Table headers at row 9 (1-based). Data starts at row 10.
+        Columns: Code(A) Description(B) UOM(C) Quantity(D) Unit Cost(E) Amount(F) Level(G)
+      - Division rows: Code like "DIV 1", Level = 0, Description is division/scope name
+      - Task rows: one dot (e.g., "1.2"), Level = 1
+      - Item rows: two dots (e.g., "1.2.1"), Level = 2 — treated as materials unless division is GENERAL REQUIREMENTS
+    """
+    try:
+        import io as _io
+        buffer = _io.BytesIO(file_bytes)
+        # Read raw for cell addressing (header=None)
+        df_cells = pd.read_excel(buffer, header=None, engine='openpyxl')
+        # Read table with headers at row 9 (index 8)
+        buffer.seek(0)
+        df = pd.read_excel(buffer, header=8, engine='openpyxl')
+
+        # Project info
+        project_name = _get_cell_value(df_cells, 'B4')
+        lot_size_val = _get_cell_value(df_cells, 'B5')
+        floor_area_val = _get_cell_value(df_cells, 'B6')
+        total_amount_val = _get_cell_value(df_cells, 'F2')
+
+        def to_decimal(val) -> Decimal:
+            try:
+                if val is None or (isinstance(val, float) and pd.isna(val)) or (isinstance(val, str) and val.strip() == ''):
+                    return Decimal('0')
+                return Decimal(str(val).replace(',', ''))
+            except Exception:
+                return Decimal('0')
+
+        lot_size = to_decimal(lot_size_val)
+        floor_area = to_decimal(floor_area_val)
+        total_amount = to_decimal(total_amount_val)
+
+        # Iterate rows to build items with division/task context
+        current_division_name = ''
+        current_division_is_general = False
+        current_task_name = ''
+        division_subtotals: Dict[str, Decimal] = {}
+        boq_items: List[Dict[str, Any]] = []
+        suggested_roles: Dict[str, Decimal] = {}
+        required_permits: List[Dict[str, Any]] = []
+
+        # Normalize columns
+        col_map = {str(c).strip().lower(): c for c in df.columns}
+        code_col = col_map.get('code')
+        desc_col = col_map.get('description')
+        uom_col = col_map.get('uom')
+        qty_col = col_map.get('quantity')
+        unit_col = col_map.get('unit cost')
+        amt_col = col_map.get('amount')
+        level_col = col_map.get('level')
+
+        if code_col is None or desc_col is None:
+            return {
+                'success': False,
+                'error': 'Template missing required Code/Description columns'
+            }
+
+        for _, row in df.iterrows():
+            code = str(row.get(code_col, '')).strip()
+            if code == '' or code.lower() == 'nan':
+                continue
+            level_val = row.get(level_col)
+            try:
+                level = int(level_val) if pd.notna(level_val) else code.count('.')
+            except Exception:
+                level = code.count('.')
+
+            description = str(row.get(desc_col, '')).strip()
+
+            if level == 0:
+                # Division/scope row; code like "DIV 1"
+                current_division_name = description
+                current_division_is_general = (description or '').strip().lower() == 'general requirements'
+                current_task_name = ''
+                # Subtotal may already be pre-computed in Amount column on the same row
+                div_amt = to_decimal(row.get(amt_col))
+                if div_amt > 0:
+                    division_subtotals[current_division_name] = division_subtotals.get(current_division_name, Decimal('0')) + div_amt
+                continue
+
+            if level == 1:
+                current_task_name = description
+                continue
+
+            # Level >=2 -> Item
+            uom = str(row.get(uom_col, '') or '')
+            qty = to_decimal(row.get(qty_col))
+            unit_cost = to_decimal(row.get(unit_col))
+            amount = to_decimal(row.get(amt_col))
+            if amount == 0 and qty > 0 and unit_cost > 0:
+                amount = qty * unit_cost
+            item = {
+                'division': current_division_name,
+                'task': current_task_name,
+                'code': code,
+                'description': description,
+                'uom': uom,
+                'quantity': qty,
+                'unit_cost': unit_cost,
+                'amount': amount,
+                'is_requirement': current_division_is_general,
+                'level': level
+            }
+            boq_items.append(item)
+            
+            # Add item amount to division subtotal
+            if current_division_name and amount > 0:
+                division_subtotals[current_division_name] = division_subtotals.get(current_division_name, Decimal('0')) + amount
+
+            # Suggested roles extraction - scan all divisions for role-related items
+            import re as _re
+            desc_l = (description or '').lower()
+            def add_role(role_code: str, count: Decimal):
+                suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
+            
+            # Project Manager (PM) - look in any division
+            if ('project manager' in desc_l or _re.search(r'\bpm\b', desc_l) or 
+                'project management' in desc_l or 'project head' in desc_l):
+                add_role('PM', qty)
+            
+            # Project In Charge (PIC) - look in any division
+            if ('project in charge' in desc_l or _re.search(r'\bpic\b', desc_l) or 
+                'site engineer' in desc_l or 'supervision' in desc_l or 
+                'site supervisor' in desc_l or 'field engineer' in desc_l or
+                'construction manager' in desc_l or 'site manager' in desc_l):
+                add_role('PIC', qty)
+            
+            # Safety Officer (SO) - look in any division (more specific matching)
+            if ('safety officer' in desc_l or
+                'safety engineer' in desc_l or 'safety supervisor' in desc_l or
+                'hse officer' in desc_l or 'hse engineer' in desc_l or
+                'safety coordinator' in desc_l or 'safety manager' in desc_l or
+                'safety specialist' in desc_l or 'safety inspector' in desc_l or
+                (_re.search(r'\bso\b', desc_l) and ('safety' in desc_l or 'officer' in desc_l))):
+                add_role('SO', qty)
+            
+            # Quality Assurance Officer (QA) - look in any division
+            if ('quality control' in desc_l or _re.search(r'\bqa\b', desc_l) or
+                'quality assurance' in desc_l or 'qc officer' in desc_l or
+                'quality engineer' in desc_l or 'quality supervisor' in desc_l or
+                'quality coordinator' in desc_l or 'qa engineer' in desc_l):
+                add_role('QA', qty)
+            
+            # Quality Officer (QO) - look in any division
+            if ('quality officer' in desc_l or _re.search(r'\bqo\b', desc_l) or
+                'quality inspector' in desc_l or 'quality checker' in desc_l or
+                'quality technician' in desc_l):
+                add_role('QO', qty)
+            
+            # Foreman (FM) - look in any division
+            if ('foreman' in desc_l or _re.search(r'\bfm\b', desc_l) or
+                'foreman supervisor' in desc_l or 'crew leader' in desc_l or
+                'team leader' in desc_l or 'work supervisor' in desc_l or
+                'construction foreman' in desc_l or 'site foreman' in desc_l):
+                add_role('FM', qty)
+            
+            # Labor (LB) - look in any division
+            if ('labor' in desc_l or 'worker' in desc_l or 'helper' in desc_l or
+                'construction worker' in desc_l or 'skilled worker' in desc_l or
+                'unskilled worker' in desc_l or 'mason' in desc_l or
+                'carpenter' in desc_l or 'electrician' in desc_l or
+                'plumber' in desc_l or 'painter' in desc_l or
+                'welder' in desc_l or 'operator' in desc_l or
+                'equipment operator' in desc_l or 'machine operator' in desc_l):
+                add_role('LB', qty)
+
+            # Required permits extraction under General Requirements → Permits, Licenses and Clearances
+            if current_division_is_general and (current_task_name or '').strip().lower() in ['permits, licenses and clearances', 'permits & licenses', 'permits and licenses']:
+                if description:
+                    required_permits.append({
+                        'name': description,
+                        'quantity': str(qty),
+                        'uom': uom,
+                        'requires_upload': True
+                    })
+
+        # Debug: Print division subtotals
+        print(f"DEBUG: Division subtotals calculated: {division_subtotals}")
+        
+        # If total not present at F2, compute from division subtotals or sum of items
+        if total_amount == 0 and division_subtotals:
+            total_amount = sum(division_subtotals.values(), Decimal('0'))
+        if total_amount == 0 and boq_items:
+            total_amount = sum((it.get('amount', Decimal('0')) for it in boq_items), Decimal('0'))
+
+        return {
+            'success': True,
+            'project_info': {
+                'project_name': project_name or '',
+                'lot_size': lot_size,
+                'floor_area': floor_area,
+                'total_amount': total_amount
+            },
+            'boq_items': boq_items,
+            'division_subtotals': {k: str(v) for k, v in division_subtotals.items()},
+            'total_cost': total_amount,
+            'lot_size': lot_size,
+            'suggested_roles': {k: str(v) for k, v in suggested_roles.items()},
+            'required_permits': required_permits
+        }
+    except Exception as e:
+        logger.error(f"Error extracting hierarchical template: {e}")
+        return {
+            'success': False,
+            'error': f"Failed to extract hierarchical template: {str(e)}"
+        }
+
+
 def parse_dependencies(dependency_str: str) -> List[int]:
     """
     Parse dependency string and return list of item numbers
@@ -746,18 +986,21 @@ def extract_cost_summary(file_content: bytes, file_extension: str) -> Dict[str, 
     """
     if file_extension.lower() in ['.xlsx', '.xls']:
         try:
-            # First try standard template
+            # Try hierarchical template first
+            result_new = extract_from_hierarchical_template(file_content)
+            if result_new.get('success'):
+                return result_new
+        except Exception as e:
+            logger.warning(f"Hierarchical template extraction failed: {e}")
+        try:
+            # Then try standard template
             result = extract_from_standard_template(file_content)
             if result.get('success'):
                 return result
         except Exception as e:
             logger.warning(f"Standard template extraction failed: {e}")
-        
         # Fallback to intelligent extraction
         return _extract_from_excel_intelligent(file_content)
-    
-    elif file_extension.lower() == '.pdf':
-        return _extract_from_pdf_intelligent(file_content)
     
     return {
         'success': False,
@@ -849,24 +1092,198 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
         }
     
     try:
-        # Use pdfplumber for better text extraction
         import io
         pdf_file = io.BytesIO(file_content)
-        
+
+        # If pdfplumber is available, try structured table extraction first
+        if PDF_PLUMBER_AVAILABLE:
+            try:
+                import re as _re
+                with pdfplumber.open(pdf_file) as pdf:
+                    header_aliases = {
+                        'code': ['code', 'item code'],
+                        'description': ['description', 'item description'],
+                        'uom': ['uom', 'unit', 'unit of measure'],
+                        'quantity': ['quantity', 'qty'],
+                        'unit cost': ['unit cost', 'unit price', 'unit rate'],
+                        'amount': ['amount', 'total', 'total cost'],
+                        'level': ['level']
+                    }
+
+                    def match_header(cell: str, key: str) -> bool:
+                        if cell is None:
+                            return False
+                        val = str(cell).strip().lower()
+                        return any(alias in val for alias in header_aliases[key])
+
+                    # Collect rows from first matching table with required headers
+                    rows: List[Dict[str, Any]] = []
+                    found_headers = False
+                    for page in pdf.pages:
+                        tables = page.extract_tables()
+                        for tbl in tables:
+                            if not tbl or len(tbl) < 2:
+                                continue
+                            header_row = tbl[0]
+                            # Build column index map by fuzzy header match
+                            col_idx = {}
+                            for idx, cell in enumerate(header_row):
+                                for key in header_aliases.keys():
+                                    if key not in col_idx and match_header(cell, key):
+                                        col_idx[key] = idx
+                            # Require at least Code, Description
+                            if 'code' in col_idx and 'description' in col_idx:
+                                found_headers = True
+                                for data_row in tbl[1:]:
+                                    def get_col(name):
+                                        i = col_idx.get(name)
+                                        return (data_row[i] if i is not None and i < len(data_row) else None)
+                                    rows.append({
+                                        'code': (get_col('code') or '').strip() if get_col('code') else '',
+                                        'description': (get_col('description') or '').strip() if get_col('description') else '',
+                                        'uom': (get_col('uom') or '').strip() if get_col('uom') else '',
+                                        'quantity': get_col('quantity') or '',
+                                        'unit cost': get_col('unit cost') or '',
+                                        'amount': get_col('amount') or '',
+                                        'level': get_col('level') or ''
+                                    })
+                            if found_headers and rows:
+                                break
+                        if found_headers and rows:
+                            break
+
+                    if found_headers and rows:
+                        # Normalize numeric values and pass through hierarchical logic
+                        def to_dec(val):
+                            try:
+                                s = str(val)
+                                # Strip currency symbols, letters, and spaces; keep digits, dot, minus
+                                import re as _re_clean
+                                s = _re_clean.sub(r'[^0-9.\-]', '', s)
+                                if s == '' or s == '-' or s == '.':
+                                    return Decimal('0')
+                                return Decimal(s)
+                            except Exception:
+                                return Decimal('0')
+
+                        # Reuse the in-memory row iteration logic from Excel path
+                        current_division_name = ''
+                        current_division_is_general = False
+                        current_task_name = ''
+                        division_subtotals: Dict[str, Decimal] = {}
+                        boq_items: List[Dict[str, Any]] = []
+                        suggested_roles: Dict[str, Decimal] = {}
+                        required_permits: List[Dict[str, Any]] = []
+
+                        for r in rows:
+                            code = str(r.get('code') or '').strip()
+                            if not code:
+                                continue
+                            lvl_raw = r.get('level')
+                            try:
+                                level = int(lvl_raw) if (lvl_raw is not None and str(lvl_raw).strip() != '') else code.count('.')
+                            except Exception:
+                                level = code.count('.')
+                            description = str(r.get('description') or '').strip()
+
+                            if level == 0:
+                                current_division_name = description
+                                current_division_is_general = (description or '').strip().lower() == 'general requirements'
+                                current_task_name = ''
+                                div_amt = to_dec(r.get('amount'))
+                                if div_amt > 0:
+                                    division_subtotals[current_division_name] = division_subtotals.get(current_division_name, Decimal('0')) + div_amt
+                                continue
+                            if level == 1:
+                                current_task_name = description
+                                continue
+
+                            uom = str(r.get('uom') or '')
+                            qty = to_dec(r.get('quantity'))
+                            unit_cost = to_dec(r.get('unit cost'))
+                            amount = to_dec(r.get('amount'))
+                            # If amount missing, compute from qty * unit_cost
+                            if (amount == 0) and (qty > 0) and (unit_cost > 0):
+                                amount = qty * unit_cost
+
+                            item = {
+                                'division': current_division_name,
+                                'task': current_task_name,
+                                'code': code,
+                                'description': description,
+                                'uom': uom,
+                                'quantity': qty,
+                                'unit_cost': unit_cost,
+                                'amount': amount,
+                                'is_requirement': current_division_is_general,
+                                'level': level
+                            }
+                            boq_items.append(item)
+
+                            # Roles
+                            if current_division_is_general and (current_task_name or '').strip().lower() == 'project management & coordination':
+                                import re as _re2
+                                desc_l = (description or '').lower()
+                                def add_role(role_code: str, count: Decimal):
+                                    suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
+                                if 'project manager' in desc_l or _re2.search(r'\bpm\b', desc_l):
+                                    add_role('PM', qty)
+                                if 'project in charge' in desc_l or _re2.search(r'\bpic\b', desc_l) or 'site engineer' in desc_l or 'supervision' in desc_l:
+                                    add_role('PIC', qty)
+                                if 'safety officer' in desc_l or 'safety' in desc_l or _re2.search(r'\bso\b', desc_l):
+                                    add_role('SO', qty)
+                                if 'quality control' in desc_l or _re2.search(r'\bqa\b', desc_l):
+                                    add_role('QA', qty)
+                                if 'quality officer' in desc_l or _re2.search(r'\bqo\b', desc_l):
+                                    add_role('QO', qty)
+                                if 'foreman' in desc_l or _re2.search(r'\bfm\b', desc_l):
+                                    add_role('FM', qty)
+
+                            # Permits
+                            if current_division_is_general and (current_task_name or '').strip().lower() in ['permits, licenses and clearances', 'permits & licenses', 'permits and licenses']:
+                                if description:
+                                    required_permits.append({
+                                        'name': description,
+                                        'quantity': str(qty),
+                                        'uom': uom,
+                                        'requires_upload': True
+                                    })
+
+                        total_amount = sum((it.get('amount', Decimal('0')) for it in boq_items), Decimal('0'))
+                        return {
+                            'success': True,
+                            'project_info': {
+                                'project_name': '',
+                                'lot_size': Decimal('0'),
+                                'total_amount': total_amount
+                            },
+                            'boq_items': boq_items,
+                            'division_subtotals': {k: str(v) for k, v in division_subtotals.items()},
+                            'total_cost': total_amount,
+                            'lot_size': Decimal('0'),
+                            'suggested_roles': {k: str(v) for k, v in suggested_roles.items()},
+                            'required_permits': required_permits
+                        }
+            except Exception as e:
+                # Fall through to text-based extraction
+                pass
+
+        # Fallback: text-only totals/lot size extraction
+        # Re-open buffer since pdfplumber may have consumed it
+        pdf_file.seek(0)
         total_cost = Decimal('0')
         lot_size = Decimal('0')
-        
-        with pdfplumber.open(pdf_file) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    # Look for cost patterns
+        if PDF_PLUMBER_AVAILABLE:
+            with pdfplumber.open(pdf_file) as pdf:
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if not text:
+                        continue
                     cost_patterns = [
                         r'total[:\s]*₱?[\s]*([\d,]+\.?\d*)',
                         r'grand total[:\s]*₱?[\s]*([\d,]+\.?\d*)',
                         r'subtotal[:\s]*₱?[\s]*([\d,]+\.?\d*)'
                     ]
-                    
                     for pattern in cost_patterns:
                         matches = re.findall(pattern, text, re.IGNORECASE)
                         for match in matches:
@@ -876,14 +1293,11 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
                                     total_cost = cost_val
                             except:
                                 pass
-                    
-                    # Look for lot size patterns
                     size_patterns = [
                         r'lot size[:\s]*([\d,]+\.?\d*)\s*sqm',
                         r'floor area[:\s]*([\d,]+\.?\d*)\s*sqm',
                         r'area[:\s]*([\d,]+\.?\d*)\s*sqm'
                     ]
-                    
                     for pattern in size_patterns:
                         matches = re.findall(pattern, text, re.IGNORECASE)
                         for match in matches:
@@ -893,9 +1307,8 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
                                     lot_size = size_val
                             except:
                                 pass
-        
+
         cost_per_sqm = total_cost / lot_size if lot_size > 0 else Decimal('0')
-        
         return {
             'success': True,
             'total_cost': total_cost,
@@ -917,3 +1330,4 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
             'success': False,
             'error': f"Failed to extract from PDF: {str(e)}"
         }
+

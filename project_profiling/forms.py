@@ -8,6 +8,21 @@ from employees.models import Employee
 
 
 class ProjectProfileForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Add JavaScript for auto-calculation
+        self.fields['total_area'].widget.attrs.update({
+            'onchange': 'calculateEstimatedCost()',
+            'oninput': 'calculateEstimatedCost()'
+        })
+        self.fields['project_type'].widget.attrs.update({
+            'onchange': 'calculateEstimatedCost()'
+        })
+        self.fields['lot_size'].widget.attrs.update({
+            'onchange': 'calculateEstimatedCost()',
+            'oninput': 'calculateEstimatedCost()'
+        })
+    
     class Meta:
         model = ProjectProfile
         fields = [
@@ -23,6 +38,7 @@ class ProjectProfileForm(forms.ModelForm):
             "gps_coordinates",
             "city_province",
             "lot_size",
+            "total_area",
             "start_date",
             "target_completion_date",
             "actual_completion_date",
@@ -241,7 +257,7 @@ class ProjectProfileForm(forms.ModelForm):
             
             # Calculate cost breakdown from BOQ items
             if self._boq_items_data:
-                total_cost = sum(float(item.get('total_cost', 0)) for item in self._boq_items_data)
+                total_cost = sum(float(item.get('amount', 0)) for item in self._boq_items_data)
                 cleaned_data['extracted_total_cost'] = total_cost
                 
                 cost_breakdown = {
@@ -253,6 +269,8 @@ class ProjectProfileForm(forms.ModelForm):
                 cleaned_data['extracted_cost_breakdown'] = cost_breakdown
                 cleaned_data['boq_file_processed'] = True
                 print(f"DEBUG: Form clean - Calculated total cost: {total_cost}")
+                print(f"DEBUG: Form clean - Cost breakdown: {cost_breakdown}")
+                print(f"DEBUG: Form clean - Sample BOQ item: {self._boq_items_data[0] if self._boq_items_data else 'None'}")
         
         return cleaned_data
 

@@ -36,6 +36,16 @@
 .select2-search--dropdown .select2-search__field {
     @apply border border-gray-300 rounded-lg py-2 px-3;
 }
+
+/* Date warning styles */
+.date-warning {
+    @apply border-amber-400 bg-amber-50;
+    transition: all 0.3s ease;
+}
+
+.date-warning:focus {
+    @apply ring-2 ring-amber-400 border-amber-400;
+}
 </style>
 {% endblock %}
 
@@ -138,24 +148,27 @@
 </script>
 
 
-<!-- Progress Indicator -->
-<div class="max-w-4xl mx-auto px-8 py-6">
-    <div class="mb-8">
-        <div class="flex items-center justify-between text-sm font-medium text-gray-500 mb-4">
-            <span class="text-blue-600" id="step-1">Step 1</span>
-            <span class="text-gray-400" id="step-2">Step 2</span>
-            <span class="text-gray-400" id="step-3">Step 3</span>
-            <span class="text-gray-400" id="step-4">Step 4</span>
-            <span class="text-gray-400" id="step-5">Step 5</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
-        </div>
+<!-- Progress Indicator (Transparent & Responsive) -->
+<div id="progress-indicator" class="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-3 sm:mb-4">
+            <!-- Mobile: Stacked layout, Desktop: Horizontal layout -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">
+                <span class="text-blue-600 bg-white bg-opacity-80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full text-center w-full sm:w-auto" id="step-1">Step 1</span>
+                <span class="text-gray-400 bg-white bg-opacity-80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full text-center w-full sm:w-auto" id="step-2">Step 2</span>
+                <span class="text-gray-400 bg-white bg-opacity-80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full text-center w-full sm:w-auto" id="step-3">Step 3</span>
+                <span class="text-gray-400 bg-white bg-opacity-80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full text-center w-full sm:w-auto" id="step-4">Step 4</span>
+                <span class="text-gray-400 bg-white bg-opacity-80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full text-center w-full sm:w-auto" id="step-5">Step 5</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
+                <div id="progress-bar" class="bg-blue-600 h-1.5 sm:h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+            </div>
         </div>
     </div>
+</div>
 
 <!-- Main Content Container -->
-<div class="max-w-4xl mx-auto px-8 pb-6">
+<div class="max-w-4xl mx-auto px-8 pt-2 pb-6">
     <!-- Header Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-8 border-b border-gray-200">
@@ -369,7 +382,7 @@
                             <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
                             </svg>
-                            Documents & Data Import
+                            Data Import
                         </h3>
 
                         <!-- Cost Estimate Preview (shown when project type has data) -->
@@ -398,9 +411,10 @@
                                 </svg>
                                 Upload BOQ (Bill of Quantities)
                             </h4>
-                            <p class="text-sm text-gray-600 mb-6">
+                            <p class="text-sm text-gray-600 mb-4">
                                 Upload detailed BOQ files to automatically extract project tasks, costs, materials, and dependencies. Use the standard template for best results.
                             </p>
+
 
                             <!-- BOQ File Upload Zone -->
                             <div id="boqUploadZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer" onclick="document.getElementById('boqFileInput').click()">
@@ -408,17 +422,89 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                                 <p class="text-lg font-semibold text-gray-700 mb-1">Click to upload BOQ files</p>
-                                <p class="text-sm text-gray-500">PDF, XLS, XLSX files (Max 10MB)</p>
+                                <p class="text-sm text-gray-500">XLS, XLSX files (Max 10MB)</p>
                                 <p class="text-xs text-gray-400 mt-2">Use the standard BOQ template for automatic data extraction</p>
                             </div>
 
                             <!-- Hidden BOQ file input -->
-                            <input type="file" id="boqFileInput" class="hidden" accept=".pdf,.xls,.xlsx" multiple onchange="handleBOQUpload(event)">
+                            <input type="file" id="boqFileInput" class="hidden" accept=".xls,.xlsx" onchange="handleBOQUpload(event)">
 
                             <!-- Uploaded BOQ Files List -->
                             <div id="uploadedBOQList" class="mt-6 space-y-3 hidden">
                                 <h5 class="text-sm font-medium text-gray-700">Uploaded BOQ Files:</h5>
                                 <div id="boqFilesList" class="space-y-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- BOQ Preview Modal -->
+                        <div id="boqPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                            <div class="flex items-center justify-center min-h-screen p-4">
+                                <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-lg">
+                                    <div class="p-6">
+                                    <!-- Modal Header -->
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-lg font-medium text-gray-900">BOQ Preview</h3>
+                                        <div class="flex items-center space-x-2">
+                                            <button type="button" onclick="toggleEditMode()" id="editToggleBtn" class="flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                                Edit
+                                            </button>
+                                            <button type="button" onclick="closeBOQPreview()" class="text-gray-400 hover:text-gray-600">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary Section -->
+                                    <div id="boqSummary" class="hidden mb-4 rounded-lg border p-3 bg-gray-50">
+                                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+                                            <div>
+                                                <div class="text-gray-500 text-xs">Project Name</div>
+                                                <div id="sum-project" class="font-medium text-sm">—</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-gray-500 text-xs">Lot Size (sqm)</div>
+                                                <div id="sum-lot" class="font-medium text-sm">—</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-gray-500 text-xs">Floor Area (sqm)</div>
+                                                <div id="sum-floor-area" class="font-medium text-sm">—</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-gray-500 text-xs">Total Amount (PHP)</div>
+                                                <div id="sum-total" class="font-semibold text-blue-700 text-sm">—</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div class="rounded-md border p-2 bg-white">
+                                                <div class="font-semibold mb-1 text-sm">Suggested Roles</div>
+                                                <ul id="roles-list" class="list-disc list-inside text-xs text-gray-700"></ul>
+                                            </div>
+                                            <div class="rounded-md border p-2 bg-white">
+                                                <div class="font-semibold mb-1 text-sm">Required Permits</div>
+                                                <ul id="permits-list" class="list-disc list-inside text-xs text-gray-700"></ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Grouped BOQ View -->
+                                    <div id="boqGrouped" class="hidden space-y-4 max-h-80 overflow-y-auto border rounded-lg p-3 bg-gray-50"></div>
+
+                                    <!-- Modal Actions -->
+                                    <div class="flex justify-end space-x-3 mt-4 pt-3 border-t">
+                                        <button type="button" onclick="closeBOQPreview()" class="px-3 py-2 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400">
+                                            Cancel
+                                        </button>
+                                        <button type="button" onclick="saveBOQData()" class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                                            Save BOQ Data
+                                        </button>
+                                    </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -614,6 +700,29 @@
                                 {% endif %}
                             </div>
 
+                            <!-- Total Area -->
+                            <div class="form-group">
+                                <label for="id_total_area" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Total Area (Floor Area)
+                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.total_area|add_class:"block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 text-sm">m²</span>
+                                    </div>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-500">Enter the total floor area in square meters for automatic cost estimation</p>
+                                {% if form.total_area.errors %}
+                                    <p class="mt-1 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ form.total_area.errors.0 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
                             <!-- Start Date -->
                             <div class="form-group">
                                 <label for="id_start_date" class="block text-sm font-medium text-gray-700 mb-2">
@@ -621,6 +730,20 @@
                                     <span class="text-red-500 ml-1" aria-label="required">*</span>
                                 </label>
                                 {{ form.start_date|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
+                                
+                                <!-- Past date warning message -->
+                                <div id="start-date-warning" class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <div>
+                                            <p class="text-sm font-medium text-yellow-800">Warning: Past Date Selected</p>
+                                            <p class="text-sm text-yellow-700">The selected start date is in the past. Please select a future date for the project start.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 {% if form.start_date.errors %}
                                     <p class="mt-1 text-sm text-red-600 flex items-center">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -678,6 +801,21 @@
                             </svg>
                             Team & Resources
                         </h3>
+
+                        <!-- BOQ Suggested Roles Section (Small) -->
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                BOQ Suggested Roles
+                            </h4>
+                            
+                            <!-- Suggested Roles Display -->
+                            <div id="suggested-roles-display" class="space-y-2">
+                                <div class="text-xs text-gray-500 italic">No BOQ data available yet. Upload a BOQ file to see suggested roles.</div>
+                            </div>
+                        </div>
 
                         <!-- Employee Assignments Section -->
                         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-6">
@@ -926,6 +1064,7 @@
                     </div>
                 </div>
 
+
                 <!-- Financial & Legal Tab -->
                 <div class="tab-content hidden" id="financial-tab">
                     <div class="space-y-6">
@@ -984,43 +1123,7 @@
                         </div>
 
 
-<!-- Permits & Licenses -->
-<div class="form-group">
-    <label for="id_permits_licenses" class="block text-sm font-medium text-gray-700 mb-2">
-        Permits & Licenses 
-        <span class="text-gray-500 text-xs">(Optional)</span>
-    </label>
-    <div class="relative">
-        <input type="text" 
-               id="permits_display" 
-               class="block w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
-               placeholder="No file selected"
-               readonly>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <button type="button" class="text-blue-500 hover:text-blue-600 text-sm font-medium" onclick="uploadPermits()">
-                Browse Files
-            </button>
-        </div>
-    </div>
-    
-    <div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;">
-        {{form.permits_licenses|add_class:"w-full border border-gray-300 rounded-md px-3 py-2"}}
-    </div>
 
-    
-    <p class="mt-1 text-sm text-gray-500">Upload permits, licenses, or regulatory documents</p>
-    {% if form.permits_licenses.errors %}
-        <p class="mt-1 text-sm text-red-600 flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-            </svg>
-            {{ form.permits_licenses.errors.0 }}
-        </p>
-    {% endif %}
-</div>
-
-                    </div>
-                </div>
 
                         </div>
 
@@ -1087,6 +1190,52 @@
                 </svg>
                 <span class="text-gray-700 font-medium">Creating project...</span>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Overlay -->
+<div id="processing-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 mb-4">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing BOQ File</h3>
+            <p class="text-gray-600 text-sm">Please wait while we extract and analyze your BOQ data...</p>
+        </div>
+    </div>
+</div>
+
+<!-- File Replacement Confirmation Modal -->
+<div id="fileReplacementModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-medium text-gray-900">Replace Existing File?</h3>
+            </div>
+        </div>
+        <div class="mb-6">
+            <p class="text-sm text-gray-600">
+                You already have a BOQ file uploaded. Uploading a new file will replace the existing one and clear all extracted data.
+            </p>
+            <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p class="text-sm text-yellow-800 font-medium">Current file: <span id="currentFileName" class="font-mono"></span></p>
+                <p class="text-sm text-yellow-800">New file: <span id="newFileName" class="font-mono"></span></p>
+            </div>
+        </div>
+        <div class="flex justify-end space-x-3">
+            <button type="button" id="cancelReplacement" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Cancel
+            </button>
+            <button type="button" id="confirmReplacement" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 border border-transparent rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                Replace File
+            </button>
         </div>
     </div>
 </div>
@@ -2850,8 +2999,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const progressPercentage = ((step + 1) / steps.length) * 100;
         progressBar.style.width = progressPercentage + '%';
         
-        // Update step indicators
+        
+        // Update step indicators with responsive blur background
         stepElements.forEach((stepEl, i) => {
+            // Ensure responsive blur background classes are always present
+            stepEl.classList.add('bg-white', 'bg-opacity-80', 'backdrop-blur-sm', 'px-2', 'sm:px-3', 'py-1', 'rounded-full', 'text-center', 'w-full', 'sm:w-auto');
+            
             if (i <= step) {
                 if (completedSteps.has(i)) {
                     stepEl.classList.remove('text-gray-400', 'text-blue-600');
@@ -2868,6 +3021,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 stepEl.classList.add('text-gray-400');
             }
         });
+        
     }
     
     function updateNextButtonState() {
@@ -3120,6 +3274,17 @@ document.addEventListener('DOMContentLoaded', function() {
         projectInCharge.addEventListener('change', validateCurrentStep);
     }
     
+    // Start date validation
+    const startDate = document.getElementById('id_start_date');
+    if (startDate) {
+        startDate.addEventListener('change', validateStartDate);
+        startDate.addEventListener('input', validateStartDate);
+        // Also validate on page load if there's already a value
+        if (startDate.value) {
+            validateStartDate();
+        }
+    }
+    
     // Global function to trigger step validation (can be called from file processing)
     window.validateCurrentStep = validateCurrentStep;
     
@@ -3240,6 +3405,76 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize first step
     showStep(0);
+    
+    // Make progress indicator floating, transparent, and responsive
+    const progressIndicator = document.getElementById('progress-indicator');
+    if (progressIndicator) {
+        // Add floating styles to the original progress indicator with full transparency
+        progressIndicator.classList.add('fixed', 'top-0', 'left-0', 'right-0', 'z-50', 'transition-all', 'duration-300');
+        
+        // Remove any background and make it fully transparent
+        progressIndicator.style.backgroundColor = 'transparent';
+        progressIndicator.style.backdropFilter = 'none';
+        progressIndicator.style.boxShadow = 'none';
+        progressIndicator.style.border = 'none';
+        
+        // Responsive padding adjustments
+        const isMobile = window.innerWidth < 640; // sm breakpoint
+        progressIndicator.style.paddingTop = isMobile ? '0.5rem' : '0.75rem';
+        progressIndicator.style.paddingBottom = isMobile ? '0.5rem' : '0.75rem';
+        
+        // Add responsive padding to the main content to account for floating header
+        const mainContent = document.querySelector('.max-w-4xl.mx-auto.px-8.pb-6');
+        if (mainContent) {
+            mainContent.style.paddingTop = isMobile ? '100px' : '80px'; // More space on mobile for stacked layout
+        }
+        
+        // Handle window resize for responsive adjustments
+        window.addEventListener('resize', () => {
+            const isMobileResize = window.innerWidth < 640;
+            progressIndicator.style.paddingTop = isMobileResize ? '0.5rem' : '0.75rem';
+            progressIndicator.style.paddingBottom = isMobileResize ? '0.5rem' : '0.75rem';
+            if (mainContent) {
+                mainContent.style.paddingTop = isMobileResize ? '100px' : '80px';
+            }
+        });
+    }
+    
+    // File replacement modal event listeners
+    const fileReplacementModal = document.getElementById('fileReplacementModal');
+    const cancelReplacement = document.getElementById('cancelReplacement');
+    const confirmReplacement = document.getElementById('confirmReplacement');
+    
+    if (cancelReplacement) {
+        cancelReplacement.addEventListener('click', () => {
+            fileReplacementModal.classList.add('hidden');
+            window.pendingBOQFile = null;
+        });
+    }
+    
+    if (confirmReplacement) {
+        confirmReplacement.addEventListener('click', () => {
+            if (window.pendingBOQFile) {
+                // Clear existing files first
+                const boqFilesList = document.getElementById('boqFilesList');
+                if (boqFilesList) {
+                    boqFilesList.innerHTML = '';
+                    document.getElementById('uploadedBOQList').classList.add('hidden');
+                }
+                
+                // Clear current BOQ data
+                currentBOQData = null;
+                
+                // Process the new file
+                processFileUpload(window.pendingBOQFile);
+                
+                // Clear pending file
+                window.pendingBOQFile = null;
+            }
+            
+            fileReplacementModal.classList.add('hidden');
+        });
+    }
 });
 
 </script>
@@ -3914,33 +4149,61 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// BOQ Upload Functions
+// Enhanced BOQ Upload Functions
+let currentBOQData = null;
+let isEditMode = false;
+
 function handleBOQUpload(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    for (let file of files) {
-        // Validate file type
-        const allowedTypes = ['.pdf', '.xls', '.xlsx'];
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    // Check if there are existing files
+    const boqFilesList = document.getElementById('boqFilesList');
+    const hasExistingFiles = boqFilesList && boqFilesList.children.length > 0;
 
-        if (!allowedTypes.includes(fileExtension)) {
-            alert(`File ${file.name} is not supported. Please select PDF or Excel files.`);
-            continue;
-        }
-
-        // Validate file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-            alert(`File ${file.name} is too large. Maximum size is 10MB.`);
-            continue;
-        }
-
-        // Show file in uploaded BOQ files list
-        showUploadedBOQFile(file);
+    if (hasExistingFiles) {
+        // Store the new file for later processing
+        window.pendingBOQFile = files[0];
         
-        // Process file for cost extraction
-        processBOQFile(file);
+        // Get current file name
+        const currentFileElement = boqFilesList.querySelector('p.text-sm.font-medium');
+        const currentFileName = currentFileElement ? currentFileElement.textContent : 'Unknown';
+        
+        // Show confirmation modal
+        document.getElementById('currentFileName').textContent = currentFileName;
+        document.getElementById('newFileName').textContent = files[0].name;
+        document.getElementById('fileReplacementModal').classList.remove('hidden');
+        
+        // Clear the input so it can be used again
+        event.target.value = '';
+        return;
     }
+
+    // No existing files, proceed with upload
+    processFileUpload(files[0]);
+}
+
+function processFileUpload(file) {
+    // Validate file type
+    const allowedTypes = ['.xls', '.xlsx'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!allowedTypes.includes(fileExtension)) {
+        showEnhancedToast(`File ${file.name} is not supported. Please select Excel files.`, 'error');
+        return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+        showEnhancedToast(`File ${file.name} is too large. Maximum size is 10MB.`, 'error');
+        return;
+    }
+
+    // Show file in uploaded BOQ files list
+    showUploadedBOQFile(file);
+    
+    // Process file for cost extraction
+    processBOQFile(file);
 }
 
 function showUploadedBOQFile(file) {
@@ -3990,6 +4253,9 @@ function removeUploadedBOQFile(fileName) {
     // Remove from extracted data
     extractedBOQData.delete(fileName);
     
+    // Clear current BOQ data
+    currentBOQData = null;
+    
     // Remove from UI
     const fileItems = document.querySelectorAll('#boqFilesList .flex');
     for (let fileItem of fileItems) {
@@ -4006,6 +4272,15 @@ function removeUploadedBOQFile(fileName) {
         document.getElementById('uploadedBOQList').classList.add('hidden');
     }
     
+    // Reset file input to allow new uploads
+    const boqFileInput = document.getElementById('boqFileInput');
+    if (boqFileInput) {
+        boqFileInput.value = '';
+    }
+    
+    // Clear any pending file
+    window.pendingBOQFile = null;
+    
     // Trigger validation when file is removed
     if (typeof validateCurrentStep === 'function') {
         validateCurrentStep();
@@ -4013,11 +4288,17 @@ function removeUploadedBOQFile(fileName) {
 }
 
 async function processBOQFile(file) {
+    // Show processing overlay
+    const overlay = document.getElementById('processing-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+    
     try {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/projects/api/boq-upload/', {
+        const response = await fetch('/projects/boq/preview/', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
@@ -4027,39 +4308,39 @@ async function processBOQFile(file) {
 
         const result = await response.json();
 
+        // Hide processing overlay
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+
         if (result.success) {
-            // Store extracted data for preview
-            extractedBOQData.set(file.name, result.cost_data);
-            
-            // Store BOQ items in hidden form field for submission
-            storeBOQItemsInForm(result.cost_data.boq_items || []);
-            
-            // Update estimated cost field with BOQ total cost
-            if (result.cost_data.total_cost) {
-                const estimatedCostField = document.getElementById('id_estimated_cost');
-                if (estimatedCostField) {
-                    estimatedCostField.value = parseFloat(result.cost_data.total_cost).toFixed(2);
-                    showEnhancedToast(`💰 Estimated cost updated to ₱${parseFloat(result.cost_data.total_cost).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} from BOQ data`, 'success', 4000);
-                }
-            }
-            
-            // Autofill project name and lot size from BOQ data
-            autofillProjectDataFromBOQ(result.cost_data);
-            
-            // Update file status to success
+            currentBOQData = result.data;
+            // Store original data for validation
+            currentBOQData.original_boq_items = JSON.parse(JSON.stringify(result.data.boq_items || []));
+            currentBOQData.original_division_subtotals = JSON.parse(JSON.stringify(result.data.division_subtotals || {}));
+            currentBOQData.original_total_cost = result.data.total_cost || result.data.total_amount;
             updateBOQFileStatus(file.name, 'success', 'Processed');
+            showBOQPreview(result.data);
             
-            // Show enhanced success message
-            const itemCount = result.cost_data.boq_items?.length || 0;
-            showEnhancedToast(`✅ BOQ file '${file.name}' processed successfully! ${itemCount} items extracted.`, 'success', 5000);
+            // Update estimated cost from BOQ data
+            updateEstimatedCostFromBOQ(result.data);
+            
+            // Update form fields from BOQ data
+            updateFormFieldsFromBOQ(result.data);
+            
+            // Store BOQ items in form for submission
+            if (result.data.boq_items) {
+                storeBOQItemsInForm(result.data.boq_items);
+            }
         } else {
-            // Update file status to error
-            updateBOQFileStatus(file.name, 'error', 'Error');
-            
-            showEnhancedToast(`❌ Error processing BOQ file '${file.name}': ${result.error}`, 'error', 8000);
+            updateBOQFileStatus(file.name, 'error', result.error || 'Processing failed');
         }
     } catch (error) {
-        showEnhancedToast(`❌ Network error processing BOQ file '${file.name}': ${error.message}`, 'error', 8000);
+        // Hide processing overlay
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+        
         updateBOQFileStatus(file.name, 'error', 'Network Error');
     }
 }
@@ -4078,6 +4359,79 @@ function storeBOQItemsInForm(boqItems) {
     
     // Store BOQ items as JSON
     boqItemsInput.value = JSON.stringify(boqItems);
+}
+
+// Store complete BOQ data in hidden form fields for submission
+function storeBOQDataInForm(boqData) {
+    // Store BOQ items
+    if (boqData.boq_items) {
+        storeBOQItemsInForm(boqData.boq_items);
+    }
+    
+    // Store division subtotals
+    if (boqData.division_subtotals) {
+        let divisionInput = document.getElementById('boq_division_subtotals');
+        if (!divisionInput) {
+            divisionInput = document.createElement('input');
+            divisionInput.type = 'hidden';
+            divisionInput.id = 'boq_division_subtotals';
+            divisionInput.name = 'boq_division_subtotals';
+            document.querySelector('form').appendChild(divisionInput);
+        }
+        divisionInput.value = JSON.stringify(boqData.division_subtotals);
+    }
+    
+    // Store suggested roles
+    if (boqData.suggested_roles) {
+        let rolesInput = document.getElementById('boq_suggested_roles');
+        if (!rolesInput) {
+            rolesInput = document.createElement('input');
+            rolesInput.type = 'hidden';
+            rolesInput.id = 'boq_suggested_roles';
+            rolesInput.name = 'boq_suggested_roles';
+            document.querySelector('form').appendChild(rolesInput);
+        }
+        rolesInput.value = JSON.stringify(boqData.suggested_roles);
+    }
+    
+    // Store required permits
+    if (boqData.required_permits) {
+        let permitsInput = document.getElementById('boq_required_permits');
+        if (!permitsInput) {
+            permitsInput = document.createElement('input');
+            permitsInput.type = 'hidden';
+            permitsInput.id = 'boq_required_permits';
+            permitsInput.name = 'boq_required_permits';
+            document.querySelector('form').appendChild(permitsInput);
+        }
+        permitsInput.value = JSON.stringify(boqData.required_permits);
+    }
+    
+    // Store project info
+    if (boqData.project_info) {
+        let projectInfoInput = document.getElementById('boq_project_info');
+        if (!projectInfoInput) {
+            projectInfoInput = document.createElement('input');
+            projectInfoInput.type = 'hidden';
+            projectInfoInput.id = 'boq_project_info';
+            projectInfoInput.name = 'boq_project_info';
+            document.querySelector('form').appendChild(projectInfoInput);
+        }
+        projectInfoInput.value = JSON.stringify(boqData.project_info);
+    }
+    
+    // Store total cost
+    if (boqData.total_cost || boqData.total_amount) {
+        let totalCostInput = document.getElementById('boq_total_cost');
+        if (!totalCostInput) {
+            totalCostInput = document.createElement('input');
+            totalCostInput.type = 'hidden';
+            totalCostInput.id = 'boq_total_cost';
+            totalCostInput.name = 'boq_total_cost';
+            document.querySelector('form').appendChild(totalCostInput);
+        }
+        totalCostInput.value = boqData.total_cost || boqData.total_amount;
+    }
 }
 
 // Toast notification helper
@@ -4119,6 +4473,660 @@ function updateBOQFileStatus(fileName, status, text) {
     }
 }
 
+// Enhanced BOQ Preview Functions
+function showBOQPreview(data) {
+    // Set to preview mode by default
+    isEditMode = false;
+    
+    // Update edit button to show edit mode
+    const editBtn = document.getElementById('editToggleBtn');
+    editBtn.innerHTML = `
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        Edit
+    `;
+    editBtn.className = 'flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200';
+    
+    // Extract display data
+    const info = data.project_info || {};
+    const items = data.boq_items || [];
+    const roles = data.suggested_roles || {};
+    const permits = data.required_permits || [];
+
+    // Update summary
+    document.getElementById('sum-project').textContent = info.project_name || '—';
+    document.getElementById('sum-lot').textContent = peso(info.lot_size);
+    document.getElementById('sum-floor-area').textContent = peso(info.floor_area);
+    document.getElementById('sum-total').textContent = '₱ ' + peso(info.total_amount || data.total_cost);
+    document.getElementById('boqSummary').classList.remove('hidden');
+
+    // Update roles and permits
+    const rolesEl = document.getElementById('roles-list');
+    const permitsEl = document.getElementById('permits-list');
+    
+    // Role name mapping (matching Employee model choices)
+    const roleNames = {
+        'PM': 'Project Manager',
+        'PIC': 'Project In Charge',
+        'SO': 'Safety Officer',
+        'QA': 'Quality Assurance Officer',
+        'QO': 'Quality Officer',
+        'FM': 'Foreman',
+        'LB': 'Labor'
+    };
+    
+    rolesEl.innerHTML = Object.keys(roles).length ? 
+        Object.entries(roles).map(([k,v]) => `<li><span class="font-medium">${roleNames[k] || k}</span>: ${peso(v)}</li>`).join('') : 
+        '<li>None detected</li>';
+    permitsEl.innerHTML = permits.length ? 
+        permits.map(p => `<li>${p.name} ${p.quantity && p.quantity !== '0' ? `(qty ${p.quantity})` : ''}</li>`).join('') : 
+        '<li>No permits detected</li>';
+
+    // Group and render BOQ items
+    const grouped = groupItems(items);
+    const container = document.getElementById('boqGrouped');
+    renderGrouped(container, grouped);
+    container.classList.remove('hidden');
+
+    // Show modal
+    document.getElementById('boqPreviewModal').classList.remove('hidden');
+}
+
+function closeBOQPreview() {
+    document.getElementById('boqPreviewModal').classList.add('hidden');
+    // Don't clear currentBOQData - keep it for potential re-opening
+}
+
+function openBOQPreview() {
+    if (currentBOQData) {
+        isEditMode = false; // Start in preview mode
+        showBOQPreview(currentBOQData);
+    } else {
+        showEnhancedToast('No BOQ data available. Please upload a file first.', 'error');
+    }
+}
+
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    const editBtn = document.getElementById('editToggleBtn');
+    
+    if (isEditMode) {
+        editBtn.innerHTML = `
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            Preview
+        `;
+        editBtn.className = 'flex items-center px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200';
+    } else {
+        editBtn.innerHTML = `
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Edit
+        `;
+        editBtn.className = 'flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200';
+    }
+    
+    // Re-render the grouped view with current mode
+    if (currentBOQData) {
+        const grouped = groupItems(currentBOQData.boq_items || []);
+        const container = document.getElementById('boqGrouped');
+        renderGrouped(container, grouped);
+    }
+}
+
+function saveBOQData() {
+    if (currentBOQData) {
+        // Log what data is being saved
+        console.log('=== BOQ Data Being Saved ===');
+        console.log('Project Info:', currentBOQData.project_info);
+        console.log('Total Amount:', currentBOQData.total_amount);
+        console.log('Total Cost:', currentBOQData.total_cost);
+        console.log('Lot Size:', currentBOQData.lot_size);
+        console.log('Floor Area:', currentBOQData.project_info?.floor_area);
+        console.log('BOQ Items Count:', currentBOQData.boq_items?.length || 0);
+        console.log('Division Subtotals:', currentBOQData.division_subtotals);
+        console.log('Suggested Roles:', currentBOQData.suggested_roles);
+        console.log('Required Permits:', currentBOQData.required_permits);
+        console.log('=============================');
+        
+        // Store BOQ data in form
+        storeBOQDataInForm(currentBOQData);
+        
+        // Log what's being stored in form fields
+        console.log('=== Form Fields Being Set ===');
+        console.log('BOQ Items:', document.getElementById('boq_items_data')?.value ? 'Stored' : 'Not stored');
+        console.log('Division Subtotals:', document.getElementById('boq_division_subtotals')?.value ? 'Stored' : 'Not stored');
+        console.log('Suggested Roles:', document.getElementById('boq_suggested_roles')?.value ? 'Stored' : 'Not stored');
+        console.log('Required Permits:', document.getElementById('boq_required_permits')?.value ? 'Stored' : 'Not stored');
+        console.log('Project Info:', document.getElementById('boq_project_info')?.value ? 'Stored' : 'Not stored');
+        console.log('Total Cost:', document.getElementById('boq_total_cost')?.value ? 'Stored' : 'Not stored');
+        console.log('============================');
+        
+        // Autofill project data
+        autofillProjectDataFromBOQ(currentBOQData);
+        
+        // Auto-fill estimate cost with BOQ total amount
+        if (currentBOQData.total_amount) {
+            const estimatedCostField = document.getElementById('id_estimated_cost');
+            if (estimatedCostField) {
+                const totalAmount = parseFloat(currentBOQData.total_amount);
+                estimatedCostField.value = totalAmount.toFixed(2);
+                
+                // Show notification about auto-filled cost
+                showEnhancedToast(`💰 Estimate cost auto-filled: ₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 'info');
+            }
+        }
+        
+        // Close modal
+        closeBOQPreview();
+        
+        // Show success message with data summary
+        const summary = `✅ BOQ data saved successfully!\n` +
+            `📊 Summary: ${currentBOQData.boq_items?.length || 0} items, ` +
+            `₱${parseFloat(currentBOQData.total_amount || currentBOQData.total_cost || 0).toLocaleString('en-PH')} total`;
+        showEnhancedToast(summary, 'success', 5000);
+        
+        // Trigger validation after a short delay to allow autofill to complete
+        setTimeout(() => {
+            if (typeof validateCurrentStep === 'function') {
+                validateCurrentStep();
+            }
+        }, 500);
+    }
+}
+
+// Helper functions from boq_preview_test.html
+function peso(n) {
+    if (n === null || n === undefined) return '—';
+    const x = Number(n);
+    if (isNaN(x)) return String(n);
+    return x.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function groupItems(items) {
+    const out = {};
+    for (const it of items) {
+        if (Number(it.level) !== 2) continue;
+        if (!out[it.division]) out[it.division] = { tasks: {}, subtotal: 0 };
+        if (!out[it.division].tasks[it.task || '—']) out[it.division].tasks[it.task || '—'] = { items: [], subtotal: 0 };
+        out[it.division].tasks[it.task || '—'].items.push(it);
+        const amt = parseFloat(it.amount) || 0;
+        out[it.division].tasks[it.task || '—'].subtotal += amt;
+        out[it.division].subtotal += amt;
+    }
+    return out;
+}
+
+function renderGrouped(container, grouped) {
+    container.innerHTML = '';
+    Object.entries(grouped).forEach(([division, dval]) => {
+        const divCard = document.createElement('div');
+        divCard.className = 'rounded-lg border bg-white';
+        const header = document.createElement('div');
+        header.className = 'px-4 py-3 border-b flex items-center justify-between bg-yellow-50';
+        header.innerHTML = `<div class="font-semibold">${division}</div><div class="text-sm">Subtotal: <span class="font-semibold">₱ ${peso(dval.subtotal)}</span></div>`;
+        divCard.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'p-4 space-y-4';
+
+        Object.entries(dval.tasks).forEach(([task, tval]) => {
+            const taskCard = document.createElement('div');
+            taskCard.className = 'rounded-md border';
+            taskCard.innerHTML = `<div class="px-3 py-2 border-b bg-gray-50 font-medium">${task} <span class="text-xs text-gray-500">(Subtotal: ₱ ${peso(tval.subtotal)})</span></div>`;
+
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm';
+            table.innerHTML = `
+                <thead>
+                    <tr class="text-left text-gray-500">
+                        <th class="px-3 py-2">Code</th>
+                        <th class="px-3 py-2">Description</th>
+                        <th class="px-3 py-2">UOM</th>
+                        <th class="px-3 py-2 text-right">Qty</th>
+                        <th class="px-3 py-2 text-right">Unit Cost</th>
+                        <th class="px-3 py-2 text-right">Amount</th>
+                        <th class="px-3 py-2">Type</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            const tbody = table.querySelector('tbody');
+            tval.items.forEach((it, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                
+                // Find the actual index in the original boq_items array
+                const actualIndex = currentBOQData.boq_items.findIndex(item => 
+                    item.code === it.code && 
+                    item.description === it.description && 
+                    item.division === it.division &&
+                    item.task === it.task
+                );
+                
+                if (isEditMode) {
+                    // Edit mode - show input fields
+                    tr.innerHTML = `
+                        <td class="px-2 py-1">
+                            <input type="text" value="${it.code || ''}" class="w-full text-xs border rounded px-1 py-0.5" 
+                                   onchange="updateBOQItem(${actualIndex}, 'code', this.value)" 
+                                   onkeydown="event.stopPropagation()" />
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="text" value="${it.description || ''}" class="w-full text-xs border rounded px-1 py-0.5" 
+                                   onchange="updateBOQItem(${actualIndex}, 'description', this.value)" 
+                                   onkeydown="event.stopPropagation()" />
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="text" value="${it.uom || ''}" class="w-full text-xs border rounded px-1 py-0.5" 
+                                   onchange="updateBOQItem(${actualIndex}, 'uom', this.value)" 
+                                   onkeydown="event.stopPropagation()" />
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="number" value="${it.quantity || 0}" step="0.01" class="w-full text-xs border rounded px-1 py-0.5 text-right" 
+                                   data-item-index="${actualIndex}" data-field="quantity"
+                                   onchange="updateBOQItem(${actualIndex}, 'quantity', this.value)" 
+                                   onkeydown="event.stopPropagation()" />
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="number" value="${it.unit_cost || 0}" step="0.01" class="w-full text-xs border rounded px-1 py-0.5 text-right" 
+                                   data-item-index="${actualIndex}" data-field="unit_cost"
+                                   onchange="updateBOQItem(${actualIndex}, 'unit_cost', this.value)" 
+                                   onkeydown="event.stopPropagation()" />
+                        </td>
+                        <td class="px-2 py-1 text-right text-xs font-medium">
+                            ${peso(it.amount)}
+                        </td>
+                        <td class="px-2 py-1">
+                            <select class="w-full text-xs border rounded px-1 py-0.5" 
+                                    onchange="updateBOQItem(${actualIndex}, 'is_requirement', this.value === 'requirement')"
+                                    onkeydown="event.stopPropagation()">
+                                <option value="material" ${!it.is_requirement ? 'selected' : ''}>Material</option>
+                                <option value="requirement" ${it.is_requirement ? 'selected' : ''}>Requirement</option>
+                            </select>
+                        </td>
+                    `;
+                } else {
+                    // Preview mode - show read-only text
+                    tr.innerHTML = `
+                        <td class="px-2 py-1 text-xs">${it.code || ''}</td>
+                        <td class="px-2 py-1 text-xs">${it.description || ''}</td>
+                        <td class="px-2 py-1 text-xs">${it.uom || ''}</td>
+                        <td class="px-2 py-1 text-right text-xs">${peso(it.quantity)}</td>
+                        <td class="px-2 py-1 text-right text-xs">${peso(it.unit_cost)}</td>
+                        <td class="px-2 py-1 text-right text-xs font-medium">${peso(it.amount)}</td>
+                        <td class="px-2 py-1 text-xs">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${it.is_requirement ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                                ${it.is_requirement ? 'Requirement' : 'Material'}
+                            </span>
+                        </td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+            taskCard.appendChild(table);
+            body.appendChild(taskCard);
+        });
+
+        divCard.appendChild(body);
+        container.appendChild(divCard);
+    });
+}
+
+// Function to update BOQ item data when user edits inline
+function updateBOQItem(itemIndex, field, value) {
+    if (!currentBOQData || !currentBOQData.boq_items) {
+        console.log('No currentBOQData or boq_items available');
+        return;
+    }
+    
+    // Find the item in the current data
+    const items = currentBOQData.boq_items;
+    if (itemIndex >= 0 && itemIndex < items.length) {
+        const item = items[itemIndex];
+        console.log(`Updating item ${itemIndex}, field: ${field}, value: ${value}`);
+        
+        // Update the field
+        if (field === 'quantity' || field === 'unit_cost') {
+            const numValue = parseFloat(value) || 0;
+            
+            // Validation for unit_cost
+            if (field === 'unit_cost') {
+                // Prevent setting unit cost to 0
+                if (numValue <= 0) {
+                    showEnhancedToast('⚠️ Unit cost cannot be set to 0 or negative values', 'warning', 3000);
+                    // Revert to original value
+                    if (currentBOQData.original_boq_items && currentBOQData.original_boq_items[itemIndex]) {
+                        const originalItem = currentBOQData.original_boq_items[itemIndex];
+                        item.unit_cost = originalItem.unit_cost;
+                        item.amount = item.quantity * item.unit_cost;
+                        // Update the input field visually
+                        updateInputFieldValue(itemIndex, 'unit_cost', originalItem.unit_cost);
+                    }
+                    return;
+                }
+                
+                // Check if we have original data for validation
+                if (currentBOQData.original_boq_items && currentBOQData.original_boq_items[itemIndex]) {
+                    const originalItem = currentBOQData.original_boq_items[itemIndex];
+                    const originalUnitCost = parseFloat(originalItem.unit_cost) || 0;
+                    
+                    if (originalUnitCost > 0) {
+                        // Allow maximum 30% reduction and 50% increase from original cost
+                        const minAllowedCost = originalUnitCost * 0.7; // 70% of original (30% reduction max)
+                        const maxAllowedCost = originalUnitCost * 1.5; // 150% of original (50% increase max)
+                        
+                        if (numValue < minAllowedCost) {
+                            showEnhancedToast(`⚠️ Unit cost cannot be reduced below ₱${minAllowedCost.toFixed(2)} (70% of original ₱${originalUnitCost.toFixed(2)})`, 'warning', 4000);
+                            // Revert to original value
+                            item.unit_cost = originalItem.unit_cost;
+                            item.amount = item.quantity * item.unit_cost;
+                            updateInputFieldValue(itemIndex, 'unit_cost', originalItem.unit_cost);
+                            return;
+                        }
+                        
+                        if (numValue > maxAllowedCost) {
+                            showEnhancedToast(`⚠️ Unit cost cannot be increased above ₱${maxAllowedCost.toFixed(2)} (150% of original ₱${originalUnitCost.toFixed(2)})`, 'warning', 4000);
+                            // Revert to original value
+                            item.unit_cost = originalItem.unit_cost;
+                            item.amount = item.quantity * item.unit_cost;
+                            updateInputFieldValue(itemIndex, 'unit_cost', originalItem.unit_cost);
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            item[field] = numValue;
+            // Recalculate amount
+            item.amount = item.quantity * item.unit_cost;
+            console.log(`Updated ${field} to ${numValue}, new amount: ${item.amount}`);
+        } else if (field === 'is_requirement') {
+            item[field] = value;
+        } else {
+            item[field] = String(value || '');
+        }
+        
+        // Update the display
+        refreshBOQDisplay();
+    } else {
+        console.log(`Invalid item index: ${itemIndex}, items length: ${items.length}`);
+    }
+}
+
+// Function to update input field value visually
+function updateInputFieldValue(itemIndex, field, value) {
+    // Find the input field in the DOM and update its value
+    const inputSelector = `input[data-item-index="${itemIndex}"][data-field="${field}"]`;
+    const inputField = document.querySelector(inputSelector);
+    if (inputField) {
+        inputField.value = value;
+        // Add visual feedback for reverted value
+        inputField.classList.add('bg-yellow-100', 'border-yellow-400');
+        setTimeout(() => {
+            inputField.classList.remove('bg-yellow-100', 'border-yellow-400');
+        }, 2000);
+    }
+}
+
+// Function to restore original values for a division when validation fails
+function restoreOriginalDivisionValues(division) {
+    if (!currentBOQData || !currentBOQData.original_boq_items) return;
+    
+    const items = currentBOQData.boq_items;
+    const originalItems = currentBOQData.original_boq_items;
+    
+    // Find items in this division and restore their original values
+    items.forEach((item, index) => {
+        if (item.division === division && originalItems[index]) {
+            const originalItem = originalItems[index];
+            item.unit_cost = originalItem.unit_cost;
+            item.quantity = originalItem.quantity;
+            item.amount = originalItem.amount;
+            // Update input fields visually
+            updateInputFieldValue(index, 'unit_cost', originalItem.unit_cost);
+            updateInputFieldValue(index, 'quantity', originalItem.quantity);
+        }
+    });
+    
+    // Refresh display with restored values
+    refreshBOQDisplay();
+}
+
+// Function to update suggested roles display in Team & Resources tab
+function updateSuggestedRolesDisplay(suggestedRoles) {
+    const displayContainer = document.getElementById('suggested-roles-display');
+    if (!displayContainer) return;
+    
+    if (!suggestedRoles || Object.keys(suggestedRoles).length === 0) {
+        displayContainer.innerHTML = '<div class="text-xs text-gray-500 italic">No specific roles detected in BOQ analysis.</div>';
+        return;
+    }
+    
+    // Role name mapping
+    const roleNames = {
+        'PM': 'Project Manager',
+        'PIC': 'Project In Charge',
+        'SO': 'Safety Officer',
+        'QA': 'Quality Assurance',
+        'FM': 'Foreman',
+        'ENG': 'Engineer',
+        'TECH': 'Technician',
+        'SUPER': 'Supervisor'
+    };
+    
+    let html = '';
+    for (const [roleCode, quantity] of Object.entries(suggestedRoles)) {
+        const roleName = roleNames[roleCode] || roleCode;
+        const qty = parseFloat(quantity) || 0;
+        
+        html += `
+            <div class="flex items-center justify-between p-2 bg-white border border-green-200 rounded text-xs">
+                <div class="flex items-center">
+                    <svg class="h-3 w-3 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium text-gray-900">${roleName}</span>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    ${qty} ${qty === 1 ? 'person' : 'people'}
+                </span>
+            </div>
+        `;
+    }
+    
+    displayContainer.innerHTML = html;
+}
+
+// Function to refresh the BOQ display after changes
+function refreshBOQDisplay() {
+    if (!currentBOQData) return;
+    
+    // Recalculate totals
+    const items = currentBOQData.boq_items || [];
+    const totalAmount = items.reduce((sum, item) => {
+        const amount = parseFloat(item.amount) || 0;
+        return sum + amount;
+    }, 0);
+    
+    // Recalculate division subtotals
+    const divisionSubtotals = {};
+    items.forEach(item => {
+        if (item.division && item.amount > 0) {
+            divisionSubtotals[item.division] = (divisionSubtotals[item.division] || 0) + parseFloat(item.amount);
+        }
+    });
+    
+    // Validate division subtotals against original data
+    if (currentBOQData.original_division_subtotals) {
+        for (const [division, currentTotal] of Object.entries(divisionSubtotals)) {
+            const originalTotal = currentBOQData.original_division_subtotals[division];
+            if (originalTotal && originalTotal > 0) {
+                const minAllowedTotal = originalTotal * 0.6; // Allow 40% reduction maximum
+                if (currentTotal < minAllowedTotal) {
+                    showEnhancedToast(`⚠️ Division "${division}" total cannot be reduced below ₱${minAllowedTotal.toFixed(2)} (60% of original ₱${originalTotal.toFixed(2)})`, 'warning', 5000);
+                    // Revert the last change by restoring original values
+                    restoreOriginalDivisionValues(division);
+                    return;
+                }
+            }
+        }
+    }
+    
+    currentBOQData.division_subtotals = divisionSubtotals;
+    
+    // Update project info
+    if (currentBOQData.project_info) {
+        currentBOQData.project_info.total_amount = totalAmount;
+    }
+    currentBOQData.total_cost = totalAmount;
+    
+    // Recalculate suggested roles based on current quantities
+    const suggestedRoles = calculateSuggestedRoles(items);
+    currentBOQData.suggested_roles = suggestedRoles;
+    
+    // Update suggested roles display in Team & Resources tab
+    updateSuggestedRolesDisplay(suggestedRoles);
+    
+    // Log the updated data
+    console.log('=== BOQ Data Updated After Edit ===');
+    console.log('Total Amount:', totalAmount);
+    console.log('Division Subtotals:', divisionSubtotals);
+    console.log('Suggested Roles:', suggestedRoles);
+    console.log('===================================');
+    
+    // Update summary display
+    document.getElementById('sum-total').textContent = '₱ ' + peso(totalAmount);
+    
+    // Update roles display
+    updateRolesDisplay(suggestedRoles);
+    
+    // Re-render the grouped view
+    const grouped = groupItems(items);
+    const container = document.getElementById('boqGrouped');
+    renderGrouped(container, grouped);
+}
+
+// Function to calculate suggested roles based on BOQ items
+function calculateSuggestedRoles(items) {
+    const roles = {};
+    const debugInfo = []; // For debugging
+    
+    // Role name mapping (matching Employee model choices)
+    const roleNames = {
+        'PM': 'Project Manager',
+        'PIC': 'Project In Charge',
+        'SO': 'Safety Officer',
+        'QA': 'Quality Assurance Officer',
+        'QO': 'Quality Officer',
+        'FM': 'Foreman',
+        'LB': 'Labor'
+    };
+    
+    // Look for role-related items in ALL divisions (not just General Requirements)
+    for (const item of items) {
+        const description = (item.description || '').toLowerCase();
+        const quantity = parseFloat(item.quantity) || 0;
+        
+        // Project Manager (PM) - look in any division
+        if (description.includes('project manager') || description.includes('pm') || 
+            description.includes('project management') || description.includes('project head')) {
+            roles['PM'] = (roles['PM'] || 0) + quantity;
+            debugInfo.push(`PM: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Project In Charge (PIC) - look in any division
+        if (description.includes('project in charge') || description.includes('pic') || 
+            description.includes('site engineer') || description.includes('supervision') || 
+            description.includes('site supervisor') || description.includes('field engineer') ||
+            description.includes('construction manager') || description.includes('site manager')) {
+            roles['PIC'] = (roles['PIC'] || 0) + quantity;
+            debugInfo.push(`PIC: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Safety Officer (SO) - look in any division (more specific matching)
+        if (description.includes('safety officer') || 
+            description.includes('safety engineer') || description.includes('safety supervisor') || 
+            description.includes('hse officer') || description.includes('hse engineer') || 
+            description.includes('safety coordinator') || description.includes('safety manager') ||
+            description.includes('safety specialist') || description.includes('safety inspector') ||
+            (description.includes('so') && (description.includes('safety') || description.includes('officer')))) {
+            roles['SO'] = (roles['SO'] || 0) + quantity;
+            debugInfo.push(`SO: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Quality Assurance Officer (QA) - look in any division
+        if (description.includes('quality control') || description.includes('qa') ||
+            description.includes('quality assurance') || description.includes('qc officer') ||
+            description.includes('quality engineer') || description.includes('quality supervisor') ||
+            description.includes('quality coordinator') || description.includes('qa engineer')) {
+            roles['QA'] = (roles['QA'] || 0) + quantity;
+            debugInfo.push(`QA: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Quality Officer (QO) - look in any division
+        if (description.includes('quality officer') || description.includes('qo') ||
+            description.includes('quality inspector') || description.includes('quality checker') ||
+            description.includes('quality technician')) {
+            roles['QO'] = (roles['QO'] || 0) + quantity;
+            debugInfo.push(`QO: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Foreman (FM) - look in any division
+        if (description.includes('foreman') || description.includes('fm') ||
+            description.includes('foreman supervisor') || description.includes('crew leader') ||
+            description.includes('team leader') || description.includes('work supervisor') ||
+            description.includes('construction foreman') || description.includes('site foreman')) {
+            roles['FM'] = (roles['FM'] || 0) + quantity;
+            debugInfo.push(`FM: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+        
+        // Labor (LB) - look in any division
+        if (description.includes('labor') || description.includes('worker') || description.includes('helper') ||
+            description.includes('construction worker') || description.includes('skilled worker') ||
+            description.includes('unskilled worker') || description.includes('mason') ||
+            description.includes('carpenter') || description.includes('electrician') ||
+            description.includes('plumber') || description.includes('painter') ||
+            description.includes('welder') || description.includes('operator') ||
+            description.includes('equipment operator') || description.includes('machine operator')) {
+            roles['LB'] = (roles['LB'] || 0) + quantity;
+            debugInfo.push(`LB: "${item.description}" (qty: ${quantity}) in ${item.division}`);
+        }
+    }
+    
+    // Log debug information to console
+    console.log('Role Detection Debug Info:');
+    debugInfo.forEach(info => console.log(info));
+    console.log('Final roles:', roles);
+    
+    return roles;
+}
+
+// Function to update roles display
+function updateRolesDisplay(roles) {
+    const rolesEl = document.getElementById('roles-list');
+    
+    // Role name mapping (matching Employee model choices)
+    const roleNames = {
+        'PM': 'Project Manager',
+        'PIC': 'Project In Charge',
+        'SO': 'Safety Officer',
+        'QA': 'Quality Assurance Officer',
+        'QO': 'Quality Officer',
+        'FM': 'Foreman',
+        'LB': 'Labor'
+    };
+    
+    rolesEl.innerHTML = Object.keys(roles).length ? 
+        Object.entries(roles).map(([k,v]) => `<li><span class="font-medium">${roleNames[k] || k}</span>: ${peso(v)}</li>`).join('') : 
+        '<li>None detected</li>';
+}
+
 function autofillProjectDataFromBOQ(costData) {
     // Autofilling project data from BOQ
     
@@ -4146,6 +5154,18 @@ function autofillProjectDataFromBOQ(costData) {
         }
     }
     
+    // Autofill floor area
+    if (costData.project_info && costData.project_info.floor_area && parseFloat(costData.project_info.floor_area) > 0) {
+        const floorAreaField = document.getElementById('id_floor_area');
+        if (floorAreaField && !floorAreaField.value.trim()) {
+            floorAreaField.value = costData.project_info.floor_area;
+            // Add visual indicator for autofilled field
+            floorAreaField.classList.add('bg-blue-50', 'border-blue-300');
+            floorAreaField.setAttribute('data-autofilled', 'true');
+            showEnhancedToast(`🏠 Floor area autofilled: ${costData.project_info.floor_area} m²`, 'info', 3000);
+        }
+    }
+    
     // Location autofill removed as requested
     
     // Add event listeners to remove highlighting when user edits autofilled fields
@@ -4164,6 +5184,16 @@ function autofillProjectDataFromBOQ(costData) {
     const lotSizeField = document.getElementById('id_lot_size');
     if (lotSizeField) {
         lotSizeField.addEventListener('input', function() {
+            if (this.getAttribute('data-autofilled') === 'true') {
+                this.classList.remove('bg-blue-50', 'border-blue-300');
+                this.removeAttribute('data-autofilled');
+            }
+        });
+    }
+    
+    const floorAreaField = document.getElementById('id_floor_area');
+    if (floorAreaField) {
+        floorAreaField.addEventListener('input', function() {
             if (this.getAttribute('data-autofilled') === 'true') {
                 this.classList.remove('bg-blue-50', 'border-blue-300');
                 this.removeAttribute('data-autofilled');
@@ -4200,66 +5230,11 @@ function updateDraftButtonState() {
 }
 
 function previewBOQData(fileName) {
-    const data = extractedBOQData.get(fileName);
-    if (!data) {
-        showToast('No data available for preview. Please process the file first.', 'error');
-        return;
-    }
-
-    // Use detailed mode for project creation
-    previewBOQDataDetailed(fileName, data);
+    // Use the new enhanced preview instead of old preview
+    openBOQPreview();
 }
 
-function previewBOQDataDetailed(fileName, data) {
-    // Create preview modal
-    const previewModal = document.createElement('div');
-    previewModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    previewModal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-gray-900">BOQ Data Preview - Detailed Mode</h3>
-                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 class="text-lg font-medium text-purple-900 mb-3">File: ${fileName}</h4>
-                    ${data.project_info ? `
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div><strong>Project:</strong> ${data.project_info.project_name || 'N/A'}</div>
-                            <div><strong>Type:</strong> ${data.project_info.project_type || 'N/A'}</div>
-                            <div><strong>Location:</strong> ${data.project_info.location || 'N/A'}</div>
-                            <div><strong>Role:</strong> ${data.project_info.role || 'General Contractor'}</div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                ${getDetailedBOQPreviewHTML(data)}
-                
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span class="text-green-800 font-medium">Data successfully extracted and ready for project creation!</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex justify-end mt-6">
-                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(previewModal);
-}
+// Old preview function removed - now using enhanced preview modal
 
 function getDetailedBOQPreviewHTML(data) {
     const boqItems = data.boq_items || [];
@@ -4829,6 +5804,280 @@ function hideSavingDraftOverlay() {
         overlay.classList.add('hidden');
         overlay.style.display = 'none';
     }
+}
+
+// Auto-calculate estimated cost from BOQ data
+function calculateEstimatedCost() {
+    const lotSizeInput = document.getElementById('id_lot_size');
+    const totalAreaInput = document.getElementById('id_total_area');
+    const projectTypeSelect = document.getElementById('id_project_type');
+    const estimatedCostInput = document.getElementById('id_estimated_cost');
+    
+    if (!estimatedCostInput) return;
+    
+    // Get values
+    const lotSize = parseFloat(lotSizeInput?.value) || 0;
+    const totalArea = parseFloat(totalAreaInput?.value) || 0;
+    const projectTypeId = projectTypeSelect?.value;
+    
+    // Use total area if available, otherwise use lot size
+    const area = totalArea > 0 ? totalArea : lotSize;
+    
+    if (area > 0 && projectTypeId) {
+        // Basic cost estimation based on area and project type
+        // These are rough estimates - you can adjust these values
+        const costPerSqm = {
+            '1': 15000,  // Residential
+            '2': 20000,  // Commercial
+            '3': 25000,  // Industrial
+            '4': 18000,  // Mixed Use
+        };
+        
+        const baseCost = costPerSqm[projectTypeId] || 15000;
+        const estimatedCost = area * baseCost;
+        
+        // Update the estimated cost field
+        estimatedCostInput.value = estimatedCost.toFixed(2);
+        
+        // Add visual feedback
+        estimatedCostInput.style.backgroundColor = '#f0f9ff';
+        estimatedCostInput.style.borderColor = '#3b82f6';
+        
+        // Remove visual feedback after 2 seconds
+        setTimeout(() => {
+            estimatedCostInput.style.backgroundColor = '';
+            estimatedCostInput.style.borderColor = '';
+        }, 2000);
+    }
+}
+
+// Function to update form fields from BOQ data
+function updateFormFieldsFromBOQ(boqData) {
+    if (!boqData) return;
+    
+    console.log('Updating form fields from BOQ data:', boqData);
+    
+    // Get project info
+    const projectInfo = boqData.project_info || {};
+    let updatedFields = [];
+    
+    // Helper function to highlight a field
+    function highlightField(field, fieldName) {
+        if (field) {
+            // Add highlight styles
+            field.style.backgroundColor = '#f0fdf4';
+            field.style.borderColor = '#22c55e';
+            field.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
+            field.classList.add('boq-populated');
+            updatedFields.push(fieldName);
+            
+            // Add event listeners to remove highlight when user edits
+            const removeHighlight = () => {
+                field.style.backgroundColor = '';
+                field.style.borderColor = '';
+                field.style.boxShadow = '';
+                field.classList.remove('boq-populated');
+                // Remove event listeners after highlighting is removed
+                field.removeEventListener('input', removeHighlight);
+                field.removeEventListener('change', removeHighlight);
+                field.removeEventListener('focus', removeHighlight);
+            };
+            
+            // Remove highlight when user starts editing
+            field.addEventListener('input', removeHighlight);
+            field.addEventListener('change', removeHighlight);
+            field.addEventListener('focus', removeHighlight);
+        }
+    }
+    
+    // Update project name
+    const projectNameInput = document.getElementById('id_project_name');
+    if (projectNameInput && projectInfo.project_name) {
+        projectNameInput.value = projectInfo.project_name;
+        highlightField(projectNameInput, 'Project Name');
+        console.log('Updated project name:', projectInfo.project_name);
+    }
+    
+    // Update lot size
+    const lotSizeInput = document.getElementById('id_lot_size');
+    if (lotSizeInput && projectInfo.lot_size) {
+        lotSizeInput.value = projectInfo.lot_size;
+        highlightField(lotSizeInput, 'Lot Size');
+        console.log('Updated lot size:', projectInfo.lot_size);
+    }
+    
+    // Update total area (floor area)
+    const totalAreaInput = document.getElementById('id_total_area');
+    if (totalAreaInput && projectInfo.floor_area) {
+        totalAreaInput.value = projectInfo.floor_area;
+        highlightField(totalAreaInput, 'Total Area');
+        console.log('Updated total area:', projectInfo.floor_area);
+    }
+    
+    // Update location
+    const locationInput = document.getElementById('id_location');
+    if (locationInput && projectInfo.location) {
+        locationInput.value = projectInfo.location;
+        highlightField(locationInput, 'Location');
+        console.log('Updated location:', projectInfo.location);
+    }
+    
+    // Update client
+    const clientInput = document.getElementById('id_client');
+    if (clientInput && projectInfo.client) {
+        clientInput.value = projectInfo.client;
+        highlightField(clientInput, 'Client');
+        console.log('Updated client:', projectInfo.client);
+    }
+    
+    // Update project type
+    const projectTypeInput = document.getElementById('id_project_type');
+    if (projectTypeInput && projectInfo.project_type) {
+        projectTypeInput.value = projectInfo.project_type;
+        highlightField(projectTypeInput, 'Project Type');
+        console.log('Updated project type:', projectInfo.project_type);
+    }
+    
+    // Show success message with updated fields
+    if (updatedFields.length > 0) {
+        showToast(`Form fields updated from BOQ data: ${updatedFields.join(', ')}`, 'success');
+    } else {
+        showToast('BOQ data processed but no form fields were updated', 'info');
+    }
+    
+    // Update suggested roles display
+    if (boqData.suggested_roles) {
+        updateSuggestedRolesDisplay(boqData.suggested_roles);
+    }
+}
+
+// Function to update estimated cost from BOQ data
+function updateEstimatedCostFromBOQ(boqData) {
+    const estimatedCostInput = document.getElementById('id_estimated_cost');
+    if (!estimatedCostInput || !boqData) return;
+    
+    console.log('BOQ Data received:', boqData);
+    
+    // Calculate total cost from BOQ items or use direct total_cost
+    let totalCost = 0;
+    
+    // First try to get total_cost directly
+    if (boqData.total_cost) {
+        totalCost = parseFloat(boqData.total_cost);
+        console.log('Using direct total_cost:', totalCost);
+    }
+    // If no direct total_cost, calculate from boq_items
+    else if (boqData.boq_items && Array.isArray(boqData.boq_items)) {
+        totalCost = boqData.boq_items.reduce((sum, item) => {
+            return sum + (parseFloat(item.total_cost) || 0);
+        }, 0);
+        console.log('Calculated from boq_items:', totalCost);
+    }
+    
+    console.log('Final total cost:', totalCost);
+    
+    if (totalCost > 0) {
+        estimatedCostInput.value = totalCost.toFixed(2);
+        
+        // Add visual feedback with persistent highlighting
+        estimatedCostInput.style.backgroundColor = '#f0fdf4';
+        estimatedCostInput.style.borderColor = '#22c55e';
+        estimatedCostInput.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
+        estimatedCostInput.classList.add('boq-populated');
+        
+        // Show success message
+        showToast(`Estimated cost updated to ₱${totalCost.toLocaleString('en-PH', {minimumFractionDigits: 2})} from BOQ data`, 'success');
+        
+        // Add event listeners to remove highlight when user edits
+        const removeHighlight = () => {
+            estimatedCostInput.style.backgroundColor = '';
+            estimatedCostInput.style.borderColor = '';
+            estimatedCostInput.style.boxShadow = '';
+            estimatedCostInput.classList.remove('boq-populated');
+            // Remove event listeners after highlighting is removed
+            estimatedCostInput.removeEventListener('input', removeHighlight);
+            estimatedCostInput.removeEventListener('change', removeHighlight);
+            estimatedCostInput.removeEventListener('focus', removeHighlight);
+        };
+        
+        // Remove highlight when user starts editing
+        estimatedCostInput.addEventListener('input', removeHighlight);
+        estimatedCostInput.addEventListener('change', removeHighlight);
+        estimatedCostInput.addEventListener('focus', removeHighlight);
+    } else {
+        console.log('No valid total cost found in BOQ data');
+    }
+}
+
+// Start Date Validation Function
+function validateStartDate() {
+    const startDateInput = document.getElementById('id_start_date');
+    const warningDiv = document.getElementById('start-date-warning');
+    
+    if (!startDateInput || !warningDiv) return;
+    
+    const selectedDate = new Date(startDateInput.value);
+    const today = new Date();
+    
+    // Reset today's time to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (startDateInput.value && selectedDate < today) {
+        // Show warning for past date
+        warningDiv.classList.remove('hidden');
+        startDateInput.style.borderColor = '#f59e0b';
+        startDateInput.style.backgroundColor = '#fffbeb';
+        
+        // Add warning class for additional styling
+        startDateInput.classList.add('date-warning');
+    } else {
+        // Hide warning for future date or no date
+        warningDiv.classList.add('hidden');
+        startDateInput.style.borderColor = '';
+        startDateInput.style.backgroundColor = '';
+        startDateInput.classList.remove('date-warning');
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                ${type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ'}
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <div class="ml-4 flex-shrink-0">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                    <span class="sr-only">Close</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
 }
 </script>
 

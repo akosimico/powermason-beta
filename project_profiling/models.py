@@ -413,6 +413,13 @@ class ProjectProfile(models.Model):
         null=True,
         help_text="Lot size in square meters"
     )
+    total_area = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        help_text="Total area in square meters"
+    )
 
     # ----------------------------
     # 5. Timeline

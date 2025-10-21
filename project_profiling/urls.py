@@ -164,6 +164,12 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     
     # BOQ Upload API
     path('api/boq-upload/', file_preview_views.BOQUploadAPIView.as_view(), name='api_boq_upload'),
+    path('boq/template/', file_preview_views.download_boq_template, name='download_boq_template'),
+    path('boq/template/electrical/', file_preview_views.download_electrical_boq_template, name='download_electrical_boq_template'),
+    path('boq/template/mechanical/', file_preview_views.download_mechanical_boq_template, name='download_mechanical_boq_template'),
+    path('boq/template/civil/', file_preview_views.download_civil_boq_template, name='download_civil_boq_template'),
+    path('boq/template/architectural/', file_preview_views.download_architectural_boq_template, name='download_architectural_boq_template'),
+    path('boq/preview/', file_preview_views.boq_preview_test, name='boq_preview_test'),
         path('api/project-type-cost-data/<int:project_type_id>/', file_preview_views.check_project_type_cost_data, name='check_project_type_cost_data'),
         path('api/project-type-boq-breakdown/<int:project_type_id>/', file_preview_views.get_project_type_boq_breakdown, name='get_project_type_boq_breakdown'),
         path('api/project-type-auto-configure/<int:project_type_id>/', file_preview_views.auto_configure_project_type_costs, name='auto_configure_project_type_costs'),
