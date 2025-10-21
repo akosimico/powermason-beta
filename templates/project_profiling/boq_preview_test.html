@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+  <h1 class="text-xl font-semibold mb-4">BOQ Preview Test</h1>
+<!-- BOQ Template Download Section -->
+<div class="mb-6">
+  <h5 class="text-sm font-medium text-gray-700 mb-3">Download Specialized BOQ Templates:</h5>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <!-- General BOQ Template -->
+      <a href="{% url 'download_boq_template' %}" 
+         class="flex items-center p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors duration-200 group">
+          <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+              </div>
+          </div>
+          <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-green-700">General BOQ</p>
+              <p class="text-xs text-gray-500">Residential construction</p>
+          </div>
+      </a>
+
+      <!-- Electrical BOQ Template -->
+      <a href="{% url 'download_electrical_boq_template' %}" 
+         class="flex items-center p-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors duration-200 group">
+          <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+              </div>
+          </div>
+          <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-orange-700">Electrical BOQ</p>
+              <p class="text-xs text-gray-500">Power & lighting systems</p>
+          </div>
+      </a>
+
+      <!-- Mechanical BOQ Template -->
+      <a href="{% url 'download_mechanical_boq_template' %}" 
+         class="flex items-center p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors duration-200 group">
+          <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                  </svg>
+              </div>
+          </div>
+          <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-green-700">Mechanical BOQ</p>
+              <p class="text-xs text-gray-500">HVAC & plumbing systems</p>
+          </div>
+      </a>
+
+      <!-- Civil BOQ Template -->
+      <a href="{% url 'download_civil_boq_template' %}" 
+         class="flex items-center p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors duration-200 group">
+          <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                  </svg>
+              </div>
+          </div>
+          <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-blue-700">Civil BOQ</p>
+              <p class="text-xs text-gray-500">Foundation & structural works</p>
+          </div>
+      </a>
+
+      <!-- Architectural BOQ Template -->
+      <a href="{% url 'download_architectural_boq_template' %}" 
+         class="flex items-center p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors duration-200 group">
+          <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+                  </svg>
+              </div>
+          </div>
+          <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-amber-700">Architectural BOQ</p>
+              <p class="text-xs text-gray-500">Doors, windows & finishes</p>
+          </div>
+      </a>
+  </div>
+  <p class="text-xs text-gray-500 mt-3">
+      Choose the appropriate template based on your project scope. Each template contains realistic sample data for commercial construction projects.
+  </p>
+</div>
+  <form id="boq-form" method="post" enctype="multipart/form-data" class="space-y-3 mb-6">
+    {% csrf_token %}
+    <input type="file" name="file" accept=".xlsx,.xls" required class="block w-full text-sm" />
+    <div class="flex items-center gap-2">
+      <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">Preview</button>
+      <button type="button" id="toggle-raw" class="px-3 py-2 bg-gray-100 text-gray-700 rounded border">Toggle Raw JSON</button>
+    </div>
+  </form>
+
+  <!-- Summary -->
+  <div id="summary" class="hidden mb-6 rounded-lg border p-4 bg-white">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+      <div>
+        <div class="text-gray-500">Project Name</div>
+        <div id="sum-project" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-gray-500">Lot Size (sqm)</div>
+        <div id="sum-lot" class="font-medium">—</div>
+      </div>
+      <div>
+        <div class="text-gray-500">Total Amount (PHP)</div>
+        <div id="sum-total" class="font-semibold text-blue-700">—</div>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-md border p-3">
+        <div class="font-semibold mb-2">Suggested Roles</div>
+        <ul id="roles-list" class="list-disc list-inside text-sm text-gray-700"></ul>
+      </div>
+      <div class="rounded-md border p-3">
+        <div class="font-semibold mb-2">Required Permits (Uploads)</div>
+        <ul id="permits-list" class="list-disc list-inside text-sm text-gray-700"></ul>
+        <div class="mt-2 text-xs">
+          Manage uploads in <a href="/projects/document-library/" class="text-blue-600 underline">Document Library</a>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grouped view -->
+  <div id="grouped" class="hidden space-y-6"></div>
+
+  <!-- Raw JSON -->
+  <pre id="result" class="hidden bg-gray-100 p-3 mt-4 rounded text-xs whitespace-pre-wrap"></pre>
+</div>
+<script>
+function peso(n){
+  if(n===null||n===undefined) return '—';
+  const x = Number(n);
+  if(isNaN(x)) return String(n);
+  return x.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function groupItems(items){
+  const out = {};
+  for(const it of items){
+    // Keep only level 2 material/requirement rows
+    if(Number(it.level) !== 2) continue;
+    if(!out[it.division]) out[it.division] = { tasks:{}, subtotal:0 };
+    if(!out[it.division].tasks[it.task||'—']) out[it.division].tasks[it.task||'—'] = { items:[], subtotal:0 };
+    out[it.division].tasks[it.task||'—'].items.push(it);
+    const amt = Number(it.amount)||0;
+    out[it.division].tasks[it.task||'—'].subtotal += amt;
+    out[it.division].subtotal += amt;
+  }
+  return out;
+}
+
+function renderGrouped(container, grouped){
+  container.innerHTML = '';
+  Object.entries(grouped).forEach(([division, dval]) => {
+    const divCard = document.createElement('div');
+    divCard.className = 'rounded-lg border bg-white';
+    const header = document.createElement('div');
+    header.className = 'px-4 py-3 border-b flex items-center justify-between bg-yellow-50';
+    header.innerHTML = `<div class="font-semibold">${division}</div><div class="text-sm">Subtotal: <span class="font-semibold">₱ ${peso(dval.subtotal)}</span></div>`;
+    divCard.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'p-4 space-y-4';
+
+    Object.entries(dval.tasks).forEach(([task, tval]) => {
+      const taskCard = document.createElement('div');
+      taskCard.className = 'rounded-md border';
+      taskCard.innerHTML = `<div class="px-3 py-2 border-b bg-gray-50 font-medium">${task} <span class="text-xs text-gray-500">(Subtotal: ₱ ${peso(tval.subtotal)})</span></div>`;
+
+      const table = document.createElement('table');
+      table.className = 'w-full text-sm';
+      table.innerHTML = `
+        <thead>
+          <tr class="text-left text-gray-500">
+            <th class="px-3 py-2">Code</th>
+            <th class="px-3 py-2">Description</th>
+            <th class="px-3 py-2">UOM</th>
+            <th class="px-3 py-2 text-right">Qty</th>
+            <th class="px-3 py-2 text-right">Unit Cost</th>
+            <th class="px-3 py-2 text-right">Amount</th>
+            <th class="px-3 py-2">Type</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+
+      const tbody = table.querySelector('tbody');
+      tval.items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2">${it.code||''}</td>
+          <td class="px-3 py-2">${it.description||''}</td>
+          <td class="px-3 py-2">${it.uom||''}</td>
+          <td class="px-3 py-2 text-right">${peso(it.quantity)}</td>
+          <td class="px-3 py-2 text-right">${peso(it.unit_cost)}</td>
+          <td class="px-3 py-2 text-right">${peso(it.amount)}</td>
+          <td class="px-3 py-2">${it.is_requirement ? 'Requirement' : 'Material'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      taskCard.appendChild(table);
+      body.appendChild(taskCard);
+    });
+
+    divCard.appendChild(body);
+    container.appendChild(divCard);
+  });
+}
+
+document.getElementById('boq-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = new FormData(form);
+  const res = await fetch('', { method: 'POST', body: data });
+  const json = await res.json();
+
+  // Show raw
+  const raw = document.getElementById('result');
+  raw.textContent = JSON.stringify(json, null, 2);
+
+  // Extract display data
+  const payload = (json && (json.data || json)) || {};
+  const ok = !!(payload.success || json.success);
+  const info = (payload.data && payload.data.project_info) || payload.project_info || {};
+  const items = (payload.data && payload.data.boq_items) || payload.boq_items || [];
+
+  // Summary
+  document.getElementById('sum-project').textContent = info.project_name || '—';
+  document.getElementById('sum-lot').textContent = peso(info.lot_size);
+  document.getElementById('sum-total').textContent = '₱ ' + peso(info.total_amount || payload.total_cost);
+  document.getElementById('summary').classList.toggle('hidden', !ok);
+
+  // Roles and permits
+  const roles = (payload.data && payload.data.suggested_roles) || payload.suggested_roles || {};
+  const permits = (payload.data && payload.data.required_permits) || payload.required_permits || [];
+  const rolesEl = document.getElementById('roles-list');
+  const permitsEl = document.getElementById('permits-list');
+  rolesEl.innerHTML = Object.keys(roles).length ? Object.entries(roles).map(([k,v]) => `<li><span class="font-medium">${k}</span>: ${peso(v)}</li>`).join('') : '<li>None detected</li>';
+  permitsEl.innerHTML = (permits && permits.length) ? permits.map(p => `<li>${p.name} ${p.quantity && p.quantity !== '0' ? `(qty ${p.quantity})` : ''}</li>`).join('') : '<li>No permits detected</li>';
+
+  // Group and render
+  const grouped = groupItems(items || []);
+  const container = document.getElementById('grouped');
+  renderGrouped(container, grouped);
+  container.classList.toggle('hidden', !ok);
+});
+
+document.getElementById('toggle-raw').addEventListener('click', () => {
+  const el = document.getElementById('result');
+  el.classList.toggle('hidden');
+});
+</script>
+{% endblock %}
+
