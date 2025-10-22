@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/equipment/<int:pk>/', views.api_equipment_detail, name='api_equipment_detail'),
     path('api/manpower/', views.api_manpower_list, name='api_manpower_list'),
     path('api/price-comparison/', views.api_price_comparison, name='api_price_comparison'),
+    path('api/price-monitoring/', views.api_price_monitoring_list, name='api_price_monitoring_list'),
 ]

@@ -83,7 +83,12 @@ function initializeEventListeners() {
     // Remove file button
     const removeFileBtn = document.getElementById('remove-file');
     if (removeFileBtn) {
-        removeFileBtn.addEventListener('click', removeSelectedFile);
+        removeFileBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Remove file button clicked (initial setup)');
+            removeSelectedFile();
+        });
     }
 }
 
@@ -135,7 +140,12 @@ function openUploadModal() {
             // Remove any existing listeners to avoid duplicates
             removeFileBtn.removeEventListener('click', removeSelectedFile);
             // Add the listener again
-            removeFileBtn.addEventListener('click', removeSelectedFile);
+            removeFileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Remove file button clicked');
+                removeSelectedFile();
+            });
             console.log('Remove file button event listener re-attached');
         } else {
             console.error('Remove file button element not found in modal!');
@@ -158,6 +168,42 @@ function closeUploadModal() {
         const form = document.getElementById('quotationUploadForm');
         if (form) {
             form.reset();
+        }
+        
+        // Reset button state
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+        if (submitBtn) {
+            // Reset button text to original
+            const btnText = document.getElementById('uploadBtnText');
+            const btnLoading = document.getElementById('uploadBtnLoading');
+            
+            if (btnText && btnLoading) {
+                btnText.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+            }
+            
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // Reset file selection state
+        const fileSelected = document.getElementById('file-selected');
+        if (fileSelected) {
+            fileSelected.classList.add('hidden');
+        }
+        
+        // Reset file input
+        const fileInput = document.getElementById('quotation_file');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Reset total amount input
+        const totalAmountInput = document.getElementById('total_amount');
+        if (totalAmountInput) {
+            totalAmountInput.disabled = false;
+            totalAmountInput.placeholder = '0.00';
         }
     }
 }
@@ -225,11 +271,13 @@ function removeSelectedFile() {
     console.log('removeSelectedFile called');
     const fileInput = document.getElementById('quotation_file');
     const fileSelected = document.getElementById('file-selected');
+    const fileName = document.getElementById('file-name');
     const totalAmountInput = document.getElementById('total_amount');
     
     console.log('Remove file elements found:', {
         fileInput: !!fileInput,
         fileSelected: !!fileSelected,
+        fileName: !!fileName,
         totalAmountInput: !!totalAmountInput
     });
     
@@ -241,11 +289,19 @@ function removeSelectedFile() {
         fileSelected.classList.add('hidden');
         console.log('File selected indicator hidden');
     }
+    if (fileName) {
+        fileName.textContent = '';
+        console.log('File name cleared');
+    }
     if (totalAmountInput) {
         totalAmountInput.placeholder = '0.00';
         totalAmountInput.disabled = false;
+        totalAmountInput.value = '';
         console.log('Total amount input reset');
     }
+    
+    // Show success message
+    console.log('File removal completed successfully');
 }
 
 /**
@@ -278,6 +334,10 @@ async function handleQuotationUpload(event) {
             showNotification('Quotation uploaded successfully!', 'success');
             closeUploadModal();
             loadQuotations(); // Refresh quotations list
+            // Update budget field after quotations change
+            if (typeof updateBudgetFromQuotations === 'function') {
+                updateBudgetFromQuotations();
+            }
         } else {
             showNotification(data.error || 'Failed to upload quotation', 'error');
         }
@@ -449,6 +509,8 @@ async function approveQuotation(quotationId) {
         if (data.success) {
             showNotification(data.message, 'success');
             loadQuotations(); // Refresh quotations list
+            // Update budget field after quotation approval
+            updateBudgetFieldAfterApproval(data.quotation);
         } else {
             showNotification(data.error || 'Failed to approve quotation', 'error');
         }
@@ -456,6 +518,34 @@ async function approveQuotation(quotationId) {
         console.error('Approval error:', error);
         showNotification('An error occurred while approving the quotation', 'error');
     }
+}
+
+/**
+ * Update budget field after quotation approval
+ */
+function updateBudgetFieldAfterApproval(quotationData) {
+    console.log('DEBUG: updateBudgetFieldAfterApproval called with:', quotationData);
+    
+    if (!quotationData || !quotationData.total_amount) {
+        console.log('DEBUG: No quotation data or total_amount available');
+        return;
+    }
+    
+    // Get the budget input fields
+    const budgetInput = document.getElementById('approved_budget');
+    const hiddenInput = document.querySelector('input[name="approved_budget_hidden"]');
+    
+    if (!budgetInput || !hiddenInput) {
+        console.log('DEBUG: Budget input fields not found');
+        return;
+    }
+    
+    // Update both fields with the approved quotation amount
+    const approvedAmount = parseFloat(quotationData.total_amount);
+    budgetInput.value = approvedAmount.toFixed(2);
+    hiddenInput.value = approvedAmount.toFixed(2);
+    
+    console.log('DEBUG: Updated budget fields to:', approvedAmount.toFixed(2));
 }
 
 /**

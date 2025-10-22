@@ -7,6 +7,8 @@ class SupplierType(models.TextChoices):
     REGULAR = "REG", "Regular Supplier"
     RANDOM = "RND", "Random Supplier"
     BOTH = "BTH", "Both"
+    BOQ = "BOQ", "BOQ Estimate"
+    QUOTATION = "QUO", "Project Quotation"
 
 
 class Material(models.Model):
@@ -21,6 +23,7 @@ class Material(models.Model):
         help_text="Standard/reference price"
     )
     category = models.CharField(max_length=100, blank=True, help_text="e.g., Cement, Steel, Wood")
+    source = models.CharField(max_length=20, blank=True, help_text="Source of material: BOQ, QUOTATION, MANUAL")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -56,6 +59,15 @@ class MaterialPriceMonitoring(models.Model):
     date = models.DateField()
     notes = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True, help_text="Set to False for outdated prices")
+    # Project relationship for BOQ/Quotation tracking
+    project = models.ForeignKey(
+        'project_profiling.ProjectProfile',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='price_records',
+        help_text="Project this price record is associated with (for BOQ/Quotation types)"
+    )
     recorded_by = models.ForeignKey(
         'authentication.UserProfile',
         on_delete=models.SET_NULL,
@@ -83,6 +95,49 @@ class MaterialPriceMonitoring(models.Model):
         if self.material.standard_price > 0:
             return ((self.price - self.material.standard_price) / self.material.standard_price) * 100
         return 0
+
+
+class ProjectMaterialExtraction(models.Model):
+    """Track material extraction history from BOQ/Quotation files"""
+    EXTRACTION_SOURCES = [
+        ('BOQ', 'BOQ File'),
+        ('QUOTATION', 'Quotation File'),
+    ]
+    
+    project = models.ForeignKey(
+        'project_profiling.ProjectProfile',
+        on_delete=models.CASCADE,
+        related_name='material_extractions'
+    )
+    source_type = models.CharField(max_length=10, choices=EXTRACTION_SOURCES)
+    source_file = models.CharField(max_length=500, help_text="Original file name")
+    extraction_date = models.DateTimeField(auto_now_add=True)
+    materials_count = models.PositiveIntegerField(default=0)
+    equipment_count = models.PositiveIntegerField(default=0)
+    mobilization_count = models.PositiveIntegerField(default=0)
+    total_extracted_value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total value of extracted items"
+    )
+    extraction_notes = models.TextField(blank=True, null=True)
+    extracted_by = models.ForeignKey(
+        'authentication.UserProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='extractions'
+    )
+    
+    class Meta:
+        ordering = ['-extraction_date']
+        indexes = [
+            models.Index(fields=['project', 'source_type']),
+            models.Index(fields=['extraction_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.project.project_name} - {self.get_source_type_display()} ({self.extraction_date})"
 
 
 class Equipment(models.Model):

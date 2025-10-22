@@ -998,56 +998,6 @@ class SubcontractorPayment(models.Model):
         self.subcontractor_expense.save(update_fields=['amount_paid'])
 
 
-class MobilizationCost(models.Model):
-    """Detailed tracking of mobilization costs with itemized breakdown"""
-    MOBILIZATION_CATEGORIES = [
-        ('TRANSPORT', 'Equipment Transportation'),
-        ('SETUP', 'Site Setup & Preparation'),
-        ('TEMP_FAC', 'Temporary Facilities'),
-        ('PERMITS', 'Permits & Bonds'),
-        ('SAFETY', 'Safety Equipment & Signage'),
-        ('UTILITIES', 'Temporary Utilities Connection'),
-        ('SURVEY', 'Survey & Layout'),
-        ('OTHER', 'Other Mobilization Costs'),
-    ]
-
-    project = models.ForeignKey(
-        ProjectProfile,
-        on_delete=models.CASCADE,
-        related_name='mobilization_costs'
-    )
-    category = models.CharField(max_length=10, choices=MOBILIZATION_CATEGORIES)
-    description = models.TextField()
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
-    unit = models.CharField(max_length=50, default='lot', help_text="e.g., trip, set, piece, lot")
-    unit_cost = models.DecimalField(max_digits=15, decimal_places=2)
-
-    # Optional vendor tracking
-    vendor_name = models.CharField(max_length=200, blank=True)
-    invoice_number = models.CharField(max_length=100, blank=True)
-    invoice_file = models.FileField(upload_to='mobilization_invoices/', blank=True, null=True)
-
-    date_incurred = models.DateField()
-    notes = models.TextField(blank=True)
-
-    created_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['project', 'category', 'date_incurred']
-        indexes = [
-            models.Index(fields=['project', 'category']),
-            models.Index(fields=['date_incurred']),
-        ]
-
-    def __str__(self):
-        return f"{self.project.project_name} - {self.get_category_display()} (₱{self.total_cost:,.2f})"
-
-    @property
-    def total_cost(self):
-        """Calculate total cost for this mobilization item"""
-        return self.quantity * self.unit_cost
 
 
 class ProjectDocument(models.Model):
@@ -1325,3 +1275,5 @@ class SupplierQuotation(models.Model):
     def is_pdf(self):
         """Check if file is PDF format"""
         return self.file_extension == '.pdf'
+
+

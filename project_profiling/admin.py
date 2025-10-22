@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     ProjectProfile, ProjectBudget, ProjectCost, ProjectStaging,
     ProjectType, Expense, SubcontractorExpense, SubcontractorPayment,
-    MobilizationCost, ProjectDocument, SupplierQuotation
+    ProjectDocument, SupplierQuotation
 )
 
 @admin.register(ProjectProfile)
@@ -225,51 +225,6 @@ class SubcontractorPaymentAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(MobilizationCost)
-class MobilizationCostAdmin(admin.ModelAdmin):
-    list_display = [
-        'project', 'category', 'description_short', 'quantity',
-        'unit', 'unit_cost', 'total_cost_display', 'date_incurred'
-    ]
-    list_filter = ['category', 'date_incurred', 'project']
-    search_fields = ['project__project_name', 'description', 'vendor_name']
-    date_hierarchy = 'date_incurred'
-    ordering = ['-date_incurred']
-
-    fieldsets = (
-        ('Project & Category', {
-            'fields': ('project', 'category', 'description')
-        }),
-        ('Cost Details', {
-            'fields': ('quantity', 'unit', 'unit_cost')
-        }),
-        ('Vendor Information', {
-            'fields': ('vendor_name', 'invoice_number', 'invoice_file'),
-            'classes': ('collapse',)
-        }),
-        ('Additional', {
-            'fields': ('date_incurred', 'notes'),
-        }),
-        ('Audit', {
-            'fields': ('created_by', 'created_at', 'updated_at'),
-            'classes': ('collapse',)
-        })
-    )
-
-    readonly_fields = ['created_at', 'updated_at']
-
-    def description_short(self, obj):
-        return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
-    description_short.short_description = 'Description'
-
-    def total_cost_display(self, obj):
-        return f"₱{obj.total_cost:,.2f}"
-    total_cost_display.short_description = 'Total Cost'
-
-    def save_model(self, request, obj, form, change):
-        if not obj.pk:
-            obj.created_by = request.user.userprofile
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(ProjectDocument)

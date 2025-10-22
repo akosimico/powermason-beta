@@ -780,17 +780,32 @@ def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
             # Check if this is a GENERAL REQUIREMENTS item
             is_general_requirements = current_division_is_general
             
-            # Check if this is a permit-related task
+            # Check if this is a permit-related task or item
             task_name_lower = (current_task_name or '').strip().lower()
+            description_lower = (description or '').strip().lower()
+            
+            # Check task name for permit keywords
             is_permit_task = any(keyword in task_name_lower for keyword in [
                 'permits', 'licenses', 'clearances', 'documentation', 'compliance'
             ])
             
+            # Also check description for permit-related keywords
+            is_permit_item = any(keyword in description_lower for keyword in [
+                'permit', 'license', 'clearance', 'inspection', 'fee', 'certificate', 
+                'authorization', 'approval', 'registration', 'compliance',
+                'building permit', 'business permit', 'occupancy permit', 'equipment to operate',
+                'mechanical permit', 'estate permit', 'work permit', 'electrical permit',
+                'fire permit', 'safety permit', 'environmental permit', 'zoning permit'
+            ])
+            
+            # Combine both checks
+            is_permit_related = is_permit_task or is_permit_item
+            
             # Debug logging for permit detection
             if is_general_requirements:
-                print(f"DEBUG: Division: {current_division_name}, Task: {current_task_name}, Is General: {is_general_requirements}, Is Permit Task: {is_permit_task}")
+                print(f"DEBUG: Division: {current_division_name}, Task: {current_task_name}, Is General: {is_general_requirements}, Is Permit Task: {is_permit_task}, Is Permit Item: {is_permit_item}, Description: {description}")
             
-            if is_general_requirements and is_permit_task:
+            if is_general_requirements and is_permit_related:
                 if description:
                     print(f"DEBUG: Adding permit: {description}")
                     required_permits.append({
@@ -1260,13 +1275,28 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
                             # Check if this is a GENERAL REQUIREMENTS item
                             is_general_requirements = current_division_is_general
                             
-                            # Check if this is a permit-related task
+                            # Check if this is a permit-related task or item
                             task_name_lower = (current_task_name or '').strip().lower()
+                            description_lower = (description or '').strip().lower()
+                            
+                            # Check task name for permit keywords
                             is_permit_task = any(keyword in task_name_lower for keyword in [
                                 'permits', 'licenses', 'clearances', 'documentation', 'compliance'
                             ])
                             
-                            if is_general_requirements and is_permit_task:
+                            # Also check description for permit-related keywords
+                            is_permit_item = any(keyword in description_lower for keyword in [
+                                'permit', 'license', 'clearance', 'inspection', 'fee', 'certificate', 
+                                'authorization', 'approval', 'registration', 'compliance',
+                                'building permit', 'business permit', 'occupancy permit', 'equipment to operate',
+                                'mechanical permit', 'estate permit', 'work permit', 'electrical permit',
+                                'fire permit', 'safety permit', 'environmental permit', 'zoning permit'
+                            ])
+                            
+                            # Combine both checks
+                            is_permit_related = is_permit_task or is_permit_item
+                            
+                            if is_general_requirements and is_permit_related:
                                 if description:
                                     required_permits.append({
                                         'name': description,

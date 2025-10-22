@@ -3,6 +3,7 @@
 # Import all utility functions to make them available
 from .rfs_generator import generate_rfs_from_boq, generate_rfs_buffer_from_boq, get_rfs_download_info
 from .quotation_processor import extract_total_from_excel, create_tasks_from_approved_quotation
+from .boq_extractor import create_project_entities_from_boq, classify_boq_item, get_project_work_type
 
 # Import the recalc_project_progress function from the parent utils module
 try:

@@ -17,7 +17,7 @@ from authentication.utils.decorators import verified_email_required, role_requir
 from authentication.utils.tokens import get_user_profile, verify_user_profile
 from .models import (
     ProjectProfile, ProjectBudget, FundAllocation, Expense,
-    ProjectCost, SubcontractorExpense, MobilizationCost, CostCategory
+    ProjectCost, SubcontractorExpense, CostCategory
 )
 
 
@@ -185,9 +185,8 @@ def project_detail_cost_dashboard(request, project_id):
         project=project
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0')
 
-    mobilization_total = MobilizationCost.objects.filter(
-        project=project
-    ).aggregate(total=Sum(F('quantity') * F('unit_cost'), output_field=DecimalField()))['total'] or Decimal('0')
+    # Mobilization costs are now handled by ProjectGeneralRequirement
+    mobilization_total = Decimal('0')
 
     # ========================================
     # 7. ALERTS & WARNINGS

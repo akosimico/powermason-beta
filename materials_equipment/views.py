@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.db.models import Q
+from django.db.models import Q, Avg
 from authentication.models import UserProfile
 from .models import (
     Material, MaterialPriceMonitoring, Equipment, Manpower,
@@ -160,7 +160,7 @@ def price_monitoring_delete(request, pk):
 
 @require_http_methods(["GET"])
 def api_material_list(request):
-    """API endpoint for materials list"""
+    """API endpoint for materials list with enhanced filtering and pagination"""
     materials = Material.objects.filter(is_active=True)
 
     # Search
@@ -175,18 +175,174 @@ def api_material_list(request):
     category = request.GET.get('category', '')
     if category:
         materials = materials.filter(category=category)
+    
+    # Filter by source
+    source = request.GET.get('source', '')
+    if source:
+        materials = materials.filter(source=source)
+    
+    # Filter by project
+    project_id = request.GET.get('project', '')
+    if project_id:
+        # Get materials that have price records for this project
+        project_material_ids = MaterialPriceMonitoring.objects.filter(
+            project_id=project_id
+        ).values_list('material_id', flat=True)
+        materials = materials.filter(id__in=project_material_ids)
+    
+    # Pagination
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    start = (page - 1) * page_size
+    end = start + page_size
+    
+    total_count = materials.count()
+    materials = materials[start:end]
 
-    data = [{
-        'id': m.id,
-        'name': m.name,
-        'unit': m.unit,
-        'standard_price': float(m.standard_price),
-        'category': m.category or '',
-        'description': m.description or '',
-        'latest_price': float(m.get_latest_price().price) if m.get_latest_price() else float(m.standard_price)
-    } for m in materials]
+    data = []
+    for m in materials:
+        latest_price = m.get_latest_price()
+        latest_price_value = float(latest_price.price) if latest_price else float(m.standard_price)
+        
+        # Calculate variance from standard price
+        variance = latest_price_value - float(m.standard_price)
+        variance_percentage = (variance / float(m.standard_price) * 100) if m.standard_price > 0 else 0
+        
+        # Get project-specific price records
+        project_prices = MaterialPriceMonitoring.objects.filter(material=m)
+        boq_price = project_prices.filter(supplier_type='BOQ').first()
+        quotation_price = project_prices.filter(supplier_type='QUOTATION').first()
+        
+        data.append({
+            'id': m.id,
+            'name': m.name,
+            'unit': m.unit,
+            'standard_price': float(m.standard_price),
+            'category': m.category or '',
+            'description': m.description or '',
+            'source': m.source or '',
+            'latest_price': latest_price_value,
+            'variance': variance,
+            'variance_percentage': variance_percentage,
+            'boq_price': float(boq_price.price) if boq_price else None,
+            'quotation_price': float(quotation_price.price) if quotation_price else None,
+            'project_count': project_prices.values('project').distinct().count()
+        })
 
-    return JsonResponse({'materials': data, 'count': len(data)})
+    return JsonResponse({
+        'materials': data, 
+        'count': total_count,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': (total_count + page_size - 1) // page_size
+    })
+
+
+@require_http_methods(["GET"])
+def api_price_monitoring_list(request):
+    """API endpoint for price monitoring with enhanced filtering and pagination"""
+    prices = MaterialPriceMonitoring.objects.all()
+    
+    # Filter by supplier type
+    supplier_type = request.GET.get('supplier_type', '')
+    if supplier_type:
+        prices = prices.filter(supplier_type=supplier_type)
+    
+    # Filter by project
+    project_id = request.GET.get('project', '')
+    if project_id:
+        prices = prices.filter(project_id=project_id)
+    
+    # Filter by material
+    material_id = request.GET.get('material', '')
+    if material_id:
+        prices = prices.filter(material_id=material_id)
+    
+    # Filter by date range
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        prices = prices.filter(date__gte=date_from)
+    if date_to:
+        prices = prices.filter(date__lte=date_to)
+    
+    # Pagination
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    start = (page - 1) * page_size
+    end = start + page_size
+    
+    total_count = prices.count()
+    prices = prices.order_by('-date')[start:end]
+    
+    data = []
+    for p in prices:
+        variance = p.price_difference_from_standard()
+        variance_percentage = p.price_difference_percentage()
+        
+        data.append({
+            'id': p.id,
+            'material_name': p.material.name,
+            'material_id': p.material.id,
+            'supplier_type': p.supplier_type,
+            'supplier_type_display': p.get_supplier_type_display(),
+            'supplier_name': p.supplier_name,
+            'price': float(p.price),
+            'date': p.date.isoformat(),
+            'project_name': p.project.project_name if p.project else None,
+            'project_id': p.project.id if p.project else None,
+            'variance': float(variance),
+            'variance_percentage': float(variance_percentage),
+            'is_active': p.is_active,
+            'notes': p.notes or ''
+        })
+    
+    # Calculate comparison stats (using all data, not just paginated)
+    all_prices = MaterialPriceMonitoring.objects.all()
+    if supplier_type:
+        all_prices = all_prices.filter(supplier_type=supplier_type)
+    if project_id:
+        all_prices = all_prices.filter(project_id=project_id)
+    if material_id:
+        all_prices = all_prices.filter(material_id=material_id)
+    if date_from:
+        all_prices = all_prices.filter(date__gte=date_from)
+    if date_to:
+        all_prices = all_prices.filter(date__lte=date_to)
+    
+    # Calculate averages for comparison
+    regular_prices = all_prices.filter(supplier_type='REG')
+    random_prices = all_prices.filter(supplier_type='RND')
+    boq_prices = all_prices.filter(supplier_type='BOQ')
+    quotation_prices = all_prices.filter(supplier_type='QUO')
+    
+    # Calculate averages with proper null handling
+    def safe_avg(queryset):
+        result = queryset.aggregate(avg=Avg('price'))
+        return float(result['avg']) if result['avg'] is not None else 0.0
+    
+    comparison = {
+        'avg_regular': safe_avg(regular_prices),
+        'avg_random': safe_avg(random_prices),
+        'avg_boq': safe_avg(boq_prices),
+        'avg_quotation': safe_avg(quotation_prices)
+    }
+    
+    # Debug logging
+    print(f"DEBUG: Price monitoring comparison data: {comparison}")
+    print(f"DEBUG: Regular prices count: {regular_prices.count()}")
+    print(f"DEBUG: Random prices count: {random_prices.count()}")
+    print(f"DEBUG: BOQ prices count: {boq_prices.count()}")
+    print(f"DEBUG: Quotation prices count: {quotation_prices.count()}")
+    
+    return JsonResponse({
+        'prices': data, 
+        'count': total_count,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': (total_count + page_size - 1) // page_size,
+        'comparison': comparison
+    })
 
 
 @require_http_methods(["GET"])

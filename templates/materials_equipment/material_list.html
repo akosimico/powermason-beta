@@ -26,7 +26,7 @@
 
     <!-- Search and Filter -->
     <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Search Materials</label>
                 <input type="text" id="searchInput" placeholder="Search by name or category..."
@@ -36,6 +36,15 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select id="categoryFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">All Categories</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                <select id="sourceFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Sources</option>
+                    <option value="BOQ">BOQ</option>
+                    <option value="QUOTATION">Quotation</option>
+                    <option value="MANUAL">Manual</option>
                 </select>
             </div>
             <div class="flex items-end">
@@ -50,6 +59,18 @@
     <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
         <div id="materialsContainer">
             <!-- Skeleton will show here initially -->
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mt-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                <span id="paginationInfo">Loading...</span>
+            </div>
+            <div class="flex items-center space-x-2" id="paginationControls">
+                <!-- Pagination controls will be added here -->
+            </div>
         </div>
     </div>
 </div>
@@ -259,19 +280,28 @@ async function loadStats() {
     }
 }
 
-async function loadMaterials() {
+let currentPage = 1;
+const itemsPerPage = 20;
+
+async function loadMaterials(page = 1) {
     SkeletonLoader.show('materialsContainer', 'table');
 
     try {
         const search = document.getElementById('searchInput').value;
         const category = document.getElementById('categoryFilter').value;
+        const source = document.getElementById('sourceFilter').value;
 
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (category) params.append('category', category);
+        if (source) params.append('source', source);
+        params.append('page', page);
+        params.append('page_size', itemsPerPage);
 
         const response = await fetch(`/materials/api/materials/?${params}`);
         const data = await response.json();
+        
+        currentPage = page;
 
         const html = `
             <table class="w-full">
@@ -338,6 +368,9 @@ async function loadMaterials() {
         `;
 
         SkeletonLoader.hide('materialsContainer', html);
+        
+        // Update pagination
+        updatePagination(data);
     } catch (error) {
         console.error('Error loading materials:', error);
         SkeletonLoader.hide('materialsContainer', `
@@ -350,6 +383,55 @@ async function loadMaterials() {
             </div>
         `);
     }
+}
+
+function updatePagination(data) {
+    const totalPages = Math.ceil(data.count / itemsPerPage);
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, data.count);
+    
+    // Update pagination info
+    document.getElementById('paginationInfo').textContent = 
+        `Showing ${startItem}-${endItem} of ${data.count} materials`;
+    
+    // Update pagination controls
+    const controls = document.getElementById('paginationControls');
+    let controlsHTML = '';
+    
+    // Previous button
+    if (currentPage > 1) {
+        controlsHTML += `
+            <button onclick="loadMaterials(${currentPage - 1})" 
+                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
+                Previous
+            </button>
+        `;
+    }
+    
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        controlsHTML += `
+            <button onclick="loadMaterials(${i})" 
+                    class="px-3 py-2 text-sm font-medium ${i === currentPage ? 'text-blue-600 bg-blue-50 border-blue-500' : 'text-gray-500 bg-white border-gray-300'} border hover:bg-gray-50">
+                ${i}
+            </button>
+        `;
+    }
+    
+    // Next button
+    if (currentPage < totalPages) {
+        controlsHTML += `
+            <button onclick="loadMaterials(${currentPage + 1})" 
+                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
+                Next
+            </button>
+        `;
+    }
+    
+    controls.innerHTML = controlsHTML;
 }
 
 async function loadCategories() {

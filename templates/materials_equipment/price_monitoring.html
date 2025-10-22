@@ -15,13 +15,29 @@
         <p class="text-gray-600 mt-1">Compare prices from regular vs random suppliers</p>
     </div>
 
-    <!-- Material Selector -->
+    <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Select Material</label>
-                <select id="materialSelect" onchange="loadPriceData()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <select id="materialSelect" onchange="loadPriceData(1)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">All Materials</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Type</label>
+                <select id="supplierTypeFilter" onchange="loadPriceData(1)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Types</option>
+                    <option value="REG">Regular Supplier</option>
+                    <option value="RND">Random Supplier</option>
+                    <option value="BOQ">BOQ Estimate</option>
+                    <option value="QUO">Project Quotation</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                <select id="projectFilter" onchange="loadPriceData(1)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Projects</option>
                 </select>
             </div>
             <div class="flex items-end">
@@ -50,10 +66,29 @@
             </div>
         </div>
 
+        <!-- BOQ vs Quotation Chart -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">BOQ vs Quotation Comparison</h3>
+            <div id="boqQuotationChartContainer" class="h-64">
+                <!-- Chart will load here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Savings Chart -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Savings Analysis</h3>
             <div id="savingsChartContainer" class="h-64">
+                <!-- Chart will load here -->
+            </div>
+        </div>
+
+        <!-- Price Variance Chart -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Price Variance Analysis</h3>
+            <div id="varianceChartContainer" class="h-64">
                 <!-- Chart will load here -->
             </div>
         </div>
@@ -218,28 +253,52 @@ async function loadMaterials() {
     }
 }
 
-async function loadPriceData() {
+let currentPage = 1;
+const pageSize = 20;
+
+async function loadPriceData(page = 1) {
+    currentPage = page;
+    
     // Show skeletons
     SkeletonLoader.showGrid('comparisonStats', 'stat-card', 3, 'grid grid-cols-1 md:grid-cols-3 gap-4');
     SkeletonLoader.show('priceChartContainer', 'chart');
+    SkeletonLoader.show('boqQuotationChartContainer', 'chart');
     SkeletonLoader.show('savingsChartContainer', 'chart');
+    SkeletonLoader.show('varianceChartContainer', 'chart');
     SkeletonLoader.show('priceRecordsContainer', 'table');
 
     try {
         const materialId = document.getElementById('materialSelect').value;
-        const params = materialId ? `?material_id=${materialId}` : '';
+        const supplierType = document.getElementById('supplierTypeFilter').value;
+        const projectId = document.getElementById('projectFilter').value;
+        
+        const params = new URLSearchParams();
+        if (materialId) params.append('material', materialId);
+        if (supplierType) params.append('supplier_type', supplierType);
+        if (projectId) params.append('project', projectId);
+        params.append('page', page);
+        params.append('page_size', pageSize);
+        
+        const queryString = params.toString();
+        const url = queryString ? `/materials/api/price-monitoring/?${queryString}` : '/materials/api/price-monitoring/';
 
-        const response = await fetch(`/materials/api/price-comparison/${params}`);
+        const response = await fetch(url);
         const data = await response.json();
+        
+        // Also load comparison data
+        const comparisonResponse = await fetch('/materials/api/price-comparison/');
+        const comparisonData = await comparisonResponse.json();
 
         // Update stats
         updateComparisonStats(data);
 
         // Update charts
         updatePriceChart(data);
+        updateBOQQuotationChart(data);
         updateSavingsChart(data);
+        updateVarianceChart(data);
 
-        // Update table
+        // Update table with pagination
         updatePriceRecords(data);
 
     } catch (error) {
@@ -248,10 +307,18 @@ async function loadPriceData() {
 }
 
 function updateComparisonStats(data) {
-    const avgRegular = data.comparison.avg_regular;
-    const avgRandom = data.comparison.avg_random;
+    // Ensure we have valid numbers with proper type checking and fallbacks
+    const comparison = data.comparison || {};
+    const avgRegular = Number(comparison.avg_regular) || 0;
+    const avgRandom = Number(comparison.avg_random) || 0;
+    const avgBOQ = Number(comparison.avg_boq) || 0;
+    const avgQuotation = Number(comparison.avg_quotation) || 0;
     const savings = avgRegular - avgRandom;
     const savingsPercent = avgRegular > 0 ? ((savings / avgRegular) * 100) : 0;
+    
+    // Debug logging
+    console.log('DEBUG: Comparison data:', comparison);
+    console.log('DEBUG: Parsed values:', { avgRegular, avgRandom, avgBOQ, avgQuotation });
 
     const statsHTML = `
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
@@ -310,10 +377,12 @@ function updatePriceChart(data) {
         priceChart.destroy();
     }
 
-    const regularPrices = data.regular_suppliers.slice(0, 10);
-    const randomPrices = data.random_suppliers.slice(0, 10);
+    // Handle both old and new data structures
+    const prices = data.prices || [];
+    const regularPrices = prices.filter(p => p.supplier_type === 'REG').slice(0, 10);
+    const randomPrices = prices.filter(p => p.supplier_type === 'RND').slice(0, 10);
 
-    const labels = regularPrices.map(p => p.material);
+    const labels = regularPrices.map(p => p.material_name);
 
     priceChart = new Chart(ctx, {
         type: 'bar',
@@ -374,9 +443,11 @@ function updateSavingsChart(data) {
         savingsChart.destroy();
     }
 
-    const allPrices = [...data.regular_suppliers, ...data.random_suppliers];
-    const savings = allPrices.filter(p => p.difference_pct < 0);
-    const overpriced = allPrices.filter(p => p.difference_pct > 0);
+    // Handle both old and new data structures
+    const prices = data.prices || [];
+    const savings = prices.filter(p => p.variance_percentage < 0);
+    const overpriced = prices.filter(p => p.variance_percentage > 0);
+    const atStandard = prices.filter(p => p.variance_percentage === 0);
 
     savingsChart = new Chart(ctx, {
         type: 'doughnut',
@@ -386,7 +457,7 @@ function updateSavingsChart(data) {
                 data: [
                     savings.length,
                     overpriced.length,
-                    allPrices.length - savings.length - overpriced.length
+                    atStandard.length
                 ],
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.7)',
@@ -414,60 +485,119 @@ function updateSavingsChart(data) {
 }
 
 function updatePriceRecords(data) {
-    const allPrices = [...data.regular_suppliers, ...data.random_suppliers]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 20);
+    const prices = data.prices || [];
+    const totalPages = data.total_pages || 1;
+    const currentPage = data.page || 1;
+    const totalCount = data.count || 0;
 
     const html = `
-        <table class="w-full">
-            <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                <tr>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Material</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Supplier</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Type</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Price</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">vs Standard</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Date</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                ${allPrices.length === 0 ? `
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
-                            <p class="text-gray-500">No price records found</p>
-                            <button onclick="openCreateModal()" class="mt-4 text-blue-600 hover:text-blue-700 font-medium">
-                                Add first price record
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900">Price Records</h3>
+                    <div class="text-sm text-gray-600">
+                        Showing ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalCount)} of ${totalCount} records
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Material</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Supplier</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Type</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Price</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Variance</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Project</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${prices.length === 0 ? `
+                            <tr>
+                                <td colspan="8" class="px-6 py-12 text-center">
+                                    <p class="text-gray-500">No price records found</p>
+                                    <button onclick="openCreateModal()" class="mt-4 text-blue-600 hover:text-blue-700 font-medium">
+                                        Add first price record
+                                    </button>
+                                </td>
+                            </tr>
+                        ` : prices.map(p => `
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 font-medium text-gray-900">${p.material_name}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${p.supplier_name}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                                        p.supplier_type === 'REG' ? 'bg-blue-100 text-blue-800' : 
+                                        p.supplier_type === 'RND' ? 'bg-orange-100 text-orange-800' :
+                                        p.supplier_type === 'BOQ' ? 'bg-green-100 text-green-800' :
+                                        'bg-purple-100 text-purple-800'
+                                    }">
+                                        ${p.supplier_type_display}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-gray-900">₱${p.price.toFixed(2)}</td>
+                                <td class="px-6 py-4">
+                                    <span class="font-semibold ${
+                                        p.variance_percentage < 0 ? 'text-green-600' : p.variance_percentage > 0 ? 'text-red-600' : 'text-gray-600'
+                                    }">
+                                        ${p.variance_percentage > 0 ? '+' : ''}${p.variance_percentage.toFixed(1)}%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">${p.project_name || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-600">${new Date(p.date).toLocaleDateString()}</td>
+                                <td class="px-6 py-4 text-sm">
+                                    <button onclick="deletePrice(${p.id})" class="text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            ${totalPages > 1 ? `
+                <div class="px-6 py-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <button 
+                                onclick="loadPriceData(1)" 
+                                class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${currentPage === 1 ? 'disabled' : ''}
+                            >
+                                First
                             </button>
-                        </td>
-                    </tr>
-                ` : allPrices.map(p => `
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-gray-900">${p.material}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">${p.supplier}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${
-                                p.supplier_type === 'REG' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                            }">
-                                ${p.supplier_type_display}
+                            <button 
+                                onclick="loadPriceData(${currentPage - 1})" 
+                                class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${currentPage === 1 ? 'disabled' : ''}
+                            >
+                                Previous
+                            </button>
+                            <span class="px-3 py-1 text-sm text-gray-700">
+                                Page ${currentPage} of ${totalPages}
                             </span>
-                        </td>
-                        <td class="px-6 py-4 font-semibold text-gray-900">₱${p.price.toFixed(2)}</td>
-                        <td class="px-6 py-4">
-                            <span class="font-semibold ${
-                                p.difference_pct < 0 ? 'text-green-600' : p.difference_pct > 0 ? 'text-red-600' : 'text-gray-600'
-                            }">
-                                ${p.difference_pct > 0 ? '+' : ''}${p.difference_pct.toFixed(1)}%
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${new Date(p.date).toLocaleDateString()}</td>
-                        <td class="px-6 py-4 text-sm">
-                            <button onclick="deletePrice(${p.id})" class="text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
+                            <button 
+                                onclick="loadPriceData(${currentPage + 1})" 
+                                class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${currentPage === totalPages ? 'disabled' : ''}
+                            >
+                                Next
+                            </button>
+                            <button 
+                                onclick="loadPriceData(${totalPages})" 
+                                class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${currentPage === totalPages ? 'disabled' : ''}
+                            >
+                                Last
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        </div>
     `;
 
     SkeletonLoader.hide('priceRecordsContainer', html);
@@ -566,6 +696,110 @@ async function confirmDelete() {
     } finally {
         deleteBtn.textContent = 'Delete';
     }
+}
+
+function updateBOQQuotationChart(data) {
+    const ctx = document.createElement('canvas');
+    SkeletonLoader.hide('boqQuotationChartContainer', '');
+    document.getElementById('boqQuotationChartContainer').appendChild(ctx);
+    
+    // Group data by supplier type
+    const boqData = data.prices.filter(p => p.supplier_type === 'BOQ');
+    const quotationData = data.prices.filter(p => p.supplier_type === 'QUOTATION');
+    
+    // Create comparison chart
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['BOQ Estimates', 'Project Quotations'],
+            datasets: [{
+                label: 'Average Price',
+                data: [
+                    boqData.length > 0 ? boqData.reduce((sum, p) => sum + p.price, 0) / boqData.length : 0,
+                    quotationData.length > 0 ? quotationData.reduce((sum, p) => sum + p.price, 0) / quotationData.length : 0
+                ],
+                backgroundColor: ['#3B82F6', '#10B981'],
+                borderColor: ['#2563EB', '#059669'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₱' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function updateVarianceChart(data) {
+    const ctx = document.createElement('canvas');
+    SkeletonLoader.hide('varianceChartContainer', '');
+    document.getElementById('varianceChartContainer').appendChild(ctx);
+    
+    // Calculate variance data
+    const varianceData = data.prices.map(p => ({
+        material: p.material_name,
+        variance: p.variance,
+        variance_percentage: p.variance_percentage
+    })).filter(v => v.variance !== 0);
+    
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Price Variance',
+                data: varianceData.map(v => ({
+                    x: v.variance_percentage,
+                    y: v.variance
+                })),
+                backgroundColor: '#EF4444',
+                borderColor: '#DC2626',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Variance Percentage (%)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Variance Amount (₱)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '₱' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
 }
 
 function showToast(message, type) {

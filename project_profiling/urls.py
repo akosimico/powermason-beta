@@ -148,11 +148,6 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     path('api/subcontractors/<int:subcon_id>/payments/', views.api_subcontractor_payments, name='api_subcontractor_payments'),
     path('api/subcontractors/<int:subcon_id>/payments/create/', views.api_create_payment, name='api_create_payment'),
 
-    # Mobilization Costs - Session-based
-    path('mobilization/', views.mobilization_costs, name='mobilization_costs'),
-    path('api/mobilization-costs/', views.api_mobilization_costs_list, name='api_mobilization_costs_list'),
-    path('api/mobilization-costs/create/', views.api_create_mobilization_cost, name='api_create_mobilization_cost'),
-    path('api/mobilization-costs/<int:cost_id>/', views.api_mobilization_cost_detail, name='api_mobilization_cost_detail'),
     
     # Cost Estimation API
     path('api/cost-estimation/', cost_estimation_views.CostEstimationAPIView.as_view(), name='api_cost_estimation'),

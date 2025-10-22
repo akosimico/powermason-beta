@@ -45,9 +45,7 @@ from powermason_capstone.utils.calculate_progress import calculate_progress
 # Import cost tracking views
 from .cost_tracking_views import (
     subcontractor_list, api_subcontractor_list, api_subcontractor_detail,
-    api_subcontractor_payments, api_create_payment,
-    mobilization_costs, api_mobilization_costs_list,
-    api_create_mobilization_cost, api_mobilization_cost_detail
+    api_subcontractor_payments, api_create_payment
 )
 # ----------------------------------------
 # HELPER FUNCTIONS
@@ -780,6 +778,7 @@ def review_pending_project(request, project_id):
         "rfs_info": rfs_info,
         "quotation_count": quotation_count,
         "has_approved_quotation": has_approved_quotation,
+        "approved_quotation_amount": quotations.filter(status='APPROVED').first().total_amount if has_approved_quotation else 0,
     }
     
     # Fix BOQ data for JSON serialization
@@ -793,8 +792,20 @@ def review_pending_project(request, project_id):
         # Also serialize other BOQ-related data to ensure proper JSON format
         context['boq_division_subtotals_json'] = json.dumps(project.project_data.get('boq_division_subtotals', {}))
         context['boq_project_info_json'] = json.dumps(project.project_data.get('boq_project_info', {}))
-        required_permits = project.project_data.get('required_permits', [])
-        print(f"DEBUG: Required permits in view: {len(required_permits)} permits")
+        # Get stored required permits
+        stored_permits = project.project_data.get('required_permits', [])
+        print(f"DEBUG: Stored required permits: {len(stored_permits)} permits")
+        
+        # If no stored permits, try to detect them from BOQ items
+        if not stored_permits and boq_items:
+            print("DEBUG: No stored permits found, detecting from BOQ items...")
+            detected_permits = detect_permits_from_boq_items(boq_items)
+            print(f"DEBUG: Detected {len(detected_permits)} permits from BOQ items")
+            required_permits = detected_permits
+        else:
+            required_permits = stored_permits
+            
+        print(f"DEBUG: Final required permits: {len(required_permits)} permits")
         for permit in required_permits:
             print(f"DEBUG: - {permit}")
         context['required_permits_json'] = json.dumps(required_permits)
@@ -806,18 +817,23 @@ def review_pending_project(request, project_id):
 
         if action == "approve_budget":
             try:
-                # --- Get approved budget from form ---
-                approved_budget = request.POST.get("approved_budget")
+                # --- Get approved budget from form or project data ---
+                approved_budget = request.POST.get("approved_budget") or request.POST.get("approved_budget_hidden")
+                
+                # If still no budget from form, get from project data or use estimated cost
                 if not approved_budget:
-                    set_toast_message(request, "Please enter an approved budget amount.", "error")
-                    return render(request, "project_profiling/review_pending_project.html", context)
+                    approved_budget = project.project_data.get('approved_budget') or project.project_data.get('estimated_cost', 0)
+                    print(f"DEBUG: Using budget from project data: {approved_budget}")
+                else:
+                    print(f"DEBUG: Using budget from form: {approved_budget}")
 
                 try:
                     approved_budget = float(approved_budget)
-                    print(f"DEBUG: Approved budget: {approved_budget}")
-                except ValueError:
-                    set_toast_message(request, "Please enter a valid budget amount.", "error")
-                    return render(request, "project_profiling/review_pending_project.html", context)
+                    print(f"DEBUG: Final approved budget: {approved_budget}")
+                except (ValueError, TypeError):
+                    # Fallback to estimated cost if budget is invalid
+                    approved_budget = float(project.project_data.get('estimated_cost', 0))
+                    print(f"DEBUG: Using estimated cost as fallback budget: {approved_budget}")
 
                 # --- Get contract file from form ---
                 contract_file = request.FILES.get("contract_file")
@@ -1000,6 +1016,8 @@ def review_pending_project(request, project_id):
                 )
                 print(f"DEBUG: Created new ProjectProfile ID={new_profile.id}")
 
+                # BOQ entity extraction will happen after BOQ data is transferred
+
                 # --- Save contract file ---
                 if contract_file:
                     # Generate a unique filename
@@ -1043,6 +1061,19 @@ def review_pending_project(request, project_id):
                     doc.save()
                     migrated_count += 1
                 print(f"DEBUG: Migrated {migrated_count} document(s) from staging to approved project")
+
+                # --- Migrate quotations from staging project to approved project ---
+                quotations_to_migrate = SupplierQuotation.objects.filter(
+                    project_id=project.id,
+                    project_type='staging'
+                )
+                quotations_migrated = 0
+                for quotation in quotations_to_migrate:
+                    quotation.project_id = new_profile.id
+                    quotation.project_type = 'profile'
+                    quotation.save()
+                    quotations_migrated += 1
+                print(f"DEBUG: Migrated {quotations_migrated} quotation(s) from staging to approved project")
 
                 # --- Create ProjectDocument entries for old system files ---
                 # Create document entry for contract agreement if it exists
@@ -1167,6 +1198,42 @@ def review_pending_project(request, project_id):
                         create_project_scopes_and_budgets_from_boq(new_profile, boq_items)
                         boq_items_processed = True
                         print(f"DEBUG: Created scopes and budget entries from BOQ data for approved project")
+                        
+                        # --- Extract BOQ entities (scopes, tasks, materials, equipment) ---
+                        try:
+                            from .utils.boq_extractor import create_project_entities_from_boq
+                            
+                            print(f"DEBUG: Starting BOQ entity extraction for project {new_profile.id}")
+                            result = create_project_entities_from_boq(new_profile)
+                            print(f"DEBUG: BOQ extraction completed - Created {result.get('scopes', 0)} scopes, "
+                                  f"{result.get('tasks', 0)} tasks, {result.get('materials', 0)} materials, "
+                                  f"{result.get('equipment', 0)} equipment, {result.get('mobilization_costs', 0)} mobilization costs")
+                            
+                            # --- Create price monitoring records from BOQ ---
+                            try:
+                                from materials_equipment.utils.price_monitoring_integration import create_price_records_from_boq
+                                
+                                print(f"DEBUG: Starting BOQ price monitoring integration for project {new_profile.id}")
+                                price_result = create_price_records_from_boq(
+                                    project=new_profile,
+                                    boq_items=boq_items,
+                                    extracted_by=request.user.userprofile
+                                )
+                                print(f"DEBUG: BOQ price monitoring completed - Created {price_result.get('price_records', 0)} price records")
+                                
+                            except Exception as e:
+                                print(f"DEBUG: Error during BOQ price monitoring integration: {e}")
+                                # Don't fail the approval process for price monitoring errors
+                            
+                            # Store extraction results for reference (ProjectProfile doesn't have project_data)
+                            print(f"DEBUG: BOQ extraction results stored successfully")
+                            
+                        except Exception as e:
+                            print(f"DEBUG: Error during BOQ entity extraction: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            # Don't fail the approval process for extraction errors
+                            set_toast_message(request, f"⚠️ Project approved successfully, but BOQ entity extraction failed: {str(e)}", "warning")
                         
                     except Exception as e:
                         print(f"DEBUG: Error handling BOQ data for approved project: {e}")
@@ -1895,6 +1962,9 @@ def project_create(request, project_type, client_id):
                         except Exception as e:
                             print(f"DEBUG: Error creating budget entries: {e}")
                             messages.warning(request, f"⚠️ Project created successfully, but there was an issue processing BOQ budget data: {str(e)}")
+                    
+                    # BOQ entities will be extracted after project approval (when ProjectStaging becomes ProjectProfile)
+                    # This ensures the models have the correct project type to work with
                     
                     # Generate RFS file if BOQ data is available
                     if cleaned_data.get('boq_items') and not is_draft_save:
@@ -3471,6 +3541,53 @@ def api_document_restore(request, doc_id):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def detect_permits_from_boq_items(boq_items):
+    """
+    Detect required permits from BOQ items using the same logic as file_processing.py
+    """
+    required_permits = []
+    
+    for item in boq_items:
+        # Check if this is a GENERAL REQUIREMENTS item
+        division = item.get('division', '').strip()
+        is_general_requirements = division.lower() == 'general requirements'
+        
+        if not is_general_requirements:
+            continue
+            
+        # Get task and description
+        task_name = item.get('task', '').strip().lower()
+        description = item.get('description', '').strip().lower()
+        
+        # Check task name for permit keywords
+        is_permit_task = any(keyword in task_name for keyword in [
+            'permits', 'licenses', 'clearances', 'documentation', 'compliance'
+        ])
+        
+        # Check description for permit-related keywords
+        is_permit_item = any(keyword in description for keyword in [
+            'permit', 'license', 'clearance', 'inspection', 'fee', 'certificate', 
+            'authorization', 'approval', 'registration', 'compliance',
+            'building permit', 'business permit', 'occupancy permit', 'equipment to operate',
+            'mechanical permit', 'estate permit', 'work permit', 'electrical permit',
+            'fire permit', 'safety permit', 'environmental permit', 'zoning permit'
+        ])
+        
+        # Combine both checks
+        is_permit_related = is_permit_task or is_permit_item
+        
+        if is_permit_related and description:
+            print(f"DEBUG: Detected permit: {item.get('description', '')}")
+            required_permits.append({
+                'name': item.get('description', ''),
+                'quantity': str(item.get('quantity', '1')),
+                'uom': item.get('uom', 'lot'),
+                'requires_upload': True
+            })
+    
+    return required_permits
 
 
 @csrf_exempt

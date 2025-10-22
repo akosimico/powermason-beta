@@ -297,6 +297,35 @@ def approve_quotation(request, project_id, quotation_id):
             project.status = 'PL'  # Change status to Planned
             project.save(update_fields=['approved_budget', 'status'])
             print(f"DEBUG: Updated ProjectProfile approved_budget to: {project.approved_budget}")
+            
+            # --- Extract materials from approved quotation ---
+            try:
+                from materials_equipment.utils.price_monitoring_integration import create_price_records_from_quotation
+                
+                print(f"DEBUG: Starting quotation price monitoring integration for project {project.id}")
+                # Extract quotation data from the file if available
+                quotation_data = []
+                if quotation.file:
+                    # TODO: Parse quotation file to extract material data
+                    # For now, we'll create a basic record
+                    quotation_data = [{
+                        'description': f"Quotation item from {quotation.supplier_name}",
+                        'unit_cost': float(quotation.total_amount) if quotation.total_amount else 0,
+                        'quantity': 1,
+                        'amount': float(quotation.total_amount) if quotation.total_amount else 0,
+                        'uom': 'lot'
+                    }]
+                
+                price_result = create_price_records_from_quotation(
+                    project=project,
+                    quotation_data=quotation_data,
+                    extracted_by=request.user.userprofile
+                )
+                print(f"DEBUG: Quotation price monitoring completed - Created {price_result.get('price_records', 0)} price records")
+                
+            except Exception as e:
+                print(f"DEBUG: Error during quotation price monitoring integration: {e}")
+                # Don't fail the approval process for price monitoring errors
         else:
             print(f"DEBUG: ProjectStaging - budget will be set when project is approved")
             # For ProjectStaging, we need to update the project_data
@@ -310,7 +339,7 @@ def approve_quotation(request, project_id, quotation_id):
         
         return JsonResponse({
             'success': True,
-            'message': f'Quotation from {quotation.supplier_name} approved successfully.',
+            'message': f'Quotation approved successfully!',
             'quotation': {
                 'id': quotation.id,
                 'supplier_name': quotation.supplier_name,
