@@ -413,13 +413,6 @@ class ProjectProfile(models.Model):
         null=True,
         help_text="Lot size in square meters"
     )
-    total_area = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        help_text="Total area in square meters"
-    )
 
     # ----------------------------
     # 5. Timeline
@@ -657,6 +650,23 @@ class ProjectProfile(models.Model):
         null=True,
         blank=True,
         help_text="Dependency mapping for BOQ items"
+    )
+    boq_division_subtotals = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Cost subtotals by division from BOQ data"
+    )
+    boq_project_info = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Project information extracted from BOQ (floor area, etc.)"
+    )
+    floor_area = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        help_text="Floor area in square meters"
     )
     project_role = models.CharField(
         max_length=20,

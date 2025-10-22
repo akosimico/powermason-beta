@@ -112,6 +112,85 @@
             transform: translateX(100%);
         }
     }
+
+    /* BOQ Summary Cards - Prevent text overlapping */
+    .boq-summary-card {
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        padding: 1rem;
+    }
+
+    .boq-summary-value {
+        line-height: 1.1;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+
+    /* Specific styling for total cost to prevent overflow */
+    .boq-summary-card .boq-summary-value {
+        font-size: 1.125rem; /* text-lg - better readability */
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Responsive font sizes for large numbers */
+    @media (min-width: 1024px) {
+        .boq-summary-card .boq-summary-value {
+            font-size: 1.25rem; /* text-xl on large screens */
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .boq-summary-card .boq-summary-value {
+            font-size: 1rem; /* text-base on medium screens */
+        }
+    }
+
+    @media (max-width: 768px) {
+        .boq-summary-card .boq-summary-value {
+            font-size: 0.875rem; /* text-sm on small screens */
+        }
+    }
+
+    /* Extra small font for very long numbers */
+    .boq-summary-card .boq-summary-value.long-number {
+        font-size: 0.875rem; /* text-sm */
+        line-height: 1.1;
+    }
+
+    @media (min-width: 1024px) {
+        .boq-summary-card .boq-summary-value.long-number {
+            font-size: 1rem; /* text-base on large screens */
+        }
+    }
+
+    /* Specific styling for total cost card - balanced approach */
+    #totalCostDisplay {
+        font-size: 1rem !important; /* text-base */
+        line-height: 1.2 !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        max-width: 100% !important;
+        white-space: normal !important;
+    }
+
+    @media (min-width: 1024px) {
+        #totalCostDisplay {
+            font-size: 1.125rem !important; /* text-lg on large screens */
+        }
+    }
+
+    @media (max-width: 768px) {
+        #totalCostDisplay {
+            font-size: 0.875rem !important; /* text-sm on small screens */
+        }
+    }
 </style>
 {% endblock %}
 
@@ -527,22 +606,26 @@ window.addEventListener('click', function(e) {
                     <div class="p-6">
                         {% if project.boq_items %}
                             <!-- BOQ Summary -->
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                    <div class="text-xs font-medium text-purple-600 uppercase tracking-wide">Total Items</div>
-                                    <div class="text-2xl font-bold text-purple-900">{{ project.boq_items|length }}</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200 boq-summary-card">
+                                    <div class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-2">Total Items</div>
+                                    <div class="text-xl lg:text-2xl font-bold text-purple-900 boq-summary-value">{{ project.boq_items|length }}</div>
                                 </div>
-                                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                                    <div class="text-xs font-medium text-green-600 uppercase tracking-wide">Total Cost</div>
-                                    <div class="text-2xl font-bold text-green-900">₱{{ project.extracted_total_cost|floatformat:2|intcomma|default:"0.00" }}</div>
+                                <div class="bg-green-50 rounded-lg p-4 border border-green-200 boq-summary-card" style="min-width: 0; flex: 1;">
+                                    <div class="text-xs font-medium text-green-600 uppercase tracking-wide mb-2">Total Cost</div>
+                                    <div class="text-base lg:text-lg font-bold text-green-900 boq-summary-value" id="totalCostDisplay">₱{{ project.extracted_total_cost|floatformat:2|intcomma|default:"0.00" }}</div>
                                 </div>
-                                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                    <div class="text-xs font-medium text-blue-600 uppercase tracking-wide">Lot Size</div>
-                                    <div class="text-2xl font-bold text-blue-900">{{ project.lot_size|floatformat:0|default:"0" }} m²</div>
+                                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200 boq-summary-card">
+                                    <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-2">Lot Size</div>
+                                    <div class="text-lg lg:text-xl font-bold text-blue-900 boq-summary-value">{{ project.lot_size|floatformat:0|default:"0" }} m²</div>
                                 </div>
-                                <div class="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                                    <div class="text-xs font-medium text-orange-600 uppercase tracking-wide">Cost per m²</div>
-                                    <div class="text-2xl font-bold text-orange-900" id="costPerSqm">
+                                <div class="bg-orange-50 rounded-lg p-4 border border-orange-200 boq-summary-card">
+                                    <div class="text-xs font-medium text-orange-600 uppercase tracking-wide mb-2">Floor Area</div>
+                                    <div class="text-lg lg:text-xl font-bold text-orange-900 boq-summary-value" id="floorAreaDisplay">{{ project.floor_area|floatformat:0|default:"0" }} m²</div>
+                                </div>
+                                <div class="bg-indigo-50 rounded-lg p-4 border border-indigo-200 boq-summary-card">
+                                    <div class="text-xs font-medium text-indigo-600 uppercase tracking-wide mb-2">Cost per m²</div>
+                                    <div class="text-lg lg:text-xl font-bold text-indigo-900 boq-summary-value" id="costPerSqm">
                                         ₱0.00
                                     </div>
                                 </div>
@@ -563,7 +646,7 @@ window.addEventListener('click', function(e) {
                             </div>
                             {% endif %}
 
-                            <!-- BOQ Items with Pagination -->
+                            <!-- BOQ Items with Hierarchical Display -->
                             <div id="boqPreview" class="hidden">
                                 <div class="flex justify-between items-center mb-3">
                                     <h3 class="text-sm font-semibold text-gray-900">BOQ Items</h3>
@@ -578,34 +661,8 @@ window.addEventListener('click', function(e) {
                                     </div>
                                 </div>
                                 
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Item</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Description</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Section</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Qty</th>
-                                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">UOM</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Unit Cost</th>
-                                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="boqItemsTableBody" class="bg-white divide-y divide-gray-200">
-                                            <!-- Initial items from Django template -->
-                                            {% for item in project.boq_items %}
-                                            <tr class="boq-item-row hover:bg-gray-50" style="display: none;">
-                                                <td class="px-3 py-2 text-sm font-medium text-gray-900">{{ item.item_number|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900">{{ item.description|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-500">{{ item.section|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-center">{{ item.uom|default:"" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-right">{{ item.quantity|floatformat:2|intcomma|default:"0" }}</td>
-                                                <td class="px-3 py-2 text-sm text-gray-900 text-right">₱{{ item.unit_cost|floatformat:2|intcomma|default:"0.00" }}</td>
-                                                <td class="px-3 py-2 text-sm font-semibold text-gray-900 text-right">₱{{ item.total_cost|floatformat:2|intcomma|default:"0.00" }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                <div id="boqHierarchicalDisplay" class="space-y-6">
+                                    <!-- Hierarchical BOQ items will be populated by JavaScript -->
                                 </div>
                                 
                                 <!-- Pagination Controls -->
@@ -655,6 +712,17 @@ window.addEventListener('click', function(e) {
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- BOQ Data Script -->
+                <script type="application/json" id="boq-data">
+                {
+                    "boq_items": {{ project.boq_items|default:"[]"|safe }},
+                    "division_subtotals": {{ project.boq_division_subtotals|default:"{}"|safe }},
+                    "boq_project_info": {{ project.boq_project_info|default:"{}"|safe }},
+                    "floor_area": {{ project.floor_area|default:0|floatformat:0 }},
+                    "lot_size": {{ project.lot_size|default:0|floatformat:0 }}
+                }
+                </script>
 
                 <!-- Description Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -1280,6 +1348,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Calculate cost per square meter
     calculateCostPerSqm();
     
+    // Update floor area from BOQ data
+    updateFloorAreaFromBOQData();
+    
+    // Format large numbers to prevent overlapping
+    formatLargeNumbers();
+    
     // Initialize BOQ pagination
     initializeBOQPagination();
 });
@@ -1288,16 +1362,78 @@ function calculateCostPerSqm() {
     const costPerSqmElement = document.getElementById('costPerSqm');
     if (costPerSqmElement) {
         const lotSize = parseFloat('{{ project.lot_size|default:0 }}');
+        const floorArea = parseFloat('{{ project.floor_area|default:0 }}');
         const totalCost = parseFloat('{{ project.extracted_total_cost|default:0 }}');
         
-        if (lotSize > 0 && totalCost > 0) {
-            const costPerSqm = totalCost / lotSize;
+        // Use floor area if available, otherwise use lot size
+        const area = floorArea > 0 ? floorArea : lotSize;
+        
+        if (area > 0 && totalCost > 0) {
+            const costPerSqm = totalCost / area;
             costPerSqmElement.textContent = '₱' + costPerSqm.toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
         }
     }
+}
+
+// Update floor area display from BOQ data
+function updateFloorAreaFromBOQData() {
+    const boqDataScript = document.getElementById('boq-data');
+    if (boqDataScript) {
+        try {
+            let rawData = boqDataScript.textContent;
+            rawData = rawData
+                .replace(/'/g, '"')
+                .replace(/True/g, 'true')
+                .replace(/False/g, 'false')
+                .replace(/None/g, 'null');
+            
+            const boqData = JSON.parse(rawData);
+            const floorArea = boqData.floor_area || boqData.boq_project_info?.floor_area || 0;
+            
+            // Update floor area display if we have data
+            if (floorArea > 0) {
+                const floorAreaElement = document.getElementById('floorAreaDisplay');
+                if (floorAreaElement) {
+                    floorAreaElement.textContent = Math.round(floorArea) + ' m²';
+                }
+            }
+        } catch (e) {
+            console.error('Error updating floor area from BOQ data:', e);
+        }
+    }
+}
+
+// Format large numbers to prevent overlapping
+function formatLargeNumbers() {
+    // Format total cost display
+    const totalCostElement = document.getElementById('totalCostDisplay');
+    if (totalCostElement) {
+        const currentText = totalCostElement.textContent;
+        const amount = parseFloat(currentText.replace('₱', '').replace(/,/g, ''));
+        if (!isNaN(amount)) {
+            const formattedAmount = '₱' + amount.toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            totalCostElement.textContent = formattedAmount;
+            
+            // Add long-number class if the text is very long (more than 15 characters)
+            if (formattedAmount.length > 15) {
+                totalCostElement.classList.add('long-number');
+            }
+        }
+    }
+    
+    // Check all BOQ summary values for long numbers
+    document.querySelectorAll('.boq-summary-value').forEach(element => {
+        const text = element.textContent;
+        if (text.length > 15) {
+            element.classList.add('long-number');
+        }
+    });
 }
 
 function loadProjectSubcontractors() {
@@ -1528,58 +1664,160 @@ function toggleBOQPreview() {
 // BOQ Pagination Variables
 let currentPage = 1;
 let itemsPerPage = 10;
+let allBOQItems = [];
 
 function initializeBOQPagination() {
-    const tableBody = document.getElementById('boqItemsTableBody');
-    const allRows = tableBody ? tableBody.querySelectorAll('.boq-item-row') : [];
+    // Get BOQ data from JSON script tag
+    const boqDataScript = document.getElementById('boq-data');
+    let rawBoqItems = [];
     
-    if (allRows.length > 0) {
-        renderBOQItems();
+    if (boqDataScript) {
+        try {
+            // Get the raw text content
+            let rawData = boqDataScript.textContent;
+            console.log('DEBUG: Raw BOQ Data:', rawData);
+            
+            // Clean up Python-style data to proper JSON
+            rawData = rawData
+                .replace(/'/g, '"')  // Replace single quotes with double quotes
+                .replace(/True/g, 'true')  // Replace Python True with JavaScript true
+                .replace(/False/g, 'false')  // Replace Python False with JavaScript false
+                .replace(/None/g, 'null');  // Replace Python None with JavaScript null
+            
+            console.log('DEBUG: Cleaned BOQ Data:', rawData);
+            
+            const boqData = JSON.parse(rawData);
+            rawBoqItems = boqData.boq_items || [];
+        } catch (e) {
+            console.error('DEBUG: Error parsing BOQ data:', e);
+            console.error('DEBUG: Raw data was:', boqDataScript.textContent);
+            rawBoqItems = [];
+        }
+    }
+    
+    allBOQItems = rawBoqItems;
+    
+    console.log('DEBUG: Processed BOQ items:', allBOQItems);
+    console.log('DEBUG: BOQ items length:', allBOQItems.length);
+    
+    if (allBOQItems.length > 0) {
+        renderHierarchicalBOQItems();
         
         // Add event listeners
         document.getElementById('prevPage')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
-                renderBOQItems();
+                renderHierarchicalBOQItems();
             }
         });
         
         document.getElementById('nextPage')?.addEventListener('click', () => {
-            const totalPages = Math.ceil(allRows.length / itemsPerPage);
+            const totalPages = Math.ceil(allBOQItems.length / itemsPerPage);
             if (currentPage < totalPages) {
                 currentPage++;
-                renderBOQItems();
+                renderHierarchicalBOQItems();
             }
         });
         
         document.getElementById('itemsPerPage')?.addEventListener('change', (e) => {
             itemsPerPage = parseInt(e.target.value);
             currentPage = 1; // Reset to first page
-            renderBOQItems();
+            renderHierarchicalBOQItems();
         });
     }
 }
 
-function renderBOQItems() {
-    const tableBody = document.getElementById('boqItemsTableBody');
-    if (!tableBody) return;
+function renderHierarchicalBOQItems() {
+    const displayContainer = document.getElementById('boqHierarchicalDisplay');
+    if (!displayContainer) return;
     
-    // Get all existing rows
-    const allRows = tableBody.querySelectorAll('.boq-item-row');
-    const totalItems = allRows.length;
-    
+    const totalItems = allBOQItems.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
     
-    // Hide all rows first
-    allRows.forEach((row, index) => {
-        if (index >= startIndex && index < endIndex) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+    // Get items for current page
+    const pageItems = allBOQItems.slice(startIndex, endIndex);
+    
+    // Group items by division and task
+    const groupedData = groupBOQItemsByDivisionAndTask(pageItems);
+    
+    // Render hierarchical display
+    let html = '';
+    Object.entries(groupedData).forEach(([division, divisionData]) => {
+        html += `
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-6">
+                <!-- Division Header -->
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="text-lg font-semibold">${division}</h3>
+                    <p class="text-sm text-gray-300">Subtotal: ₱${formatCurrency(divisionData.subtotal)}</p>
+                </div>
+                
+                <div class="bg-white">
+        `;
+        
+        // Group by task within division
+        Object.entries(divisionData.tasks).forEach(([task, taskData]) => {
+            html += `
+                <!-- Task Header -->
+                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                    <h4 class="text-md font-medium text-gray-800">${task} (Subtotal: ₱${formatCurrency(taskData.subtotal)})</h4>
+                </div>
+                
+                <!-- Items Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Code</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Description</th>
+                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">UOM</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Qty</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Unit Cost</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</th>
+                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+            `;
+            
+            taskData.items.forEach(item => {
+                // Handle both string and boolean values for is_requirement
+                const isRequirement = item.is_requirement === true || item.is_requirement === 'true' || item.is_requirement === 'True';
+                const typeText = isRequirement ? 'Requirement' : 'Material';
+                const typeColor = isRequirement ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800';
+                
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 text-sm font-medium text-gray-900">${item.code || ''}</td>
+                        <td class="px-3 py-2 text-sm text-gray-900">${item.description || ''}</td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-center">${item.uom || ''}</td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right">${formatNumber(item.quantity || 0)}</td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right">₱${formatCurrency(item.unit_cost || 0)}</td>
+                        <td class="px-3 py-2 text-sm font-semibold text-gray-900 text-right">₱${formatCurrency(item.amount || 0)}</td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeColor}">
+                                ${typeText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
     });
+    
+    displayContainer.innerHTML = html;
     
     // Update pagination info
     const showingStart = document.getElementById('showingStart');
@@ -1620,11 +1858,61 @@ function renderBOQItems() {
             pageBtn.textContent = i;
             pageBtn.addEventListener('click', () => {
                 currentPage = i;
-                renderBOQItems();
+                renderHierarchicalBOQItems();
             });
             pageNumbers.appendChild(pageBtn);
         }
     }
+}
+
+function groupBOQItemsByDivisionAndTask(items) {
+    const grouped = {};
+    
+    items.forEach(item => {
+        const division = item.division || 'General Items';
+        const task = item.task || 'General Items';
+        
+        if (!grouped[division]) {
+            grouped[division] = {
+                subtotal: 0,
+                tasks: {}
+            };
+        }
+        
+        if (!grouped[division].tasks[task]) {
+            grouped[division].tasks[task] = {
+                subtotal: 0,
+                items: []
+            };
+        }
+        
+        const amount = parseFloat(item.amount) || 0;
+        grouped[division].subtotal += amount;
+        grouped[division].tasks[task].subtotal += amount;
+        grouped[division].tasks[task].items.push(item);
+    });
+    
+    return grouped;
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined || amount === '') return '0.00';
+    const number = parseFloat(amount);
+    if (isNaN(number)) return '0.00';
+    return number.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatNumber(amount) {
+    if (amount === null || amount === undefined || amount === '') return '0';
+    const number = parseFloat(amount);
+    if (isNaN(number)) return '0';
+    return number.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
 
 function exportBOQToExcel() {

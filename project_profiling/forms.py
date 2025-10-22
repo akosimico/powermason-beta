@@ -8,20 +8,19 @@ from employees.models import Employee
 
 
 class ProjectProfileForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Add JavaScript for auto-calculation
-        self.fields['total_area'].widget.attrs.update({
-            'onchange': 'calculateEstimatedCost()',
-            'oninput': 'calculateEstimatedCost()'
-        })
-        self.fields['project_type'].widget.attrs.update({
-            'onchange': 'calculateEstimatedCost()'
-        })
-        self.fields['lot_size'].widget.attrs.update({
-            'onchange': 'calculateEstimatedCost()',
-            'oninput': 'calculateEstimatedCost()'
-        })
+    # Custom field for template compatibility
+    total_area = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200',
+            'step': '0.01',
+            'min': '0',
+            'placeholder': 'Enter floor area in square meters'
+        }),
+        help_text="Enter the total floor area in square meters for automatic cost estimation"
+    )
     
     class Meta:
         model = ProjectProfile
@@ -38,6 +37,7 @@ class ProjectProfileForm(forms.ModelForm):
             "gps_coordinates",
             "city_province",
             "lot_size",
+            "floor_area",
             "total_area",
             "start_date",
             "target_completion_date",
@@ -61,6 +61,8 @@ class ProjectProfileForm(forms.ModelForm):
             # BOQ fields
             "boq_items",
             "boq_dependencies",
+            "boq_division_subtotals",
+            "boq_project_info",
             "extracted_total_cost",
             "extracted_cost_breakdown",
             "boq_file_processed",
@@ -74,6 +76,8 @@ class ProjectProfileForm(forms.ModelForm):
             # BOQ fields - hidden, handled by JavaScript
             "boq_items": forms.HiddenInput(),
             "boq_dependencies": forms.HiddenInput(),
+            "boq_division_subtotals": forms.HiddenInput(),
+            "boq_project_info": forms.HiddenInput(),
             "extracted_total_cost": forms.HiddenInput(),
             "extracted_cost_breakdown": forms.HiddenInput(),
             "boq_file_processed": forms.HiddenInput(),
@@ -87,6 +91,16 @@ class ProjectProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # ----------------------------
+        # Handle total_area and floor_area synchronization
+        # ----------------------------
+        if self.instance and self.instance.pk:
+            # For existing instances, sync total_area with floor_area
+            self.fields['total_area'].initial = self.instance.floor_area
+        elif 'total_area' in self.data:
+            # For new instances, sync total_area with floor_area
+            self.fields['total_area'].initial = self.data.get('total_area')
+
+        # ----------------------------
         # Handle Project Manager field
         # ----------------------------
         self.fields["project_manager"].required = False
@@ -94,8 +108,8 @@ class ProjectProfileForm(forms.ModelForm):
         # ----------------------------
         # Handle BOQ fields - make them non-required
         # ----------------------------
-        boq_fields = ["boq_items", "boq_dependencies", "extracted_total_cost", 
-                      "extracted_cost_breakdown", "boq_file_processed", "project_role"]
+        boq_fields = ["boq_items", "boq_dependencies", "boq_division_subtotals", "boq_project_info", 
+                      "extracted_total_cost", "extracted_cost_breakdown", "boq_file_processed", "project_role"]
         for field_name in boq_fields:
             if field_name in self.fields:
                 self.fields[field_name].required = False
@@ -250,6 +264,13 @@ class ProjectProfileForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         
+        # Handle total_area to floor_area synchronization
+        if 'total_area' in cleaned_data and cleaned_data['total_area']:
+            cleaned_data['floor_area'] = cleaned_data['total_area']
+        elif 'total_area' in cleaned_data and not cleaned_data['total_area'] and 'floor_area' in cleaned_data:
+            # If total_area is empty but floor_area has value, keep floor_area
+            pass
+        
         # Handle BOQ items data if it was parsed from JSON
         if hasattr(self, '_boq_items_data') and self._boq_items_data:
             print(f"DEBUG: Form clean - Processing BOQ data: {len(self._boq_items_data)} items")
@@ -257,7 +278,7 @@ class ProjectProfileForm(forms.ModelForm):
             
             # Calculate cost breakdown from BOQ items
             if self._boq_items_data:
-                total_cost = sum(float(item.get('amount', 0)) for item in self._boq_items_data)
+                total_cost = sum(float(item.get('total_cost', 0)) for item in self._boq_items_data)
                 cleaned_data['extracted_total_cost'] = total_cost
                 
                 cost_breakdown = {
@@ -269,8 +290,6 @@ class ProjectProfileForm(forms.ModelForm):
                 cleaned_data['extracted_cost_breakdown'] = cost_breakdown
                 cleaned_data['boq_file_processed'] = True
                 print(f"DEBUG: Form clean - Calculated total cost: {total_cost}")
-                print(f"DEBUG: Form clean - Cost breakdown: {cost_breakdown}")
-                print(f"DEBUG: Form clean - Sample BOQ item: {self._boq_items_data[0] if self._boq_items_data else 'None'}")
         
         return cleaned_data
 
