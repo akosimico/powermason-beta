@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import cost_estimation_views
 from . import file_preview_views
+from . import quotation_views
 from .cost_dashboard_views import (
     project_detail_cost_dashboard,
     api_project_cost_summary,
@@ -185,4 +186,18 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     # ==============================================
     path('api/geocoding/reverse/', views.reverse_geocode, name='reverse_geocode'),
     path('api/geocoding/search/', views.forward_geocode, name='forward_geocode'),
+    
+    # ==============================================
+    # QUOTATION MANAGEMENT
+    # ==============================================
+    path('<int:project_id>/quotations/upload/', quotation_views.upload_quotation, name='upload_quotation'),
+    path('<int:project_id>/quotations/list/', quotation_views.list_quotations, name='list_quotations'),
+    path('<int:project_id>/quotations/<int:quotation_id>/approve/', quotation_views.approve_quotation, name='approve_quotation'),
+    path('<int:project_id>/quotations/<int:quotation_id>/delete/', quotation_views.delete_quotation, name='delete_quotation'),
+    path('<int:project_id>/rfs/download/', quotation_views.download_rfs, name='download_rfs'),
+    
+    # ==============================================
+    # RFS DOWNLOAD (moved to quotation_views)
+    # ==============================================
+    # path('rfs/download/<path:file_path>/', views.download_rfs_file, name='download_rfs_file'),
 ]

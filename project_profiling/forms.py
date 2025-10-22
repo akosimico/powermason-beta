@@ -1,6 +1,6 @@
 from django import forms
 from django.db.models import Q
-from .models import ProjectProfile, ProjectBudget, ProjectType, ProjectScope, CostCategory
+from .models import ProjectProfile, ProjectBudget, ProjectType, ProjectScope, CostCategory, SupplierQuotation
 from authentication.models import UserProfile
 from manage_client.models import Client
 from employees.models import Employee
@@ -359,3 +359,103 @@ class ProjectBudgetForm(forms.ModelForm):
             if code == category_code:
                 return name
         return category_code
+
+
+class QuotationUploadForm(forms.ModelForm):
+    """Form for uploading supplier quotations"""
+    
+    class Meta:
+        model = SupplierQuotation
+        fields = ['supplier_name', 'quotation_file', 'total_amount', 'notes']
+        widgets = {
+            'supplier_name': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'placeholder': 'Enter supplier name'
+            }),
+            'quotation_file': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100',
+                'accept': '.pdf,.xlsx,.xls'
+            }),
+            'total_amount': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'rows': 3,
+                'placeholder': 'Additional notes (optional)'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.project = kwargs.pop('project', None)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Make total_amount optional for auto-calculation
+        self.fields['total_amount'].required = False
+        
+        # Add help text
+        self.fields['supplier_name'].help_text = 'Name of the supplier company'
+        self.fields['quotation_file'].help_text = 'Upload quotation file (PDF or Excel format)'
+        self.fields['total_amount'].help_text = 'Total quoted amount (leave blank for auto-calculation from Excel)'
+        self.fields['notes'].help_text = 'Any additional notes about this quotation'
+    
+    def clean_quotation_file(self):
+        """Validate uploaded file"""
+        file = self.cleaned_data.get('quotation_file')
+        
+        if not file:
+            raise forms.ValidationError("Please select a file to upload.")
+        
+        # Check file size (10MB limit)
+        if file.size > 10 * 1024 * 1024:
+            raise forms.ValidationError("File size must be less than 10MB.")
+        
+        # Check file type
+        allowed_extensions = ['.pdf', '.xlsx', '.xls']
+        file_extension = file.name.lower().split('.')[-1]
+        if f'.{file_extension}' not in allowed_extensions:
+            raise forms.ValidationError("Only PDF and Excel files are allowed.")
+        
+        return file
+    
+    def clean(self):
+        """Validate form data"""
+        cleaned_data = super().clean()
+        
+        # Check quotation limit
+        if self.project:
+            # Determine project type for filtering
+            if hasattr(self.project, 'project_data'):  # ProjectStaging
+                project_type = 'staging'
+            else:  # ProjectProfile
+                project_type = 'profile'
+            
+            existing_count = SupplierQuotation.objects.filter(
+                project_id=self.project.id,
+                project_type=project_type
+            ).count()
+            if existing_count >= 5:
+                raise forms.ValidationError("Maximum 5 quotations allowed per project.")
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        """Save quotation with project and user"""
+        quotation = super().save(commit=False)
+        if self.project:
+            quotation.project_id = self.project.id
+            # Determine project type
+            if hasattr(self.project, 'project_data'):  # ProjectStaging
+                quotation.project_type = 'staging'
+            else:  # ProjectProfile
+                quotation.project_type = 'profile'
+        if self.user:
+            quotation.uploaded_by = self.user
+        
+        if commit:
+            quotation.save()
+        return quotation

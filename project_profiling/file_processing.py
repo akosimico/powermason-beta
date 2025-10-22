@@ -776,9 +776,23 @@ def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
                 'equipment operator' in desc_l or 'machine operator' in desc_l):
                 add_role('LB', qty)
 
-            # Required permits extraction under General Requirements → Permits, Licenses and Clearances
-            if current_division_is_general and (current_task_name or '').strip().lower() in ['permits, licenses and clearances', 'permits & licenses', 'permits and licenses']:
+            # Required permits extraction - Updated logic for current data structure
+            # Check if this is a GENERAL REQUIREMENTS item
+            is_general_requirements = current_division_is_general
+            
+            # Check if this is a permit-related task
+            task_name_lower = (current_task_name or '').strip().lower()
+            is_permit_task = any(keyword in task_name_lower for keyword in [
+                'permits', 'licenses', 'clearances', 'documentation', 'compliance'
+            ])
+            
+            # Debug logging for permit detection
+            if is_general_requirements:
+                print(f"DEBUG: Division: {current_division_name}, Task: {current_task_name}, Is General: {is_general_requirements}, Is Permit Task: {is_permit_task}")
+            
+            if is_general_requirements and is_permit_task:
                 if description:
+                    print(f"DEBUG: Adding permit: {description}")
                     required_permits.append({
                         'name': description,
                         'quantity': str(qty),
@@ -788,6 +802,9 @@ def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
 
         # Debug: Print division subtotals
         print(f"DEBUG: Division subtotals calculated: {division_subtotals}")
+        print(f"DEBUG: Required permits detected: {len(required_permits)} permits")
+        for permit in required_permits:
+            print(f"DEBUG: - {permit['name']} ({permit['quantity']} {permit['uom']})")
         
         # If total not present at F2, compute from division subtotals or sum of items
         if total_amount == 0 and division_subtotals:
@@ -1239,8 +1256,17 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
                                 if 'foreman' in desc_l or _re2.search(r'\bfm\b', desc_l):
                                     add_role('FM', qty)
 
-                            # Permits
-                            if current_division_is_general and (current_task_name or '').strip().lower() in ['permits, licenses and clearances', 'permits & licenses', 'permits and licenses']:
+                            # Permits - Updated logic for current data structure
+                            # Check if this is a GENERAL REQUIREMENTS item
+                            is_general_requirements = current_division_is_general
+                            
+                            # Check if this is a permit-related task
+                            task_name_lower = (current_task_name or '').strip().lower()
+                            is_permit_task = any(keyword in task_name_lower for keyword in [
+                                'permits', 'licenses', 'clearances', 'documentation', 'compliance'
+                            ])
+                            
+                            if is_general_requirements and is_permit_task:
                                 if description:
                                     required_permits.append({
                                         'name': description,

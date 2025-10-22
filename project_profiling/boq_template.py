@@ -635,7 +635,7 @@ def create_civil_boq_template() -> bytes:
     ws = wb.active
     ws.title = "Civil BOQ"
 
-    header_fill = PatternFill(start_color="4169E1", end_color="4169E1", fill_type="solid")
+    header_fill = PatternFill(start_color="4169E1", end_color="4169E1", fill_type="solid")  # Blue
     header_font = Font(bold=True, color="FFFFFF")
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
     thin = Side(style="thin")
@@ -670,97 +670,53 @@ def create_civil_boq_template() -> bytes:
         cell.alignment = center
         cell.border = border
 
-    # Civil Works Sample Data
+    # Civil Works Sample Data (now with General Requirements)
     sample_rows = [
-        ("DIV 1", "SITE PREPARATION", "", "", "", ""),
-        ("1.1", "Earthworks", "", "", "", ""),
-        ("1.1.1", "Site clearing and grubbing", "sqm", 2500, 45, 112500),
-        ("1.1.2", "Excavation for foundation", "cum", 200, 850, 170000),
-        ("1.1.3", "Backfilling and compaction", "cum", 150, 450, 67500),
-        ("1.1.4", "Site grading and leveling", "sqm", 2500, 120, 300000),
-        ("1.1.5", "Temporary drainage", "lm", 100, 250, 25000),
-        ("1.2", "Site Utilities", "", "", "", ""),
-        ("1.2.1", "Temporary water connection", "lot", 1, 15000, 15000),
-        ("1.2.2", "Temporary power connection", "lot", 1, 25000, 25000),
-        ("1.2.3", "Temporary access road", "sqm", 200, 180, 36000),
-        ("1.2.4", "Construction fence", "lm", 200, 450, 90000),
+        ("DIV 1", "GENERAL REQUIREMENTS", "", "", "", ""),
+        ("1.1", "Mobilization & Temporary Facilities", "", "", "", ""),
+        ("1.1.1", "Mobilization and setup", "lot", 1, 20000, 20000),
+        ("1.1.2", "Temporary access road", "sqm", 200, 180, 36000),
+        ("1.1.3", "Temporary fence and gate", "lm", 100, 450, 45000),
+        ("1.1.4", "Temporary water & power connection", "lot", 1, 20000, 20000),
+        ("1.2", "Project Supervision & Safety", "", "", "", ""),
+        ("1.2.1", "Civil Engineer (3 months)", "mo", 3, 40000, 120000),
+        ("1.2.2", "Safety officer (3 months)", "mo", 3, 25000, 75000),
+        ("1.2.3", "Quality control and testing", "lot", 1, 20000, 20000),
+        ("1.3", "Permits & Documentation", "", "", "", ""),
+        ("1.3.1", "Building permit", "lot", 1, 15000, 15000),
+        ("1.3.2", "Safety and inspection fees", "lot", 1, 8000, 8000),
+        ("1.3.3", "Environmental compliance", "lot", 1, 5000, 5000),
 
-        ("DIV 2", "FOUNDATION WORKS", "", "", "", ""),
-        ("2.1", "Foundation Excavation", "", "", "", ""),
-        ("2.1.1", "Foundation excavation", "cum", 150, 850, 127500),
-        ("2.1.2", "Foundation backfilling", "cum", 100, 450, 45000),
-        ("2.1.3", "Foundation waterproofing", "sqm", 300, 180, 54000),
-        ("2.2", "Concrete Foundation", "", "", "", ""),
-        ("2.2.1", "Footing concrete (Class A)", "cum", 25, 4500, 112500),
-        ("2.2.2", "Foundation wall concrete", "cum", 15, 4500, 67500),
-        ("2.2.3", "Foundation reinforcement", "kg", 3000, 65, 195000),
-        ("2.2.4", "Foundation formwork", "sqm", 200, 350, 70000),
-        ("2.3", "Foundation Materials", "", "", "", ""),
-        ("2.3.1", "Gravel bedding (150mm)", "cum", 20, 1200, 24000),
-        ("2.3.2", "Vapor barrier (0.15mm PE)", "sqm", 300, 35, 10500),
-        ("2.3.3", "Foundation insulation", "sqm", 300, 85, 25500),
+        ("DIV 2", "SITE PREPARATION", "", "", "", ""),
+        ("2.1", "Earthworks", "", "", "", ""),
+        ("2.1.1", "Site clearing and grubbing", "sqm", 2500, 45, 112500),
+        ("2.1.2", "Excavation for foundation", "cum", 200, 850, 170000),
+        ("2.1.3", "Backfilling and compaction", "cum", 150, 450, 67500),
+        ("2.1.4", "Site grading and leveling", "sqm", 2500, 120, 300000),
+        ("2.1.5", "Temporary drainage", "lm", 100, 250, 25000),
 
-        ("DIV 3", "STRUCTURAL WORKS", "", "", "", ""),
-        ("3.1", "Reinforced Concrete", "", "", "", ""),
-        ("3.1.1", "Ground floor slab (150mm)", "sqm", 2000, 850, 1700000),
-        ("3.1.2", "Columns (300x300mm)", "cum", 20, 4500, 90000),
-        ("3.1.3", "Beams (300x400mm)", "cum", 15, 4500, 67500),
-        ("3.1.4", "Structural reinforcement", "kg", 5000, 65, 325000),
-        ("3.1.5", "Concrete formwork", "sqm", 500, 350, 175000),
-        ("3.2", "Steel Works", "", "", "", ""),
-        ("3.2.1", "Structural steel beams", "kg", 2000, 85, 170000),
-        ("3.2.2", "Steel columns", "kg", 1500, 95, 142500),
-        ("3.2.3", "Steel connections and bolts", "kg", 200, 120, 24000),
-        ("3.2.4", "Steel fabrication and erection", "kg", 3700, 45, 166500),
-        ("3.3", "Concrete Finishing", "", "", "", ""),
-        ("3.3.1", "Concrete curing compound", "sqm", 500, 25, 12500),
-        ("3.3.2", "Concrete sealer", "sqm", 500, 35, 17500),
-        ("3.3.3", "Concrete repair and patching", "sqm", 50, 120, 6000),
+        ("DIV 3", "FOUNDATION WORKS", "", "", "", ""),
+        ("3.1", "Concrete Works", "", "", "", ""),
+        ("3.1.1", "Footing concrete (Class A)", "cum", 25, 4500, 112500),
+        ("3.1.2", "Foundation wall concrete", "cum", 15, 4500, 67500),
+        ("3.1.3", "Reinforcement bars", "kg", 3000, 65, 195000),
+        ("3.1.4", "Formworks", "sqm", 200, 350, 70000),
+        ("3.1.5", "Waterproofing works", "sqm", 300, 180, 54000),
 
-        ("DIV 4", "MASONRY & WALLS", "", "", "", ""),
-        ("4.1", "Blockwork", "", "", "", ""),
-        ("4.1.1", "CHB 6'' (150mm) walls", "sqm", 400, 950, 380000),
-        ("4.1.2", "CHB 4'' (100mm) partition walls", "sqm", 300, 750, 225000),
-        ("4.1.3", "Mortar mix (1:3 cement-sand)", "cum", 20, 2800, 56000),
-        ("4.1.4", "Wall reinforcement", "kg", 800, 65, 52000),
-        ("4.2", "Plastering", "", "", "", ""),
-        ("4.2.1", "Cement plaster (20mm thick)", "sqm", 700, 180, 126000),
-        ("4.2.2", "Smooth finish plaster", "sqm", 700, 45, 31500),
-        ("4.2.3", "Waterproofing plaster", "sqm", 200, 120, 24000),
-        ("4.3", "Wall Finishing", "", "", "", ""),
-        ("4.3.1", "Wall tiles (200x300mm)", "sqm", 150, 380, 57000),
-        ("4.3.2", "Wall paint (primer + 2 coats)", "sqm", 700, 85, 59500),
-        ("4.3.3", "Wall cladding (aluminum)", "sqm", 100, 450, 45000),
+        ("DIV 4", "STRUCTURAL WORKS", "", "", "", ""),
+        ("4.1", "Reinforced Concrete", "", "", "", ""),
+        ("4.1.1", "Ground floor slab (150mm)", "sqm", 2000, 850, 1700000),
+        ("4.1.2", "Columns (300x300mm)", "cum", 20, 4500, 90000),
+        ("4.1.3", "Beams (300x400mm)", "cum", 15, 4500, 67500),
+        ("4.1.4", "Structural reinforcement", "kg", 5000, 65, 325000),
+        ("4.1.5", "Formworks", "sqm", 500, 350, 175000),
 
-        ("DIV 5", "ROOFING & WATERPROOFING", "", "", "", ""),
-        ("5.1", "Roof Structure", "", "", "", ""),
-        ("5.1.1", "Roof trusses (steel)", "set", 20, 3500, 70000),
-        ("5.1.2", "Roof purlins (C-purlins)", "lm", 200, 180, 36000),
-        ("5.1.3", "Roof sheathing (plywood)", "sqm", 300, 450, 135000),
-        ("5.2", "Roof Covering", "", "", "", ""),
-        ("5.2.1", "Galvanized iron sheets (0.4mm)", "sqm", 300, 450, 135000),
-        ("5.2.2", "Roof insulation (50mm)", "sqm", 300, 180, 54000),
-        ("5.2.3", "Gutters and downspouts", "lm", 100, 280, 28000),
-        ("5.2.4", "Roof flashing and accessories", "lm", 50, 180, 9000),
-        ("5.3", "Waterproofing", "", "", "", ""),
-        ("5.3.1", "Roof waterproofing membrane", "sqm", 300, 120, 36000),
-        ("5.3.2", "Bathroom waterproofing", "sqm", 50, 85, 4250),
-        ("5.3.3", "Basement waterproofing", "sqm", 200, 150, 30000),
-
-        ("DIV 6", "FLOORING & PAVING", "", "", "", ""),
-        ("6.1", "Floor Preparation", "", "", "", ""),
-        ("6.1.1", "Floor leveling compound", "sqm", 2000, 65, 130000),
-        ("6.1.2", "Floor screed (50mm)", "sqm", 2000, 120, 240000),
-        ("6.1.3", "Floor insulation", "sqm", 2000, 85, 170000),
-        ("6.2", "Floor Finishing", "", "", "", ""),
-        ("6.2.1", "Ceramic tiles (300x300mm)", "sqm", 800, 450, 360000),
-        ("6.2.2", "Marble tiles (600x600mm)", "sqm", 200, 850, 170000),
-        ("6.2.3", "Vinyl flooring", "sqm", 500, 350, 175000),
-        ("6.2.4", "Carpet tiles", "sqm", 500, 280, 140000),
-        ("6.3", "Exterior Paving", "", "", "", ""),
-        ("6.3.1", "Concrete paving (100mm)", "sqm", 500, 180, 90000),
-        ("6.3.2", "Interlocking pavers", "sqm", 200, 350, 70000),
-        ("6.3.3", "Landscaping areas", "sqm", 300, 120, 36000),
+        ("DIV 5", "MASONRY & WALLS", "", "", "", ""),
+        ("5.1", "Blockwork", "", "", "", ""),
+        ("5.1.1", "CHB 6'' (150mm) walls", "sqm", 400, 950, 380000),
+        ("5.1.2", "CHB 4'' (100mm) partition walls", "sqm", 300, 750, 225000),
+        ("5.1.3", "Plastering (20mm thick)", "sqm", 700, 180, 126000),
+        ("5.1.4", "Wall paint (2 coats)", "sqm", 700, 85, 59500),
     ]
 
     start_row = 10
@@ -795,11 +751,12 @@ def create_civil_boq_template() -> bytes:
     notes = (
         "Notes:"\
         "\n- Specialized template for Civil Works"\
-        "\n- Includes site preparation, foundation, structural, and finishing works"\
-        "\n- Quantities based on 2000 sqm commercial building"\
+        "\n- Includes general requirements, site prep, foundation, structural, and masonry works"\
+        "\n- Quantities based on 2000 sqm commercial building (5000 sqm lot)"\
         "\n- Unit costs in PHP (Philippine Peso)"\
-        "\n- All civil work must comply with local building codes"\
-        "\n- Requires licensed civil engineer for design and supervision"
+        "\n- All civil works must comply with the National Building Code"\
+        "\n- Requires licensed civil engineer for design and supervision"\
+        "\n- General Requirements include mobilization, permits, and supervision"
     )
     notes_row = start_row + len(sample_rows) + 2
     ws.merge_cells(f"A{notes_row}:G{notes_row + 4}")

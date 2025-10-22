@@ -87,9 +87,9 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Main Details -->
-            <div class="lg:col-span-2 space-y-8">
+            <div class="lg:col-span-3 space-y-8">
                 <!-- Project Overview Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -258,8 +258,8 @@
                     <div class="p-6">
                         <p class="text-gray-700 leading-relaxed">
                             {{ project.project_data.description|default:"No description provided." }}
-                        </p>
-                    </div>
+                            </p>
+                        </div>
                 </div>
 
                 <!-- BOQ Section -->
@@ -274,37 +274,37 @@
                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
                                 <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-2">Total Tasks</div>
                                 <div class="text-xl lg:text-2xl font-bold text-blue-900 break-words" id="boq-total-tasks">0</div>
-                            </div>
+                                </div>
                             <div class="bg-green-50 border border-green-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
                                 <div class="text-xs font-medium text-green-600 uppercase tracking-wide mb-2">Total Cost</div>
                                 <div class="text-lg lg:text-xl font-bold text-green-900 break-words" id="boq-total-cost">₱0.00</div>
-                            </div>
+                                </div>
                             <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
                                 <div class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-2">Lot Size</div>
                                 <div class="text-lg lg:text-xl font-bold text-purple-900 break-words">{{ project.project_data.lot_size|default:"0" }} m²</div>
-                            </div>
+                                </div>
                             <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
                                 <div class="text-xs font-medium text-orange-600 uppercase tracking-wide mb-2">Floor Area</div>
                                 <div class="text-lg lg:text-xl font-bold text-orange-900 break-words" id="boq-floor-area">{{ project.project_data.floor_area|default:"0" }} m²</div>
-                            </div>
+                                    </div>
                             <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 min-h-[100px] flex flex-col justify-center">
                                 <div class="text-xs font-medium text-indigo-600 uppercase tracking-wide mb-2">Cost per m²</div>
                                 <div class="text-lg lg:text-xl font-bold text-indigo-900 break-words" id="boq-cost-per-sqm">₱0.00</div>
+                                </div>
                             </div>
-                        </div>
 
                         <!-- Cost Breakdown by Division -->
-                        <div class="mb-6">
+                            <div class="mb-6">
                             <h3 class="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown by Division</h3>
                             <div id="boq-cost-breakdown" class="space-y-2">
                                 <!-- Cost breakdown will be populated by JavaScript -->
-                            </div>
-                        </div>
+                                    </div>
+                                </div>
 
                         <!-- BOQ Items Display -->
                         <div class="mb-6">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-semibold text-gray-900">BOQ Items</h3>
+                                    <h3 class="text-sm font-semibold text-gray-900">BOQ Items</h3>
                                 <div class="flex items-center space-x-3">
                                     <button id="previewBOQBtn" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -326,19 +326,19 @@
                             <div id="boqItemsContainer" class="hidden">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center space-x-4">
-                                        <div class="flex items-center space-x-2">
+                                    <div class="flex items-center space-x-2">
                                             <label for="itemsPerPage" class="text-xs font-medium text-gray-500">Items per page:</label>
-                                            <select id="itemsPerPage" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                        <select id="itemsPerPage" class="text-xs border border-gray-300 rounded px-2 py-1">
                                                 <option value="10">10</option>
                                                 <option value="25" selected>25</option>
-                                                <option value="50">50</option>
+                                            <option value="50">50</option>
                                                 <option value="100">100</option>
-                                            </select>
-                                        </div>
+                                        </select>
+                                    </div>
                                         <div class="text-xs text-gray-500">
                                             Showing <span id="showingRange">0-0</span> of <span id="totalItems">0</span> items
-                                        </div>
-                                    </div>
+                                </div>
+                                </div>
                                     <button id="hideBOQBtn" class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -348,8 +348,8 @@
                                 </div>
                                 <div id="boqItemsDisplay" class="space-y-4">
                                     <!-- BOQ items will be populated by JavaScript -->
-                                </div>
-                                
+                                    </div>
+                                    
                                 <!-- Pagination Controls -->
                                 <div id="paginationControls" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                                     <div class="flex items-center space-x-2">
@@ -363,26 +363,42 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Required Permits Section -->
+                            <div class="mt-8">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Required Permits</h3>
+                                <div id="requiredPermitsDisplay" class="bg-gray-50 rounded-lg p-4">
+                                    <div class="text-sm text-gray-500">Loading permits...</div>
+                            </div>
+                    </div>
+                </div>
                     </div>
                 </div>
 
                 <!-- BOQ Data Script -->
                 <script type="application/json" id="boq-data">
                 {
-                    "boq_items": {{ project.project_data.boq_items|default:"[]"|safe }},
-                    "division_subtotals": {{ project.project_data.boq_division_subtotals|default:"{}"|safe }},
-                    "boq_project_info": {{ project.project_data.boq_project_info|default:"{}"|safe }},
+                    "boq_items": {{ boq_items_json|default:"[]"|safe }},
+                    "division_subtotals": {{ boq_division_subtotals_json|default:"{}"|safe }},
+                    "boq_project_info": {{ boq_project_info_json|default:"{}"|safe }},
+                    "required_permits": {{ required_permits_json|default:"[]"|safe }},
                     "floor_area": {{ project.project_data.floor_area|default:0|floatformat:0 }},
                     "lot_size": {{ project.project_data.lot_size|default:0|floatformat:0 }}
                 }
                 </script>
+                
+                <!-- Debug: Show required_permits_json value -->
+                <script>
+                console.log('DEBUG: Template required_permits_json:', {{ required_permits_json|default:"[]"|safe }});
+                </script>
                 {% endif %}
+
+
 
             </div>
 
             <!-- Sidebar -->
-            <div class="space-y-8">
+            <div class="lg:col-span-1 space-y-8">
                 <!-- Client Information Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -483,7 +499,7 @@
                                            id="approved_budget"
                                            step="0.01"
                                            min="0"
-                                           value="{{ project.project_data.budget|default:0 }}"
+                                           value="{% if project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}"
                                            class="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
                                            placeholder="0.00"
                                            required>
@@ -553,12 +569,26 @@
 
                             <button type="submit"
                                     id="approve-budget-btn"
-                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    {% if not has_approved_quotation %}disabled{% endif %}>
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Approve Project & Upload Contract
                             </button>
+                            
+                            {% if not has_approved_quotation %}
+                            <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                    </svg>
+                                    <p class="text-sm text-yellow-800">
+                                        <strong>Action Required:</strong> Please upload and approve at least one supplier quotation before approving the project.
+                                    </p>
+                                </div>
+                            </div>
+                            {% endif %}
                         </form>
 
                         <form method="post" class="w-full">
@@ -575,123 +605,6 @@
                     </div>
                 </div>
 
-                <!-- Documents -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-gray-900">Documents</h2>
-                            <p class="text-xs text-gray-500 mt-1">
-                                Attached to this project
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="p-6">
-                        {% if contract_url or permit_url or staging_documents %}
-                            <!-- Contract Documents -->
-                            {% if contract_url %}
-                                <div class="mb-4">
-                                    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center">
-                                        <svg class="w-4 h-4 text-blue-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
-                                        Contract
-                                    </h3>
-                                    <div class="space-y-2">
-                                        <a href="{{ contract_url }}" target="_blank"
-                                           class="flex items-center justify-between p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <div class="flex items-center min-w-0">
-                                                <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                </div>
-                                                <div class="ml-3 min-w-0">
-                                                    <p class="text-xs font-medium text-gray-900 truncate">Contract Agreement</p>
-                                                    <p class="text-xs text-gray-500">View document</p>
-                                                </div>
-                                            </div>
-                                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
-
-                            <!-- Permit Documents -->
-                            {% if permit_url %}
-                                <div class="mb-4">
-                                    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center">
-                                        <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                        Permits & Licenses
-                                    </h3>
-                                    <div class="space-y-2">
-                                        <a href="{{ permit_url }}" target="_blank"
-                                           class="flex items-center justify-between p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <div class="flex items-center min-w-0">
-                                                <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                    </svg>
-                                                </div>
-                                                <div class="ml-3 min-w-0">
-                                                    <p class="text-xs font-medium text-gray-900 truncate">Permits & Licenses</p>
-                                                    <p class="text-xs text-gray-500">View document</p>
-                                                </div>
-                                            </div>
-                                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
-
-                            <!-- Document Library Documents -->
-                            {% if staging_documents %}
-                                <div class="mb-4">
-                                    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center">
-                                        <svg class="w-4 h-4 text-purple-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                        </svg>
-                                        Project Documents ({{ staging_documents.count }})
-                                    </h3>
-                                    <div class="space-y-2 max-h-64 overflow-y-auto">
-                                        {% for doc in staging_documents %}
-                                            <a href="{% url 'api_document_download' doc.id %}" target="_blank"
-                                               class="flex items-center justify-between p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                                                <div class="flex items-center min-w-0">
-                                                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                                        </svg>
-                                                    </div>
-                                                    <div class="ml-3 min-w-0">
-                                                        <p class="text-xs font-medium text-gray-900 truncate">{{ doc.title }}</p>
-                                                        <p class="text-xs text-gray-500">{{ doc.get_document_type_display }} • v{{ doc.version }}</p>
-                                                    </div>
-                                                </div>
-                                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                                </svg>
-                                            </a>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% else %}
-                            <div class="text-center py-6">
-                                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <p class="text-gray-500 text-sm">No documents uploaded yet</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
 
                 <!-- Submission Info -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -714,27 +627,420 @@
                             </div>
                         </div>
                         <div class="space-y-3">
-                            <div>
+                        <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Submitted Date</dt>
                                 <dd class="text-sm text-gray-900">{{ project.submitted_at|timezone:"Asia/Manila"|date:"M d, Y" }}</dd>
-                            </div>
+                        </div>
                             <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Submitted Time</dt>
                                 <dd class="text-sm text-gray-900">{{ project.submitted_at|timezone:"Asia/Manila"|date:"h:i A" }}</dd>
-                            </div>
+                    </div>
                             <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Time Since</dt>
                                 <dd class="text-sm text-gray-500">{{ project.submitted_at|timesince }} ago</dd>
+                                                </div>
+                                                </div>
+                                            </div>
+                                    </div>
+                        </div>
+                    </div>
+
+        <!-- Quotation Management Section - Full Width at Bottom -->
+        <div class="mt-8" id="quotation-management-section">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Supplier Quotations & RFS</h2>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm text-gray-500">{{ quotation_count }}/5 quotations</span>
+                            {% if quotations %}
+                                <button id="viewChartsBtn" 
+                                        onclick="openChartsModal()"
+                                        class="inline-flex items-center px-3 py-2 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    View Charts
+                                </button>
+                            {% endif %}
+                            <button id="uploadQuotationBtn" 
+                                    class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    {% if quotation_count >= 5 %}disabled{% endif %}>
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                        </svg>
+                                Upload Quotation
+                            </button>
+                                                </div>
+                                                </div>
+                                            </div>
+                    <div class="p-6">
+                    <!-- RFS Information -->
+                    {% if rfs_info %}
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                <div>
+                                    <h3 class="text-sm font-medium text-blue-900">Request for Supplier (RFS) Ready</h3>
+                                    <p class="text-xs text-blue-600">Generated on {{ rfs_info.created_at|default:"Unknown" }}</p>
+                                    </div>
+                                </div>
+                            <button onclick="downloadRFS()" 
+                                    class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                Download RFS
+                            </button>
+                                                </div>
+                                                </div>
+                    {% endif %}
+                    
+                    {% if quotations %}
+                        <!-- Quotation Comparison Table -->
+                        <div class="w-full">
+                            <table class="w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Supplier & File</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Total Amount</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Date Submitted</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for quotation in quotations %}
+                                    <tr class="{% if quotation.status == 'APPROVED' %}bg-green-50{% elif quotation.status == 'REJECTED' %}bg-red-50{% endif %}" data-quotation-id="{{ quotation.id }}">
+                                        <td class="px-4 py-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ quotation.supplier_name|default:"Unknown" }}</div>
+                                            <div class="text-xs text-gray-500 truncate max-w-xs" title="{{ quotation.quotation_file.name|default:'No file' }}">
+                                                {{ quotation.quotation_file.name|default:"No file" }}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            <div class="text-sm font-semibold text-gray-900">₱{{ quotation.total_amount|floatformat:2|intcomma|default:"0.00" }}</div>
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-500">
+                                            {{ quotation.date_submitted|timezone:"Asia/Manila"|date:"M d, Y g:i A"|default:"Unknown" }}
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            {% if quotation.status == 'APPROVED' %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                                    Approved
+                                                </span>
+                                            {% elif quotation.status == 'REJECTED' %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    Rejected
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    <svg class="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            <div class="flex items-center space-x-2">
+                                                <a href="{{ quotation.quotation_file.url|default:'#' }}" target="_blank" 
+                                                   class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                    View
+                                                </a>
+                                                {% if quotation.status == 'PENDING' %}
+                                                    <button data-quotation-id="{{ quotation.id }}" 
+                                                            onclick="approveQuotation(this.getAttribute('data-quotation-id'))" 
+                                                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                        </svg>
+                                                        Approve
+                                                    </button>
+                                                    <button data-quotation-id="{{ quotation.id }}" 
+                                                            onclick="deleteQuotation(this.getAttribute('data-quotation-id'))" 
+                                                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <svg class="w-3 h-3 mr-1 delete-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                        <svg class="w-3 h-3 mr-1 delete-loading hidden animate-spin" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        <span class="delete-text">Delete</span>
+                                                        <span class="delete-loading-text hidden">Deleting...</span>
+                                                    </button>
+                                                {% endif %}
+                                    </div>
+                                        </td>
+                                    </tr>
+                                        {% endfor %}
+                                </tbody>
+                            </table>
+                                    </div>
+                        {% else %}
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            <p class="text-gray-500 text-sm">No quotations uploaded yet</p>
+                            <p class="text-gray-400 text-xs mt-1">Upload supplier quotations to compare and select the best one</p>
+                                </div>
+                            {% endif %}
+                    </div>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<!-- Upload Quotation Modal -->
+<div id="uploadQuotationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-0 border w-full max-w-2xl shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-semibold text-gray-900">Upload Supplier Quotation</h3>
+                    <p class="text-sm text-gray-600">Add a new quotation for comparison</p>
+                                                </div>
+                                            </div>
+            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+            </button>
+                                    </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6">
+            <form id="quotationUploadForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Supplier Name -->
+                            <div>
+                        <label for="supplier_name" class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                                Supplier Name *
+                            </span>
+                        </label>
+                        <input type="text" id="supplier_name" name="supplier_name" required
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                               placeholder="Enter supplier company name">
+                                </div>
+                    
+                    <!-- File Upload (spans both columns) -->
+                    <div class="md:col-span-2">
+                        <label for="quotation_file" class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                Quotation File *
+                            </span>
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="quotation_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input type="file" id="quotation_file" name="quotation_file" required
+                                               accept=".pdf,.xlsx,.xls" class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                                    </div>
+                                <p class="text-xs text-gray-500">PDF or Excel files up to 10MB</p>
+                                                    </div>
+                                                </div>
+                        <div id="file-selected" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                    <span class="text-sm text-green-700" id="file-name"></span>
+                                    </div>
+                                <button type="button" id="remove-file" class="text-red-500 hover:text-red-700 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                                </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Amount -->
+                            <div>
+                        <label for="total_amount" class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                </svg>
+                                Total Amount (Optional)
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
                             </div>
+                            <input type="number" id="total_amount" name="total_amount" step="0.01" min="0"
+                                   class="block w-full pl-8 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                                   placeholder="0.00">
+                    </div>
+                        <p class="text-xs text-gray-500 mt-1">Leave blank for auto-calculation from Excel file</p>
+                </div>
+
+                    <!-- Notes (spans both columns) -->
+                    <div class="md:col-span-2">
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Notes (Optional)
+                            </span>
+                        </label>
+                        <textarea id="notes" name="notes" rows="3"
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                                  placeholder="Additional notes about this quotation..."></textarea>
+                    </div>
+            </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+                    <button type="button" onclick="closeUploadModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="uploadSubmitBtn"
+                            class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="uploadBtnText" class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            Upload Quotation
+                                    </span>
+                        <span id="uploadBtnLoading" class="hidden flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing Upload...
+                        </span>
+                    </button>
+                                </div>
+            </form>
+                            </div>
+                            </div>
+                        </div>
+
+<!-- Quotation Charts Modal -->
+<div id="chartsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                            </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-semibold text-gray-900">Quotation Comparison Charts</h3>
+                    <p class="text-sm text-gray-600">Visual analysis of supplier quotations</p>
+                            </div>
+                            </div>
+            <button onclick="closeChartsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+                        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Bar Chart -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Total Amount Comparison</h4>
+                    <div class="relative" style="height: 300px;">
+                        <canvas id="quotationBarChart" width="400" height="300"></canvas>
+                        <div id="barChartFallback" class="hidden text-center py-8 text-gray-500">
+                            <p>Chart loading...</p>
+                    </div>
+                </div>
+            </div>
+                
+                <!-- Pie Chart -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Quotation Distribution</h4>
+                    <div class="relative" style="height: 300px;">
+                        <canvas id="quotationPieChart" width="400" height="300"></canvas>
+                        <div id="pieChartFallback" class="hidden text-center py-8 text-gray-500">
+                            <p>Chart loading...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <button onclick="closeChartsModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                Close
+            </button>
+        </div>
     </div>
 </div>
 
 <script>
+// Function to remove uploaded contract file
+function removeContractFile() {
+    const fileInput = document.getElementById('contract_file');
+    const fileInfo = document.getElementById('contract-file-info');
+    const uploadArea = fileInput.closest('.border-dashed');
+    
+    if (fileInput && fileInfo && uploadArea) {
+        // Clear the file input
+        fileInput.value = '';
+        
+        // Hide file info
+        fileInfo.classList.add('hidden');
+        
+        // Reset upload area styling
+        uploadArea.classList.remove('border-green-400', 'bg-green-50');
+        uploadArea.classList.add('border-gray-300');
+        
+        // Show success message
+        showNotification('Contract file removed successfully', 'success');
+    }
+}
+
 // Calculate cost per square meter for BOQ section
 document.addEventListener('DOMContentLoaded', function() {
     const costPerSqmElement = document.getElementById('costPerSqm');
@@ -924,28 +1230,6 @@ function initializeContractUpload() {
     }
 }
 
-// Function to remove uploaded contract file
-function removeContractFile() {
-    const fileInput = document.getElementById('contract_file');
-    const fileInfo = document.getElementById('contract-file-info');
-    const uploadArea = fileInput.closest('.border-dashed');
-    
-    if (fileInput && fileInfo && uploadArea) {
-        // Clear the file input
-        fileInput.value = '';
-        
-        // Hide file info
-        fileInfo.classList.add('hidden');
-        
-        // Reset upload area styling
-        uploadArea.classList.remove('border-green-400', 'bg-green-50');
-        uploadArea.classList.add('border-gray-300');
-        
-        // Show success message
-        showNotification('Contract file removed successfully', 'success');
-    }
-}
-
 // Notification function
 function showNotification(message, type = 'success') {
     // Create toast container if it doesn't exist
@@ -1029,15 +1313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let rawData = boqDataScript.textContent;
         console.log('DEBUG: Raw BOQ Data:', rawData);
         
-        // Clean up Python-style data to proper JSON
-        rawData = rawData
-            .replace(/'/g, '"')  // Replace single quotes with double quotes
-            .replace(/True/g, 'true')  // Replace Python True with JSON true
-            .replace(/False/g, 'false')  // Replace Python False with JSON false
-            .replace(/None/g, 'null');  // Replace Python None with JSON null
-        
-        console.log('DEBUG: Cleaned BOQ Data:', rawData);
-        
+        // Parse the JSON directly since it's already properly serialized
         boqData = JSON.parse(rawData);
         console.log('DEBUG: Parsed BOQ Data:', boqData);
     } catch (e) {
@@ -1070,6 +1346,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize preview and download buttons
     initializeBOQButtons();
+    
+    // Initialize required permits display
+    console.log('DEBUG: BOQ Data required_permits:', boqData.required_permits);
+    console.log('DEBUG: Required permits length:', (boqData.required_permits || []).length);
+    initializeRequiredPermits(boqData.required_permits || []);
+    
+    // Charts are now loaded on-demand in the modal
 });
 
 // Initialize BOQ display
@@ -1487,6 +1770,464 @@ function downloadBOQData() {
     // Open download in new window
     window.open(downloadUrl, '_blank');
 }
+
+// Initialize required permits display
+function initializeRequiredPermits(requiredPermits) {
+    console.log('DEBUG: initializeRequiredPermits called with', requiredPermits.length, 'permits');
+    console.log('DEBUG: Required permits data:', requiredPermits);
+    
+    const permitsDisplay = document.getElementById('requiredPermitsDisplay');
+    if (!permitsDisplay) {
+        console.log('DEBUG: Required permits display element not found');
+        return;
+    }
+    
+    if (!requiredPermits || requiredPermits.length === 0) {
+        console.log('DEBUG: No required permits found');
+        permitsDisplay.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm">No permits detected</p>
+                <p class="text-xs text-gray-400 mt-1">Permits will be detected from BOQ data</p>
+            </div>
+        `;
+        return;
+    }
+    
+    console.log('DEBUG: Rendering', requiredPermits.length, 'required permits');
+    
+    // Create permits list
+    const permitsList = requiredPermits.map(permit => {
+        const quantity = permit.quantity && permit.quantity !== '0' ? ` (${permit.quantity} ${permit.uom || 'unit'})` : '';
+        return `
+            <div class="flex items-center justify-between py-2 px-3 bg-white rounded border border-gray-200 mb-2">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-900">${permit.name}${quantity}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Required</span>
+                    <button class="text-xs text-blue-600 hover:text-blue-800 font-medium" onclick="uploadPermitDocument('${permit.name}')">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    permitsDisplay.innerHTML = `
+        <div class="space-y-2">
+            ${permitsList}
+        </div>
+    `;
+}
+
+// Upload permit document function
+function uploadPermitDocument(permitName) {
+    console.log('DEBUG: Upload permit document for:', permitName);
+    // This would open a file upload dialog or redirect to document library
+    // For now, just show an alert
+    alert(`Upload document for: ${permitName}\n\nThis will open the document library where you can upload the required permit.`);
+}
+
+// Chart instances for cleanup
+let barChartInstance = null;
+let pieChartInstance = null;
+
+// Initialize quotation comparison charts
+function initializeQuotationCharts() {
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        // Show fallback messages
+        const barFallback = document.getElementById('barChartFallback');
+        const pieFallback = document.getElementById('pieChartFallback');
+        if (barFallback) barFallback.classList.remove('hidden');
+        if (pieFallback) pieFallback.classList.remove('hidden');
+        return;
+    }
+    
+    // Use dynamic data if available, otherwise use initial data
+    const quotations = window.currentQuotations || {{ quotations_json|safe }};
+    
+    if (!quotations || quotations.length === 0) {
+        console.log('No quotations available for charts');
+        // Hide chart containers if no data
+        const chartContainers = document.querySelectorAll('#quotationBarChart, #quotationPieChart');
+        chartContainers.forEach(container => {
+            if (container) {
+                container.parentElement.style.display = 'none';
+            }
+        });
+        return;
+    }
+    
+    console.log('Initializing charts with quotations:', quotations);
+    
+    // Show chart containers
+    const chartContainers = document.querySelectorAll('#quotationBarChart, #quotationPieChart');
+    chartContainers.forEach(container => {
+        if (container) {
+            container.parentElement.style.display = 'block';
+        }
+    });
+    
+    // Prepare data for charts
+    const suppliers = quotations.map(q => q.supplier_name || 'Unknown');
+    const amounts = quotations.map(q => parseFloat(q.total_amount) || 0);
+    const statuses = quotations.map(q => q.status);
+    
+    // Generate unique colors for each quotation
+    const uniqueColors = [
+        '#3B82F6', // Blue
+        '#10B981', // Green
+        '#F59E0B', // Yellow
+        '#EF4444', // Red
+        '#8B5CF6', // Purple
+        '#06B6D4', // Cyan
+        '#F97316', // Orange
+        '#84CC16', // Lime
+        '#EC4899', // Pink
+        '#6366F1'  // Indigo
+    ];
+    
+    const colors = quotations.map((_, index) => uniqueColors[index % uniqueColors.length]);
+    
+    // Destroy existing charts if they exist
+    if (barChartInstance) {
+        barChartInstance.destroy();
+        barChartInstance = null;
+    }
+    if (pieChartInstance) {
+        pieChartInstance.destroy();
+        pieChartInstance = null;
+    }
+    
+    // Bar Chart
+    const barCtx = document.getElementById('quotationBarChart');
+    if (barCtx) {
+        try {
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: suppliers,
+                    datasets: [{
+                        label: 'Total Amount (₱)',
+                        data: amounts,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color + '80'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₱' + context.parsed.y.toLocaleString('en-PH', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString('en-PH');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Bar chart created successfully');
+        } catch (error) {
+            console.error('Error creating bar chart:', error);
+        }
+    }
+    
+    // Pie Chart
+    const pieCtx = document.getElementById('quotationPieChart');
+    if (pieCtx) {
+        try {
+            pieChartInstance = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: suppliers,
+                    datasets: [{
+                        data: amounts,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = amounts.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : '0.0';
+                                    return context.label + ': ₱' + context.parsed.toLocaleString('en-PH', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Pie chart created successfully');
+        } catch (error) {
+            console.error('Error creating pie chart:', error);
+        }
+    }
+}
+
+// Charts Modal Functions
+function openChartsModal() {
+    const modal = document.getElementById('chartsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize charts when modal opens
+        setTimeout(() => {
+            initializeQuotationCharts();
+        }, 100);
+    }
+}
+
+function closeChartsModal() {
+    const modal = document.getElementById('chartsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Destroy charts when modal closes to free memory
+        if (barChartInstance) {
+            barChartInstance.destroy();
+            barChartInstance = null;
+        }
+        if (pieChartInstance) {
+            pieChartInstance.destroy();
+            pieChartInstance = null;
+        }
+    }
+}
+
+// Add keyboard support for closing charts modal
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const chartsModal = document.getElementById('chartsModal');
+        if (chartsModal && !chartsModal.classList.contains('hidden')) {
+            closeChartsModal();
+        }
+    }
+});
+
+// Make functions globally available
+window.initializeQuotationCharts = initializeQuotationCharts;
+window.openChartsModal = openChartsModal;
+window.closeChartsModal = closeChartsModal;
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Quotation Management JavaScript -->
+<script src="{% static 'js/quotation_management.js' %}?v=1.3"></script>
+
+<!-- Fallback JavaScript functions -->
+<script>
+// Wait for the main JavaScript to load, then define fallbacks if needed
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if main functions exist after a short delay
+    setTimeout(function() {
+        if (typeof window.downloadRFS === 'undefined') {
+            window.downloadRFS = function() {
+                // Get RFS URL from the page (it should be available in the RFS section)
+                const rfsUrl = document.querySelector('a[href*="/media/"]')?.href;
+                if (rfsUrl) {
+                    window.open(rfsUrl, '_blank');
+                } else {
+                    // Fallback to API endpoint
+                    const currentUrl = window.location.pathname;
+                    const projectId = currentUrl.split('/')[3]; // Extract project ID from URL
+                    window.open(`/projects/${projectId}/rfs/download/`, '_blank');
+                }
+            };
+        }
+    }, 100);
+});
+
+function openUploadModal() {
+    console.log('INLINE openUploadModal called');
+    const modal = document.getElementById('uploadQuotationModal');
+    console.log('INLINE Modal element found:', !!modal);
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        console.log('INLINE Modal shown');
+        
+        // Test if preview elements are accessible when modal opens
+        const fileSelected = document.getElementById('file-selected');
+        const fileName = document.getElementById('file-name');
+        const fileInput = document.getElementById('quotation_file');
+        console.log('INLINE Modal opened - File selected element found:', !!fileSelected);
+        console.log('INLINE Modal opened - File name element found:', !!fileName);
+        console.log('INLINE Modal opened - File input element found:', !!fileInput);
+    }
+}
+
+function closeUploadModal() {
+    const modal = document.getElementById('uploadQuotationModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Reset form
+        const form = document.getElementById('quotationUploadForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // Hide file selected indicator
+        const fileSelected = document.getElementById('file-selected');
+        if (fileSelected) {
+            fileSelected.classList.add('hidden');
+        }
+    }
+}
+
+// Enhanced file upload handling
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload handling is now managed by quotation_management.js
+    // This section is kept for any additional functionality that might be needed
+    
+    // Form submission is handled by quotation_management.js
+    
+    // Button reset is handled by quotation_management.js
+    
+    // TEST: Add direct event listener to test file input
+    setTimeout(function() {
+        const fileInput = document.getElementById('quotation_file');
+        console.log('INLINE TEST: File input found:', !!fileInput);
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                console.log('INLINE TEST: File input changed!', e.target.files);
+                
+                // Test if we can find the preview elements
+                const fileSelected = document.getElementById('file-selected');
+                const fileName = document.getElementById('file-name');
+                console.log('INLINE TEST: File selected element found:', !!fileSelected);
+                console.log('INLINE TEST: File name element found:', !!fileName);
+                
+                if (fileSelected && fileName) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        fileName.textContent = file.name;
+                        fileSelected.classList.remove('hidden');
+                        console.log('INLINE TEST: File preview updated!');
+                        console.log('INLINE TEST: File selected element classes:', fileSelected.className);
+                        console.log('INLINE TEST: File name text:', fileName.textContent);
+                    }
+                } else {
+                    console.log('INLINE TEST: Preview elements not found!');
+                }
+            });
+        }
+        
+        // TEST: Add direct event listener to upload button
+        const uploadBtn = document.getElementById('uploadQuotationBtn');
+        console.log('INLINE TEST: Upload button found:', !!uploadBtn);
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', function(e) {
+                console.log('INLINE TEST: Upload button clicked!');
+                e.preventDefault();
+                openUploadModal();
+            });
+        }
+    }, 2000);
+    
+    function showNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+});
+
+// Only define fallback functions if the main functions don't exist
+if (typeof approveQuotation === 'undefined') {
+    function approveQuotation(quotationId) {
+        if (!confirm('Are you sure you want to approve this quotation? This will reject all other pending quotations.')) {
+            return;
+        }
+        
+        // This would need to be implemented with AJAX
+        alert('Quotation approval functionality requires the quotation_management.js file to be loaded properly.');
+    }
+}
+
+if (typeof deleteQuotation === 'undefined') {
+    function deleteQuotation(quotationId) {
+        if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
+            return;
+        }
+        
+        // This would need to be implemented with AJAX
+        alert('Quotation deletion functionality requires the quotation_management.js file to be loaded properly.');
+    }
+}
+
+// All quotation management functionality is handled by quotation_management.js
 </script>
 
 {% endblock %}

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     ProjectProfile, ProjectBudget, ProjectCost, ProjectStaging,
     ProjectType, Expense, SubcontractorExpense, SubcontractorPayment,
-    MobilizationCost, ProjectDocument
+    MobilizationCost, ProjectDocument, SupplierQuotation
 )
 
 @admin.register(ProjectProfile)
@@ -310,3 +310,65 @@ class ProjectDocumentAdmin(admin.ModelAdmin):
     def file_size_display(self, obj):
         return f"{obj.file_size_mb} MB"
     file_size_display.short_description = 'File Size'
+
+
+@admin.register(SupplierQuotation)
+class SupplierQuotationAdmin(admin.ModelAdmin):
+    list_display = [
+        'supplier_name', 'project_display', 'total_amount_display', 
+        'status', 'date_submitted', 'approved_by', 'approved_at'
+    ]
+    list_filter = ['status', 'project_type', 'date_submitted', 'approved_at']
+    search_fields = ['supplier_name', 'project_id', 'quotation_file']
+    date_hierarchy = 'date_submitted'
+    ordering = ['-date_submitted']
+    
+    fieldsets = (
+        ('Quotation Information', {
+            'fields': ('supplier_name', 'quotation_file', 'total_amount', 'date_submitted')
+        }),
+        ('Project Details', {
+            'fields': ('project_id', 'project_type')
+        }),
+        ('Approval', {
+            'fields': ('status', 'approved_by', 'approved_at')
+        }),
+        ('Additional', {
+            'fields': ('notes', 'uploaded_by'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    readonly_fields = ['date_submitted', 'approved_at', 'uploaded_by']
+    
+    def project_display(self, obj):
+        """Display project information based on project_type"""
+        if obj.project_type == 'profile':
+            try:
+                from .models import ProjectProfile
+                project = ProjectProfile.objects.get(id=obj.project_id)
+                return f"{project.project_name} (Profile)"
+            except:
+                return f"Project {obj.project_id} (Profile)"
+        elif obj.project_type == 'staging':
+            try:
+                from .models import ProjectStaging
+                project = ProjectStaging.objects.get(id=obj.project_id)
+                project_name = project.project_data.get('project_name', 'Unknown') if project.project_data else 'Unknown'
+                return f"{project_name} (Staging)"
+            except:
+                return f"Project {obj.project_id} (Staging)"
+        return f"Project {obj.project_id} ({obj.project_type})"
+    project_display.short_description = 'Project'
+    
+    def total_amount_display(self, obj):
+        if obj.total_amount:
+            return f"₱{obj.total_amount:,.2f}"
+        return "₱0.00"
+    total_amount_display.short_description = 'Total Amount'
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            # Set uploaded_by for new quotations
+            obj.uploaded_by = request.user.userprofile
+        super().save_model(request, obj, form, change)

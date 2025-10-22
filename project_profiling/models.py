@@ -677,6 +677,14 @@ class ProjectProfile(models.Model):
         default='general_contractor',
         help_text="Role of the company in this project"
     )
+    
+    # RFS file tracking
+    rfs_file = models.FileField(
+        upload_to='rfs_files/',
+        null=True,
+        blank=True,
+        help_text="Auto-generated Request for Supplier file"
+    )
         
 #Temporary for projects that needs to be approved
 class ProjectStaging(models.Model):
@@ -1053,6 +1061,8 @@ class ProjectDocument(models.Model):
         ('RECEIPT', 'Receipt'),
         ('TECHNICAL', 'Technical Drawing'),
         ('PHOTO', 'Project Photo'),
+        ('QUOTATION', 'Supplier Quotation'),
+        ('RFS', 'Request for Supplier'),
         ('OTHER', 'Other'),
     ]
 
@@ -1161,3 +1171,157 @@ class ProjectDocument(models.Model):
             import os
             return os.path.splitext(self.file.name)[1].lower()
         return ''
+
+
+class SupplierQuotation(models.Model):
+    """Supplier quotations for projects"""
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+    
+    # Use a generic approach to support both ProjectProfile and ProjectStaging
+    project_id = models.PositiveIntegerField(help_text="Project ID")
+    project_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('profile', 'ProjectProfile'),
+            ('staging', 'ProjectStaging'),
+        ],
+        help_text="Type of project (profile or staging)"
+    )
+    supplier_name = models.CharField(
+        max_length=200,
+        help_text="Name of the supplier"
+    )
+    quotation_file = models.FileField(
+        upload_to='quotations/',
+        help_text="Uploaded quotation file (PDF or Excel)"
+    )
+    total_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Total amount quoted (can be manual or auto-calculated)"
+    )
+    date_submitted = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When this quotation was submitted"
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='PENDING',
+        help_text="Current status of this quotation"
+    )
+    uploaded_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_quotations',
+        help_text="User who uploaded this quotation"
+    )
+    approved_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_quotations',
+        help_text="User who approved this quotation"
+    )
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this quotation was approved"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional notes about this quotation"
+    )
+    
+    class Meta:
+        ordering = ['-date_submitted']
+        verbose_name = 'Supplier Quotation'
+        verbose_name_plural = 'Supplier Quotations'
+        indexes = [
+            models.Index(fields=['project_id', 'project_type', 'status']),
+            models.Index(fields=['supplier_name']),
+        ]
+    
+    @property
+    def project(self):
+        """Get the actual project object"""
+        if self.project_type == 'profile':
+            from .models import ProjectProfile
+            return ProjectProfile.objects.get(pk=self.project_id)
+        else:
+            from .models import ProjectStaging
+            return ProjectStaging.objects.get(pk=self.project_id)
+    
+    def __str__(self):
+        try:
+            project_name = self.project.project_data.get('project_name', 'Unknown Project')
+        except:
+            project_name = f"Project {self.project_id}"
+        amount_str = f"₱{self.total_amount:,.2f}" if self.total_amount else "₱0.00"
+        return f"{self.supplier_name} - {project_name} ({amount_str})"
+    
+    def clean(self):
+        """Validate quotation constraints"""
+        from django.core.exceptions import ValidationError
+        
+        # Check max 5 quotations per project
+        if not self.pk:  # Only for new instances
+            existing_count = SupplierQuotation.objects.filter(
+                project_id=self.project_id,
+                project_type=self.project_type
+            ).count()
+            if existing_count >= 5:
+                raise ValidationError("Maximum 5 quotations allowed per project.")
+        
+        # Check only one approved quotation per project
+        if self.status == 'APPROVED':
+            existing_approved = SupplierQuotation.objects.filter(
+                project_id=self.project_id,
+                project_type=self.project_type,
+                status='APPROVED'
+            ).exclude(pk=self.pk)
+            if existing_approved.exists():
+                raise ValidationError("Only one quotation can be approved per project.")
+    
+    def save(self, *args, **kwargs):
+        # Set approval timestamp
+        if self.status == 'APPROVED' and not self.approved_at and self.approved_by:
+            from django.utils import timezone
+            self.approved_at = timezone.now()
+        
+        # Auto-reject other quotations when this one is approved
+        if self.status == 'APPROVED' and self.pk:
+            SupplierQuotation.objects.filter(
+                project_id=self.project_id,
+                project_type=self.project_type,
+                status='PENDING'
+            ).exclude(pk=self.pk).update(status='REJECTED')
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def file_extension(self):
+        """Get file extension"""
+        if self.quotation_file:
+            import os
+            return os.path.splitext(self.quotation_file.name)[1].lower()
+        return ''
+    
+    @property
+    def is_excel(self):
+        """Check if file is Excel format"""
+        return self.file_extension in ['.xlsx', '.xls']
+    
+    @property
+    def is_pdf(self):
+        """Check if file is PDF format"""
+        return self.file_extension == '.pdf'

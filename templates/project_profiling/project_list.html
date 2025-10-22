@@ -128,4 +128,56 @@
 
 {% block extra_scripts %}
 <script src="{% static 'js/projects.js' %}"></script>
+<script>
+// Check for RFS auto-download
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's RFS download info in session
+    {% if request.session.rfs_download_path %}
+        const downloadPath = '{{ request.session.rfs_download_path }}';
+        const filename = '{{ request.session.rfs_download_filename }}';
+        
+        if (downloadPath) {
+            // Show notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center space-x-3';
+            notification.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <p class="font-medium">RFS File Generated!</p>
+                    <p class="text-sm">Click to download: ${filename}</p>
+                </div>
+                <button onclick="downloadRFS('${downloadPath}', '${filename}')" 
+                        class="bg-white text-green-600 px-3 py-1 rounded text-sm font-medium hover:bg-green-50">
+                    Download
+                </button>
+                <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 10000);
+        }
+    {% endif %}
+});
+
+function downloadRFS(filePath, filename) {
+    const downloadUrl = `/projects/rfs/download/${filePath}/`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename || 'RFS.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
 {% endblock %}

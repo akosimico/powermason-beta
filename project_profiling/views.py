@@ -33,9 +33,10 @@ from authentication.utils.tokens import get_user_profile, verify_user_profile
 from authentication.utils.toast_helpers import set_toast_message, set_toast_from_messages
 from django.forms.models import model_to_dict
 from authentication.utils.decorators import verified_email_required, role_required
-from .forms import ProjectProfileForm, ProjectBudgetForm
+from .forms import ProjectProfileForm, ProjectBudgetForm, QuotationUploadForm
+from django.http import HttpResponse
 from django.urls import resolve
-from .models import ProjectProfile, ProjectFile, ProjectBudget, FundAllocation, ProjectStaging, ProjectType, ProjectScope, Expense, ProjectDocument
+from .models import ProjectProfile, ProjectFile, ProjectBudget, FundAllocation, ProjectStaging, ProjectType, ProjectScope, Expense, ProjectDocument, SupplierQuotation
 from manage_client.models import Client
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -708,6 +709,62 @@ def review_pending_project(request, project_id):
     ).order_by('-uploaded_at')
     print(f"DEBUG: Found {staging_documents.count()} document(s) from document library")
 
+    # Get quotations for this project (if it's been approved and converted to ProjectProfile)
+    quotations = []
+    rfs_info = None
+    quotation_count = 0
+    has_approved_quotation = False
+    
+    if hasattr(project, 'project') and project.project:
+        # Project has been approved, get quotations from ProjectProfile
+        quotations = SupplierQuotation.objects.filter(
+            project_id=project.project.id,
+            project_type='profile'
+        ).order_by('-date_submitted')
+        quotation_count = quotations.count()
+        has_approved_quotation = quotations.filter(status='APPROVED').exists()
+        
+        # Get RFS file info
+        if project.project.rfs_file:
+            from .utils.rfs_generator import get_rfs_download_info
+            rfs_info = get_rfs_download_info(project.project)
+    else:
+        # Project is still in staging, get quotations for staging project
+        quotations = SupplierQuotation.objects.filter(
+            project_id=project.id,
+            project_type='staging'
+        ).order_by('-date_submitted')
+        quotation_count = quotations.count()
+        has_approved_quotation = quotations.filter(status='APPROVED').exists()
+        
+        # Check for RFS in project_data
+        if project.project_data.get('rfs_file_path'):
+            from django.core.files.storage import default_storage
+            rfs_file_path = project.project_data.get('rfs_file_path')
+            rfs_generated_at = project.project_data.get('rfs_generated_at')
+            
+            if default_storage.exists(rfs_file_path):
+                rfs_info = {
+                    'filename': rfs_file_path.split('/')[-1],
+                    'file_path': rfs_file_path,
+                    'created_at': rfs_generated_at,
+                    'url': f'/media/{rfs_file_path}'
+                }
+
+    # Serialize quotations for JavaScript
+    import json
+    quotations_json = []
+    for quotation in quotations:
+        quotations_json.append({
+            'id': quotation.id,
+            'supplier_name': quotation.supplier_name,
+            'total_amount': float(quotation.total_amount) if quotation.total_amount else 0,
+            'date_submitted': quotation.date_submitted.isoformat(),
+            'status': quotation.status,
+            'file_name': quotation.quotation_file.name if quotation.quotation_file else 'No file',
+            'file_url': quotation.quotation_file.url if quotation.quotation_file else '#'
+        })
+
     # Prepare context
     context = {
         "project": project,
@@ -718,7 +775,29 @@ def review_pending_project(request, project_id):
         "contract_url": contract_url,
         "permit_url": permit_url,
         "staging_documents": staging_documents,
+        "quotations": quotations,
+        "quotations_json": json.dumps(quotations_json),
+        "rfs_info": rfs_info,
+        "quotation_count": quotation_count,
+        "has_approved_quotation": has_approved_quotation,
     }
+    
+    # Fix BOQ data for JSON serialization
+    if project.project_data.get('boq_items'):
+        import json
+        boq_items = project.project_data.get('boq_items', [])
+        # Convert Python booleans to JSON booleans
+        boq_items_json = json.dumps(boq_items)
+        context['boq_items_json'] = boq_items_json
+        
+        # Also serialize other BOQ-related data to ensure proper JSON format
+        context['boq_division_subtotals_json'] = json.dumps(project.project_data.get('boq_division_subtotals', {}))
+        context['boq_project_info_json'] = json.dumps(project.project_data.get('boq_project_info', {}))
+        required_permits = project.project_data.get('required_permits', [])
+        print(f"DEBUG: Required permits in view: {len(required_permits)} permits")
+        for permit in required_permits:
+            print(f"DEBUG: - {permit}")
+        context['required_permits_json'] = json.dumps(required_permits)
 
     # --- POST: Approve / Reject ---
     if request.method == "POST":
@@ -1816,6 +1895,36 @@ def project_create(request, project_type, client_id):
                         except Exception as e:
                             print(f"DEBUG: Error creating budget entries: {e}")
                             messages.warning(request, f"⚠️ Project created successfully, but there was an issue processing BOQ budget data: {str(e)}")
+                    
+                    # Generate RFS file if BOQ data is available
+                    if cleaned_data.get('boq_items') and not is_draft_save:
+                        try:
+                            from .utils.rfs_generator import generate_rfs_buffer_from_boq
+                            from django.core.files.base import ContentFile
+                            from django.core.files.storage import default_storage
+                            
+                            # Generate RFS Excel buffer
+                            rfs_buffer = generate_rfs_buffer_from_boq(
+                                cleaned_data.get('boq_items'), 
+                                cleaned_data.get('project_name', 'Project RFS')
+                            )
+                            
+                            if rfs_buffer:
+                                # Save RFS file to media directory
+                                rfs_filename = f"RFS_{next_id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                                file_path = default_storage.save(f'rfs_files/{rfs_filename}', ContentFile(rfs_buffer.getvalue()))
+                                
+                                # Store file path in project_data
+                                project.project_data['rfs_file_path'] = file_path
+                                project.project_data['rfs_generated_at'] = timezone.now().isoformat()
+                                project.save(update_fields=['project_data'])
+                                
+                                print(f"DEBUG: Generated RFS file: {file_path}")
+                            else:
+                                print("DEBUG: RFS generation returned None")
+                        except Exception as e:
+                            print(f"DEBUG: Error generating RFS file: {e}")
+                            messages.warning(request, f"⚠️ Project created successfully, but there was an issue generating RFS file: {str(e)}")
 
                     # Notify the creator
                     notif_self = Notification.objects.create(
@@ -1829,6 +1938,14 @@ def project_create(request, project_type, client_id):
                     # Shortened success message
                     project_name = cleaned_data.get('project_name', 'Unnamed')
                     success_msg = f"Project '{project_name}' created successfully! ID: {next_id}"
+                    
+                    # Add RFS download info to success message if RFS was generated
+                    if cleaned_data.get('boq_items') and not is_draft_save and project.project_data.get('rfs_file_path'):
+                        rfs_file_path = project.project_data.get('rfs_file_path')
+                        success_msg += f" RFS file generated and ready for download."
+                        # Store RFS download info in session for auto-download
+                        request.session['rfs_download_path'] = rfs_file_path
+                        request.session['rfs_download_filename'] = rfs_file_path.split('/')[-1]
                     
                     # Use toast system for better user feedback
                     set_toast_message(request, success_msg, 'success', 8000)
@@ -2246,6 +2363,26 @@ def delete_budget(request, project_id, budget_id):
         "project": project,
         "budget": budget,
     })
+
+@login_required
+@verified_email_required
+def download_rfs_file(request, file_path):
+    """Download RFS file from session or direct path"""
+    try:
+        # Check if file exists in storage
+        if default_storage.exists(file_path):
+            file_content = default_storage.open(file_path).read()
+            filename = file_path.split('/')[-1]
+            
+            response = HttpResponse(file_content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        else:
+            messages.error(request, "RFS file not found.")
+            return redirect('project_list_general_contractor')
+    except Exception as e:
+        messages.error(request, f"Error downloading RFS file: {str(e)}")
+        return redirect('project_list_general_contractor')
 
 # ----------------------------------------
 # PROJECTS ALLOCATION
