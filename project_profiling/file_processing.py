@@ -722,8 +722,16 @@ def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
             # Suggested roles extraction - scan all divisions for role-related items
             import re as _re
             desc_l = (description or '').lower()
+            
             def add_role(role_code: str, count: Decimal):
-                suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
+                # For duration-based roles (months, weeks, days), use 1 person regardless of duration
+                # For quantity-based roles (persons, people, workers), use the actual quantity
+                if any(time_unit in desc_l for time_unit in ['month', 'week', 'day', 'mo', 'wk', 'd']):
+                    # Duration-based role - always 1 person
+                    suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + Decimal('1')
+                else:
+                    # Quantity-based role - use the quantity or default to 1
+                    suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
             
             # Project Manager (PM) - look in any division
             if ('project manager' in desc_l or _re.search(r'\bpm\b', desc_l) or 
@@ -731,7 +739,7 @@ def extract_from_hierarchical_template(file_bytes: bytes) -> Dict[str, Any]:
                 add_role('PM', qty)
             
             # Project In Charge (PIC) - look in any division
-            if ('project in charge' in desc_l or _re.search(r'\bpic\b', desc_l) or 
+            if ('project in charge' in desc_l or 'person in charge' in desc_l or _re.search(r'\bpic\b', desc_l) or 
                 'site engineer' in desc_l or 'supervision' in desc_l or 
                 'site supervisor' in desc_l or 'field engineer' in desc_l or
                 'construction manager' in desc_l or 'site manager' in desc_l):
@@ -1257,10 +1265,17 @@ def _extract_from_pdf_intelligent(file_content: bytes) -> Dict[str, Any]:
                                 import re as _re2
                                 desc_l = (description or '').lower()
                                 def add_role(role_code: str, count: Decimal):
-                                    suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
+                                    # For duration-based roles (months, weeks, days), use 1 person regardless of duration
+                                    # For quantity-based roles (persons, people, workers), use the actual quantity
+                                    if any(time_unit in desc_l for time_unit in ['month', 'week', 'day', 'mo', 'wk', 'd']):
+                                        # Duration-based role - always 1 person
+                                        suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + Decimal('1')
+                                    else:
+                                        # Quantity-based role - use the quantity or default to 1
+                                        suggested_roles[role_code] = suggested_roles.get(role_code, Decimal('0')) + (count if count > 0 else Decimal('1'))
                                 if 'project manager' in desc_l or _re2.search(r'\bpm\b', desc_l):
                                     add_role('PM', qty)
-                                if 'project in charge' in desc_l or _re2.search(r'\bpic\b', desc_l) or 'site engineer' in desc_l or 'supervision' in desc_l:
+                                if 'project in charge' in desc_l or 'person in charge' in desc_l or _re2.search(r'\bpic\b', desc_l) or 'site engineer' in desc_l or 'supervision' in desc_l:
                                     add_role('PIC', qty)
                                 if 'safety officer' in desc_l or 'safety' in desc_l or _re2.search(r'\bso\b', desc_l):
                                     add_role('SO', qty)

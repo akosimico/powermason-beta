@@ -47,6 +47,9 @@ urlpatterns = [
     # Toast notifications (centralized for all apps)
     path('clear-toast-session/', views.clear_toast_session, name='clear_toast_session'),
 
+    # Debug email configuration
+    path('debug-email/', views.debug_email_config, name='debug_email_config'),
+
     # API endpoints
     path('api/dashboard/', views.dashboard_api, name='dashboard_api'),
 ]
