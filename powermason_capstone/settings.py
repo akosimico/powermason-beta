@@ -196,19 +196,44 @@ XERO_CLIENT_SECRET = os.getenv("XERO_CLIENT_SECRET")
 XERO_REDIRECT_URI = "http://localhost:8000/accounts/xero/login/callback/"
 
 # Email Configuration
+# Use SendGrid for production (Render-compatible)
 if ENVIRONMENT == "production" or POSTGRES_LOCALLY == True:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = os.getenv("EMAIL_ADDRESS")
-    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_USE_SSL = False
-    ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
-    DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
-    SERVER_EMAIL = "powermasonwebsite@gmail.com"
+    if os.getenv("SENDGRID_API_KEY"):
+        # Use SendGrid (recommended for Render)
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        EMAIL_HOST = "smtp.sendgrid.net"
+        EMAIL_HOST_USER = "apikey"  # This is always 'apikey' for SendGrid
+        EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
+        EMAIL_PORT = 587
+        EMAIL_USE_TLS = True
+        EMAIL_USE_SSL = False
+        EMAIL_TIMEOUT = 30
+        EMAIL_CONNECTION_TIMEOUT = 10
+        ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
+        DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
+        SERVER_EMAIL = "powermasonwebsite@gmail.com"
+        print("📧 Email configured for production with SendGrid")
+    elif os.getenv("EMAIL_ADDRESS") and os.getenv("EMAIL_HOST_PASSWORD"):
+        # Fallback to Gmail SMTP (may not work on Render)
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        EMAIL_HOST = "smtp.gmail.com"
+        EMAIL_HOST_USER = os.getenv("EMAIL_ADDRESS")
+        EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+        EMAIL_PORT = 587
+        EMAIL_USE_TLS = True
+        EMAIL_USE_SSL = False
+        EMAIL_TIMEOUT = 30
+        EMAIL_CONNECTION_TIMEOUT = 10
+        ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
+        DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
+        SERVER_EMAIL = "powermasonwebsite@gmail.com"
+        print("📧 Email configured for production with Gmail SMTP (may not work on Render)")
+    else:
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+        print("📧 Email configured for production (console backend - no credentials)")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    print("📧 Email configured for development (console backend)")
 
 # Messages Configuration - ADD THIS
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"

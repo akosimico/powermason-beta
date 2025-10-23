@@ -34,6 +34,10 @@ def role_required(*allowed_roles):
             if profile and profile.role in allowed_roles:
                 return view_func(request, *args, **kwargs)
             
+            # Allow view-only access to dashboard and profile pages
+            if request.resolver_match.url_name in ['dashboard_signed_with_role', 'profile', 'user_settings', 'dashboard_api']:
+                return view_func(request, *args, **kwargs)
+            
             messages.error(request, "You do not have permission to access this page.")
             return redirect("unauthorized")
         return _wrapped_view

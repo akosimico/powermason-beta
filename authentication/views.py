@@ -89,20 +89,33 @@ def debug_email_config(request):
 @login_required
 def dashboard_signed_with_role(request):
     """Dashboard view with role-based access"""
-    return render(request, 'dashboard.html')
+    # Get user role safely
+    user_role = None
+    if hasattr(request.user, 'userprofile') and request.user.userprofile:
+        user_role = getattr(request.user.userprofile, 'role', None)
+    
+    context = {
+        'user_role': user_role,
+        'is_superuser': request.user.is_superuser,
+        'user': request.user,
+    }
+    return render(request, 'dashboard.html', context)
 
 @login_required
 def unauthorized(request):
     """Unauthorized access view"""
-    return render(request, 'authentication/unauthorized.html')
-
+    return render(request, 'authentication/unauthorized.html', {
+        'user': request.user,
+        'role': getattr(request.user, 'role', None) if hasattr(request.user, 'role') else None
+    })
+        
 @login_required
 def resend_verification(request):
     """Resend email verification"""
     # Implementation for resend verification
     messages.success(request, 'Verification email sent!')
     return redirect('verification_sent')
-
+    
 @login_required
 def verification_sent(request):
     """Verification sent confirmation"""
@@ -148,7 +161,7 @@ def archive_user(request, user_id):
     """Archive user"""
     messages.success(request, 'User archived successfully!')
     return redirect('manage_user_profiles')
-
+    
 @login_required
 def unarchive_user(request, user_id):
     """Unarchive user"""
@@ -182,5 +195,33 @@ def clear_toast_session(request):
 
 @login_required
 def dashboard_api(request):
-    """Dashboard API"""
-    return JsonResponse({'data': 'dashboard data'})
+    """Dashboard API - returns empty data for view-only users"""
+    try:
+        # Get user role safely
+        user_role = None
+        if hasattr(request.user, 'userprofile') and request.user.userprofile:
+            user_role = getattr(request.user.userprofile, 'role', None)
+        
+        # For view-only users or users without roles, return empty data
+        if not user_role and not request.user.is_superuser:
+            return JsonResponse({
+                'projects': [],
+                'notifications': [],
+                'user_role': 'view_only',
+                'message': 'Please complete your profile setup to access full features.'
+            })
+        
+        # For users with roles, return actual data (implement as needed)
+        return JsonResponse({
+            'projects': [],
+            'notifications': [],
+            'user_role': user_role,
+            'message': 'Dashboard data loaded successfully.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Failed to load dashboard data',
+            'projects': [],
+            'notifications': []
+        }, status=500)
