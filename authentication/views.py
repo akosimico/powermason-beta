@@ -119,7 +119,7 @@ def profile(request):
     return render(request, 'account/profile.html')
 
 @login_required
-def settings(request):
+def user_settings(request):
     """User settings view"""
     return render(request, 'account/settings.html')
 

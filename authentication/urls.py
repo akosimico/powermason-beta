@@ -21,7 +21,7 @@ urlpatterns = [
 
     path('accounts/profile/', views.profile, name='profile'),
 
-    path('accounts/settings/', views.settings, name='settings'),
+    path('accounts/settings/', views.user_settings, name='settings'),
 
     path('accounts/password/change/', CustomPasswordChangeView.as_view(), name='account_change_password'),
 
