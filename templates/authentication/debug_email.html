@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Email Configuration Debug{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Email Configuration Debug</h1>
+        
+        <!-- Test Email Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Test Email</h2>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="test_email" class="block text-sm font-medium text-gray-700">Test Email Address:</label>
+                    <input type="email" id="test_email" name="test_email" 
+                           value="{{ user.email }}" 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Send Test Email
+                </button>
+            </form>
+        </div>
+
+        <!-- Email Configuration -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Email Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <strong>Backend:</strong> {{ email_config.backend }}
+                </div>
+                <div>
+                    <strong>Host:</strong> {{ email_config.host }}
+                </div>
+                <div>
+                    <strong>Port:</strong> {{ email_config.port }}
+                </div>
+                <div>
+                    <strong>User:</strong> {{ email_config.user }}
+                </div>
+                <div>
+                    <strong>Password Set:</strong> {{ email_config.password_set|yesno:"Yes,No" }}
+                </div>
+                <div>
+                    <strong>Use TLS:</strong> {{ email_config.use_tls }}
+                </div>
+                <div>
+                    <strong>Use SSL:</strong> {{ email_config.use_ssl }}
+                </div>
+                <div>
+                    <strong>Timeout:</strong> {{ email_config.timeout }}
+                </div>
+                <div>
+                    <strong>From Email:</strong> {{ email_config.from_email }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Environment Info -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Environment Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <strong>ENVIRONMENT:</strong> {{ env_info.environment }}
+                </div>
+                <div>
+                    <strong>RENDER:</strong> {{ env_info.render }}
+                </div>
+                <div>
+                    <strong>DEBUG:</strong> {{ env_info.debug|yesno:"True,False" }}
+                </div>
+                <div>
+                    <strong>EMAIL_ADDRESS Set:</strong> {{ env_info.email_address_set|yesno:"Yes,No" }}
+                </div>
+                <div>
+                    <strong>EMAIL_HOST_PASSWORD Set:</strong> {{ env_info.email_password_set|yesno:"Yes,No" }}
+                </div>
+                <div>
+                    <strong>POSTGRES_LOCALLY:</strong> {{ env_info.postgres_locally }}
+                </div>
+            </div>
+        </div>
+
+        <!-- All Environment Variables -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Relevant Environment Variables</h2>
+            <div class="space-y-2">
+                {% for key, value in all_env_vars.items %}
+                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span class="font-mono text-sm"><strong>{{ key }}:</strong></span>
+                    <span class="font-mono text-sm">
+                        {% if 'PASSWORD' in key or 'SECRET' in key or 'KEY' in key %}
+                            {{ value|length }} characters (hidden)
+                        {% else %}
+                            {{ value }}
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
