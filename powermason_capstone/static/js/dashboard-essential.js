@@ -94,16 +94,16 @@ function debounce(func, wait) {
 }
 
 function handleResize() {
-    if (window.progressChart) {
+    if (window.progressChart && typeof window.progressChart.resize === 'function') {
         window.progressChart.resize();
     }
-    if (window.budgetChart) {
+    if (window.budgetChart && typeof window.budgetChart.resize === 'function') {
         window.budgetChart.resize();
     }
-    if (window.dashboardCalendar) {
+    if (window.dashboardCalendar && typeof window.dashboardCalendar.updateSize === 'function') {
         window.dashboardCalendar.updateSize();
     }
-    if (window.projectMap) {
+    if (window.projectMap && typeof window.projectMap.invalidateSize === 'function') {
         window.projectMap.invalidateSize();
     }
 }

@@ -227,13 +227,13 @@ if ENVIRONMENT == "production" or POSTGRES_LOCALLY == True:
         ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
         DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
         SERVER_EMAIL = "powermasonwebsite@gmail.com"
-        print("📧 Email configured for production with Gmail SMTP (may not work on Render)")
+        print("Email configured for production with Gmail SMTP (may not work on Render)")
     else:
         EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-        print("📧 Email configured for production (console backend - no credentials)")
+        print("Email configured for production (console backend - no credentials)")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    print("📧 Email configured for development (console backend)")
+    print("Email configured for development (console backend)")
 
 # Messages Configuration - ADD THIS
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
