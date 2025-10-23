@@ -412,7 +412,9 @@ function handleAvatarUpload(input) {
                 // Update avatar image
                 const avatarImg = document.querySelector('img[alt="Profile Picture"]');
                 if (avatarImg) {
-                    avatarImg.src = data.avatar_url + '?t=' + Date.now(); // Cache bust
+                    const newUrl = data.avatar_url + '?t=' + Date.now(); // Cache bust
+                    console.log('Setting avatar URL to:', newUrl);
+                    avatarImg.src = newUrl;
                 }
                 showToast('{% trans "Avatar updated successfully!" %}', 'success');
             } else {

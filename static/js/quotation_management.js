@@ -377,6 +377,9 @@ async function loadQuotations() {
 function updateQuotationDisplay() {
     console.log('updateQuotationDisplay called with', quotations.length, 'quotations');
     
+    // Update quotation count display
+    updateQuotationCount();
+    
     // Find the quotation table body
     const quotationSection = document.querySelector('#quotation-management-section');
     if (!quotationSection) {
@@ -395,20 +398,24 @@ function updateQuotationDisplay() {
     tableBody.innerHTML = '';
     
     if (quotations.length === 0) {
-        // Show empty state
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = `
-            <td colspan="5" class="px-4 py-8 text-center">
-                <div class="text-center py-8">
-                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="text-gray-500 text-sm">No quotations uploaded yet</p>
-                    <p class="text-gray-400 text-xs mt-1">Upload supplier quotations to compare and select the best one</p>
-                </div>
-            </td>
-        `;
-        tableBody.appendChild(emptyRow);
+        // Show empty state - check if empty state row already exists
+        let emptyRow = document.getElementById('empty-state-row');
+        if (!emptyRow) {
+            emptyRow = document.createElement('tr');
+            emptyRow.id = 'empty-state-row';
+            emptyRow.innerHTML = `
+                <td colspan="5" class="px-4 py-8 text-center">
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-gray-500 text-sm">No quotations uploaded yet</p>
+                        <p class="text-gray-400 text-xs mt-1">Upload supplier quotations to compare and select the best one</p>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(emptyRow);
+        }
         return;
     }
     
@@ -470,6 +477,19 @@ function updateQuotationDisplay() {
 }
 
 /**
+ * Update quotation count display
+ */
+function updateQuotationCount() {
+    const countDisplay = document.querySelector('#quotation-management-section .text-sm.text-gray-500');
+    if (countDisplay) {
+        countDisplay.textContent = `${quotations.length}/5 quotations`;
+        console.log('Updated quotation count display to:', countDisplay.textContent);
+    } else {
+        console.log('Quotation count display element not found');
+    }
+}
+
+/**
  * Update approval button state based on quotations
  */
 function updateApprovalButton() {
@@ -510,6 +530,17 @@ async function approveQuotation(quotationId) {
             showNotification(data.message, 'success');
             loadQuotations(); // Refresh quotations list
             // Update budget field after quotation approval
+            console.log('Approval response data:', data);
+            console.log('Quotation data:', data.quotation);
+            console.log('Total amount:', data.quotation.total_amount);
+            console.log('Calling updateApprovedBudgetField with:', data.quotation.total_amount);
+            
+            // Try the template function first
+            if (typeof window.updateApprovedBudgetField === 'function') {
+                window.updateApprovedBudgetField(data.quotation.total_amount);
+            }
+            
+            // Also try the quotation management function
             updateBudgetFieldAfterApproval(data.quotation);
         } else {
             showNotification(data.error || 'Failed to approve quotation', 'error');
@@ -533,19 +564,98 @@ function updateBudgetFieldAfterApproval(quotationData) {
     
     // Get the budget input fields
     const budgetInput = document.getElementById('approved_budget');
-    const hiddenInput = document.querySelector('input[name="approved_budget_hidden"]');
+    const hiddenInput = document.getElementById('approved_budget_hidden');
+    
+    console.log('DEBUG: Budget input found:', !!budgetInput);
+    console.log('DEBUG: Hidden input found:', !!hiddenInput);
+    console.log('DEBUG: Budget input current value:', budgetInput ? budgetInput.value : 'N/A');
+    console.log('DEBUG: Hidden input current value:', hiddenInput ? hiddenInput.value : 'N/A');
     
     if (!budgetInput || !hiddenInput) {
         console.log('DEBUG: Budget input fields not found');
+        console.log('DEBUG: Available elements with approved_budget in ID:', document.querySelectorAll('[id*="approved_budget"]'));
         return;
     }
     
     // Update both fields with the approved quotation amount
     const approvedAmount = parseFloat(quotationData.total_amount);
-    budgetInput.value = approvedAmount.toFixed(2);
-    hiddenInput.value = approvedAmount.toFixed(2);
+    const formattedAmount = approvedAmount.toFixed(2);
     
-    console.log('DEBUG: Updated budget fields to:', approvedAmount.toFixed(2));
+    console.log('DEBUG: Approved amount:', approvedAmount);
+    console.log('DEBUG: Formatted amount:', formattedAmount);
+    
+    // Check if the budget input is disabled/readonly
+    console.log('DEBUG: Budget input disabled:', budgetInput.disabled);
+    console.log('DEBUG: Budget input readonly:', budgetInput.readOnly);
+    
+    // Temporarily enable the field to update its value
+    const wasDisabled = budgetInput.disabled;
+    const wasReadOnly = budgetInput.readOnly;
+    
+    if (wasDisabled) {
+        budgetInput.disabled = false;
+    }
+    if (wasReadOnly) {
+        budgetInput.readOnly = false;
+    }
+    
+    // Update the values
+    budgetInput.value = formattedAmount;
+    hiddenInput.value = formattedAmount;
+    
+    // Re-disable the field to maintain read-only behavior
+    if (wasDisabled) {
+        budgetInput.disabled = true;
+    }
+    if (wasReadOnly) {
+        budgetInput.readOnly = true;
+    }
+    
+    // Force trigger change events
+    budgetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    budgetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    console.log('DEBUG: Updated budget fields to:', formattedAmount);
+    console.log('DEBUG: Budget input value after update:', budgetInput.value);
+    console.log('DEBUG: Hidden input value after update:', hiddenInput.value);
+    
+    // Verify the update worked
+    if (budgetInput.value !== formattedAmount) {
+        console.warn('DEBUG: Budget input value did not update correctly, retrying...');
+        setTimeout(() => {
+            budgetInput.value = formattedAmount;
+            hiddenInput.value = formattedAmount;
+            console.log('DEBUG: Retry - Budget input value:', budgetInput.value);
+        }, 100);
+    }
+    
+    // Also update the budget info text to show the new amount
+    updateBudgetInfoText(approvedAmount);
+    
+    // Fallback: Try using the global function if available
+    if (typeof window.updateBudgetField === 'function') {
+        console.log('DEBUG: Trying fallback updateBudgetField function');
+        window.updateBudgetField(approvedAmount);
+    }
+}
+
+/**
+ * Update budget info text to reflect the approved amount
+ */
+function updateBudgetInfoText(approvedAmount) {
+    const budgetInfo = document.querySelector('.mt-1.text-xs.text-gray-500.space-y-1');
+    if (budgetInfo) {
+        const estimatedCostText = budgetInfo.querySelector('p');
+        if (estimatedCostText) {
+            // Get the estimated cost from the current text or use a default
+            const currentText = estimatedCostText.textContent;
+            const estimatedCostMatch = currentText.match(/Estimated Cost: ₱([\d,]+\.?\d*)/);
+            const estimatedCost = estimatedCostMatch ? parseFloat(estimatedCostMatch[1].replace(/,/g, '')) : 0;
+            
+            estimatedCostText.innerHTML = `Estimated Cost: ₱${estimatedCost.toLocaleString('en-PH', {minimumFractionDigits: 2})} <span class="text-green-600">(Budget: ₱${approvedAmount.toLocaleString('en-PH', {minimumFractionDigits: 2})})</span>`;
+        }
+    }
 }
 
 /**

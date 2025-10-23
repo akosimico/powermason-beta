@@ -2763,7 +2763,7 @@ function viewSelectedClientDetails() {
         })
         .catch(error => {
             console.error('Error fetching client details:', error);
-            alert('Error loading client details. Please try again.');
+            showProjectToast('Error loading client details. Please try again.', 'error');
         });
 }
 
@@ -3634,12 +3634,12 @@ function getCurrentLocationForMap() {
                 projectMap.setView(latlng, 15);
             },
             function(error) {
-                alert('Unable to get current location. Please select manually on the map.');
+                showProjectToast('Unable to get current location. Please select manually on the map.', 'warning');
                 console.log('Geolocation error:', error);
             }
         );
     } else {
-        alert('Geolocation is not supported by this browser.');
+        showProjectToast('Geolocation is not supported by this browser.', 'warning');
     }
 }
 
@@ -3672,12 +3672,12 @@ function performMapSearch() {
                 projectMap.setView(latlng, 15);
                 hideMapSearch();
             } else {
-                alert('Location not found. Please try a different search term.');
+                showProjectToast('Location not found. Please try a different search term.', 'warning');
             }
         })
         .catch(error => {
             console.log('Search error:', error);
-            alert('Search failed. Please try again.');
+            showProjectToast('Search failed. Please try again.', 'error');
         });
 }
 
@@ -4056,12 +4056,12 @@ async function estimateProjectCost() {
     const complexityLevel = document.getElementById('complexityLevel').value;
     
     if (!lotSize) {
-        alert('Please enter a lot size to estimate costs');
+        showProjectToast('Please enter a lot size to estimate costs', 'error');
         return;
     }
     
     if (!projectType) {
-        alert('Please select a project type to estimate costs');
+        showProjectToast('Please select a project type to estimate costs', 'error');
         return;
     }
     
@@ -4086,10 +4086,10 @@ async function estimateProjectCost() {
         if (result.success) {
             displayCostEstimation(result.estimation);
         } else {
-            alert('Error estimating costs: ' + result.error);
+            showProjectToast('Error estimating costs: ' + result.error, 'error');
         }
     } catch (error) {
-        alert('Network error: ' + error.message);
+        showProjectToast('Network error: ' + error.message, 'error');
     }
 }
 
@@ -5687,7 +5687,7 @@ window.submitForm = function() {
     });
     
     if (!isValid) {
-        alert('Please fill in all required fields');
+        showProjectToast('Please fill in all required fields', 'error');
         return;
     }
     

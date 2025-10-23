@@ -507,6 +507,7 @@
                                     <!-- Hidden field to ensure value is submitted -->
                                     <input type="hidden" 
                                            name="approved_budget_hidden" 
+                                           id="approved_budget_hidden"
                                            value="{% if has_approved_quotation and approved_quotation_amount %}{{ approved_quotation_amount }}{% elif project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}">
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500 space-y-1">
@@ -714,20 +715,20 @@
                                                 </div>
                     {% endif %}
                     
-                    {% if quotations %}
-                        <!-- Quotation Comparison Table -->
-                        <div class="w-full">
-                            <table class="w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Supplier & File</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Total Amount</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Date Submitted</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Status</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Quotation Comparison Table - Always present for JavaScript updates -->
+                    <div class="w-full">
+                        <table class="w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Supplier & File</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Total Amount</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Date Submitted</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% if quotations %}
                                     {% for quotation in quotations %}
                                     <tr class="{% if quotation.status == 'APPROVED' %}bg-green-50{% elif quotation.status == 'REJECTED' %}bg-red-50{% endif %}" data-quotation-id="{{ quotation.id }}">
                                         <td class="px-4 py-4">
@@ -804,18 +805,23 @@
                                         </td>
                                     </tr>
                                         {% endfor %}
-                                </tbody>
-                            </table>
-                                    </div>
-                        {% else %}
-                        <div class="text-center py-8">
-                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            <p class="text-gray-500 text-sm">No quotations uploaded yet</p>
-                            <p class="text-gray-400 text-xs mt-1">Upload supplier quotations to compare and select the best one</p>
-                                </div>
-                            {% endif %}
+                                {% else %}
+                                    <!-- Empty state row - will be replaced by JavaScript -->
+                                    <tr id="empty-state-row">
+                                        <td colspan="5" class="px-4 py-8 text-center">
+                                            <div class="text-center py-8">
+                                                <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <p class="text-gray-500 text-sm">No quotations uploaded yet</p>
+                                                <p class="text-gray-400 text-xs mt-1">Upload supplier quotations to compare and select the best one</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
                     </div>
                 </div>
                     </div>
@@ -1465,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Calculate and display budget range
-    const estimatedCost = parseFloat('{{ project.project_data.estimated_cost|default:0 }}');
+    const estimatedCost = parseFloat('{{ project.project_data.estimated_cost|default:0|floatformat:0 }}');
     if (estimatedCost > 0) {
         const minBudget = estimatedCost * 0.4;
         const maxBudget = estimatedCost * 1.5;
@@ -2697,25 +2703,59 @@ if (typeof deleteQuotation === 'undefined') {
 }
 
 // Function to update approved budget field
-function updateApprovedBudgetField() {
-    console.log('DEBUG: updateApprovedBudgetField called');
+function updateApprovedBudgetField(approvedAmount = null) {
+    console.log('DEBUG: updateApprovedBudgetField called with amount:', approvedAmount);
     
     // Get the approved budget input field
     const budgetInput = document.getElementById('approved_budget');
-    const hiddenInput = document.querySelector('input[name="approved_budget_hidden"]');
+    const hiddenInput = document.getElementById('approved_budget_hidden');
+    
+    console.log('DEBUG: Budget input found:', !!budgetInput);
+    console.log('DEBUG: Hidden input found:', !!hiddenInput);
     
     if (!budgetInput || !hiddenInput) {
         console.log('DEBUG: Budget input fields not found');
+        console.log('DEBUG: Available elements with approved_budget in ID:', document.querySelectorAll('[id*="approved_budget"]'));
         return;
     }
     
-    // Get the current value from the visible field
-    const currentValue = budgetInput.value;
-    console.log('DEBUG: Current budget value:', currentValue);
-    
-    // Update the hidden field with the same value
-    hiddenInput.value = currentValue;
-    console.log('DEBUG: Updated hidden field value to:', hiddenInput.value);
+    if (approvedAmount !== null) {
+        // Update with the approved amount
+        const formattedAmount = parseFloat(approvedAmount).toFixed(2);
+        
+        // Temporarily enable the field to update its value
+        const wasDisabled = budgetInput.disabled;
+        const wasReadOnly = budgetInput.readOnly;
+        
+        if (wasDisabled) {
+            budgetInput.disabled = false;
+        }
+        if (wasReadOnly) {
+            budgetInput.readOnly = false;
+        }
+        
+        // Update the values
+        budgetInput.value = formattedAmount;
+        hiddenInput.value = formattedAmount;
+        
+        // Re-disable the field to maintain read-only behavior
+        if (wasDisabled) {
+            budgetInput.disabled = true;
+        }
+        if (wasReadOnly) {
+            budgetInput.readOnly = true;
+        }
+        
+        console.log('DEBUG: Updated budget fields to:', formattedAmount);
+    } else {
+        // Sync current values
+        const currentValue = budgetInput.value;
+        console.log('DEBUG: Current budget value:', currentValue);
+        
+        // Update the hidden field with the same value
+        hiddenInput.value = currentValue;
+        console.log('DEBUG: Updated hidden field value to:', hiddenInput.value);
+    }
 }
 
 // Function to update budget when quotations change (called by quotation_management.js)
@@ -2724,7 +2764,7 @@ function updateBudgetFromQuotations() {
     
     // Get the approved budget input field
     const budgetInput = document.getElementById('approved_budget');
-    const hiddenInput = document.querySelector('input[name="approved_budget_hidden"]');
+    const hiddenInput = document.getElementById('approved_budget_hidden');
     
     if (!budgetInput || !hiddenInput) {
         console.log('DEBUG: Budget input fields not found');
@@ -2740,8 +2780,54 @@ function updateBudgetFromQuotations() {
     console.log('DEBUG: Updated hidden field value to:', hiddenInput.value);
 }
 
-// Make the function globally available
+// Make the functions globally available
 window.updateBudgetFromQuotations = updateBudgetFromQuotations;
+window.updateApprovedBudgetField = updateApprovedBudgetField;
+
+// Global function to update budget field (can be called from anywhere)
+window.updateBudgetField = function(amount) {
+    console.log('DEBUG: updateBudgetField called with amount:', amount);
+    
+    const budgetInput = document.getElementById('approved_budget');
+    const hiddenInput = document.getElementById('approved_budget_hidden');
+    
+    if (budgetInput && hiddenInput) {
+        const formattedAmount = parseFloat(amount).toFixed(2);
+        
+        // Temporarily enable the field to update its value
+        const wasDisabled = budgetInput.disabled;
+        const wasReadOnly = budgetInput.readOnly;
+        
+        if (wasDisabled) {
+            budgetInput.disabled = false;
+        }
+        if (wasReadOnly) {
+            budgetInput.readOnly = false;
+        }
+        
+        // Update the values
+        budgetInput.value = formattedAmount;
+        hiddenInput.value = formattedAmount;
+        
+        // Re-disable the field to maintain read-only behavior
+        if (wasDisabled) {
+            budgetInput.disabled = true;
+        }
+        if (wasReadOnly) {
+            budgetInput.readOnly = true;
+        }
+        
+        // Force trigger change events
+        budgetInput.dispatchEvent(new Event('change', { bubbles: true }));
+        budgetInput.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        console.log('DEBUG: Budget field updated to:', formattedAmount);
+        return true;
+    } else {
+        console.error('DEBUG: Budget input fields not found');
+        return false;
+    }
+};
 
 // All quotation management functionality is handled by quotation_management.js
 </script>

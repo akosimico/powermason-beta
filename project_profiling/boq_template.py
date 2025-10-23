@@ -308,9 +308,9 @@ def create_electrical_boq_template() -> bytes:
         ("1.1.3", "Construction lighting", "lot", 1, 5000, 5000),
         ("1.1.4", "Site demobilization", "lot", 1, 8000, 8000),
         ("1.2", "Project Management & Supervision", "", "", "", ""),
-        ("1.2.1", "Electrical Engineer (3 months)", "mo", 3, 35000, 105000),
-        ("1.2.2", "Electrical Foreman (3 months)", "mo", 3, 25000, 75000),
-        ("1.2.3", "Electrical Inspector (1 month)", "mo", 1, 20000, 20000),
+        ("1.2.1", "Person In Charge (3 months)", "mo", 3, 35000, 105000),
+        ("1.2.2", "Quality Officer (3 months)", "mo", 3, 25000, 75000),
+        ("1.2.3", "Foreman (1 month)", "mo", 1, 20000, 20000),
         ("1.3", "Permits & Licenses", "", "", "", ""),
         ("1.3.1", "Electrical permit", "lot", 1, 12000, 12000),
         ("1.3.2", "Electrical inspection fees", "lot", 1, 5000, 5000),
@@ -498,9 +498,9 @@ def create_mechanical_boq_template() -> bytes:
         ("1.1.3", "Construction equipment rental", "lot", 1, 8000, 8000),
         ("1.1.4", "Site demobilization", "lot", 1, 6000, 6000),
         ("1.2", "Project Management & Supervision", "", "", "", ""),
-        ("1.2.1", "Mechanical Engineer (3 months)", "mo", 3, 35000, 105000),
-        ("1.2.2", "Mechanical Foreman (3 months)", "mo", 3, 25000, 75000),
-        ("1.2.3", "Plumbing Inspector (1 month)", "mo", 1, 20000, 20000),
+        ("1.2.1", "Project Manager (3 months)", "mo", 3, 35000, 105000),
+        ("1.2.2", "Foreman (3 months)", "mo", 3, 25000, 75000),
+        ("1.2.3", "Person In Charge (1 month)", "mo", 1, 20000, 20000),
         ("1.3", "Permits & Licenses", "", "", "", ""),
         ("1.3.1", "Plumbing permit", "lot", 1, 10000, 10000),
         ("1.3.2", "Mechanical permit", "lot", 1, 8000, 8000),
@@ -679,9 +679,9 @@ def create_civil_boq_template() -> bytes:
         ("1.1.3", "Temporary fence and gate", "lm", 100, 450, 45000),
         ("1.1.4", "Temporary water & power connection", "lot", 1, 20000, 20000),
         ("1.2", "Project Supervision & Safety", "", "", "", ""),
-        ("1.2.1", "Civil Engineer (3 months)", "mo", 3, 40000, 120000),
+        ("1.2.1", "Project Manager (3 months)", "mo", 3, 40000, 120000),
         ("1.2.2", "Safety officer (3 months)", "mo", 3, 25000, 75000),
-        ("1.2.3", "Quality control and testing", "lot", 1, 20000, 20000),
+        ("1.2.3", "Quality Assurance Officer", "lot", 1, 20000, 20000),
         ("1.3", "Permits & Documentation", "", "", "", ""),
         ("1.3.1", "Building permit", "lot", 1, 15000, 15000),
         ("1.3.2", "Safety and inspection fees", "lot", 1, 8000, 8000),
@@ -770,7 +770,7 @@ def create_civil_boq_template() -> bytes:
 
 
 def create_architectural_boq_template() -> bytes:
-    """Create specialized BOQ template for Architectural Works"""
+    """Create specialized BOQ template for Architectural Works (with General Requirements)"""
     wb = Workbook()
     ws = wb.active
     ws.title = "Architectural BOQ"
@@ -810,95 +810,74 @@ def create_architectural_boq_template() -> bytes:
         cell.alignment = center
         cell.border = border
 
-    # Architectural Works Sample Data
+    # Architectural Works Sample Data (includes General Requirements)
     sample_rows = [
-        ("DIV 1", "DOORS & WINDOWS", "", "", "", ""),
-        ("1.1", "Doors", "", "", "", ""),
-        ("1.1.1", "Main entrance door (aluminum)", "pc", 2, 15000, 30000),
-        ("1.1.2", "Office doors (solid wood)", "pc", 20, 4500, 90000),
-        ("1.1.3", "Conference room doors (glass)", "pc", 4, 8500, 34000),
-        ("1.1.4", "Bathroom doors (hollow core)", "pc", 8, 2500, 20000),
-        ("1.1.5", "Fire exit doors", "pc", 6, 3500, 21000),
-        ("1.1.6", "Door hardware (handles, locks)", "set", 40, 450, 18000),
-        ("1.2", "Windows", "", "", "", ""),
-        ("1.2.1", "Aluminum windows (sliding)", "sqm", 80, 1200, 96000),
-        ("1.2.2", "Aluminum windows (casement)", "sqm", 60, 1400, 84000),
-        ("1.2.3", "Glass panels (6mm clear)", "sqm", 140, 280, 39200),
-        ("1.2.4", "Window hardware", "set", 30, 280, 8400),
-        ("1.2.5", "Window screens", "sqm", 140, 120, 16800),
-        ("1.3", "Glazing", "", "", "", ""),
-        ("1.3.1", "Tempered glass (10mm)", "sqm", 50, 450, 22500),
-        ("1.3.2", "Laminated glass (12mm)", "sqm", 30, 650, 19500),
-        ("1.3.3", "Double glazing units", "sqm", 40, 850, 34000),
+        # DIV 1 - General Requirements
+        ("DIV 1", "GENERAL REQUIREMENTS", "", "", "", ""),
+        ("1.1", "Mobilization & Demobilization", "", "", "", ""),
+        ("1.1.1", "Site mobilization and setup", "lot", 1, 15000, 15000),
+        ("1.1.2", "Temporary facilities and access", "lot", 1, 12000, 12000),
+        ("1.1.3", "Site demobilization and cleanup", "lot", 1, 10000, 10000),
+        ("1.2", "Project Management & Supervision", "", "", "", ""),
+        ("1.2.1", "Quality Officer(3 months)", "mo", 3, 40000, 120000),
+        ("1.2.2", "Site engineer / foreman (3 months)", "mo", 3, 25000, 75000),
+        ("1.2.3", "Safety officer (2 months)", "mo", 2, 20000, 40000),
+        ("1.3", "Permits & Licenses", "", "", "", ""),
+        ("1.3.1", "Building permit", "lot", 1, 20000, 20000),
+        ("1.3.2", "Occupancy permit", "lot", 1, 8000, 8000),
+        ("1.4", "Safety & Quality Control", "", "", "", ""),
+        ("1.4.1", "Safety equipment and PPE", "lot", 1, 10000, 10000),
+        ("1.4.2", "Quality assurance testing", "lot", 1, 12000, 12000),
 
-        ("DIV 2", "CEILING & PARTITIONS", "", "", "", ""),
-        ("2.1", "Ceiling Systems", "", "", "", ""),
-        ("2.1.1", "Gypsum board ceiling", "sqm", 2000, 280, 560000),
-        ("2.1.2", "Acoustic ceiling tiles", "sqm", 500, 180, 90000),
-        ("2.1.3", "Ceiling cornices", "lm", 200, 120, 24000),
-        ("2.1.4", "Ceiling lighting fixtures", "pc", 100, 350, 35000),
-        ("2.1.5", "Ceiling access panels", "pc", 20, 450, 9000),
-        ("2.2", "Partition Systems", "", "", "", ""),
-        ("2.2.1", "Drywall partitions (100mm)", "sqm", 300, 350, 105000),
-        ("2.2.2", "Glass partitions (frameless)", "sqm", 100, 1200, 120000),
-        ("2.2.3", "Movable partitions", "sqm", 50, 850, 42500),
-        ("2.2.4", "Partition doors", "pc", 15, 2800, 42000),
-        ("2.3", "Wall Finishing", "", "", "", ""),
-        ("2.3.1", "Wall paint (primer + 2 coats)", "sqm", 1000, 85, 85000),
-        ("2.3.2", "Wallpaper", "sqm", 200, 120, 24000),
-        ("2.3.3", "Wall cladding (wood)", "sqm", 150, 450, 67500),
-        ("2.3.4", "Wall cladding (stone)", "sqm", 100, 650, 65000),
+        # DIV 2 onwards (Architectural Works)
+        ("DIV 2", "DOORS & WINDOWS", "", "", "", ""),
+        ("2.1", "Doors", "", "", "", ""),
+        ("2.1.1", "Main entrance door (aluminum)", "pc", 2, 15000, 30000),
+        ("2.1.2", "Office doors (solid wood)", "pc", 20, 4500, 90000),
+        ("2.1.3", "Conference room doors (glass)", "pc", 4, 8500, 34000),
+        ("2.1.4", "Bathroom doors (hollow core)", "pc", 8, 2500, 20000),
+        ("2.1.5", "Fire exit doors", "pc", 6, 3500, 21000),
+        ("2.1.6", "Door hardware (handles, locks)", "set", 40, 450, 18000),
+        ("2.2", "Windows", "", "", "", ""),
+        ("2.2.1", "Aluminum windows (sliding)", "sqm", 80, 1200, 96000),
+        ("2.2.2", "Aluminum windows (casement)", "sqm", 60, 1400, 84000),
+        ("2.2.3", "Glass panels (6mm clear)", "sqm", 140, 280, 39200),
+        ("2.2.4", "Window hardware", "set", 30, 280, 8400),
+        ("2.2.5", "Window screens", "sqm", 140, 120, 16800),
 
-        ("DIV 3", "FLOORING & STAIRS", "", "", "", ""),
-        ("3.1", "Floor Finishing", "", "", "", ""),
-        ("3.1.1", "Ceramic tiles (300x300mm)", "sqm", 800, 450, 360000),
-        ("3.1.2", "Marble tiles (600x600mm)", "sqm", 200, 850, 170000),
-        ("3.1.3", "Granite tiles (600x600mm)", "sqm", 150, 1200, 180000),
-        ("3.1.4", "Vinyl flooring", "sqm", 500, 350, 175000),
-        ("3.1.5", "Carpet tiles", "sqm", 500, 280, 140000),
-        ("3.1.6", "Wood flooring (engineered)", "sqm", 300, 650, 195000),
-        ("3.2", "Stairs", "", "", "", ""),
-        ("3.2.1", "Concrete stairs", "lm", 50, 1200, 60000),
-        ("3.2.2", "Stair railings (stainless steel)", "lm", 50, 450, 22500),
-        ("3.2.3", "Stair treads (marble)", "lm", 50, 350, 17500),
-        ("3.2.4", "Stair lighting", "pc", 20, 280, 5600),
-        ("3.3", "Floor Accessories", "", "", "", ""),
-        ("3.3.1", "Floor drains", "pc", 20, 450, 9000),
-        ("3.3.2", "Floor mats", "pc", 10, 350, 3500),
-        ("3.3.3", "Threshold strips", "lm", 100, 120, 12000),
+        ("DIV 3", "CEILING & PARTITIONS", "", "", "", ""),
+        ("3.1", "Ceiling Systems", "", "", "", ""),
+        ("3.1.1", "Gypsum board ceiling", "sqm", 2000, 280, 560000),
+        ("3.1.2", "Acoustic ceiling tiles", "sqm", 500, 180, 90000),
+        ("3.1.3", "Ceiling cornices", "lm", 200, 120, 24000),
+        ("3.1.4", "Ceiling lighting fixtures", "pc", 100, 350, 35000),
+        ("3.1.5", "Ceiling access panels", "pc", 20, 450, 9000),
+        ("3.2", "Partition Systems", "", "", "", ""),
+        ("3.2.1", "Drywall partitions (100mm)", "sqm", 300, 350, 105000),
+        ("3.2.2", "Glass partitions (frameless)", "sqm", 100, 1200, 120000),
+        ("3.2.3", "Movable partitions", "sqm", 50, 850, 42500),
+        ("3.2.4", "Partition doors", "pc", 15, 2800, 42000),
 
-        ("DIV 4", "FURNITURE & FIXTURES", "", "", "", ""),
-        ("4.1", "Built-in Furniture", "", "", "", ""),
-        ("4.1.1", "Reception desk", "pc", 1, 25000, 25000),
-        ("4.1.2", "Office cabinets", "lm", 50, 1200, 60000),
-        ("4.1.3", "Storage shelves", "lm", 30, 800, 24000),
-        ("4.1.4", "Kitchen cabinets", "lm", 20, 3500, 70000),
-        ("4.1.5", "Bathroom vanities", "pc", 8, 4500, 36000),
-        ("4.2", "Fixed Fixtures", "", "", "", ""),
-        ("4.2.1", "Mirrors (bathroom)", "sqm", 20, 350, 7000),
-        ("4.2.2", "Handrails", "lm", 100, 280, 28000),
-        ("4.2.3", "Grab bars", "pc", 20, 180, 3600),
-        ("4.2.4", "Toilet paper holders", "pc", 20, 120, 2400),
-        ("4.3", "Decorative Elements", "", "", "", ""),
-        ("4.3.1", "Decorative panels", "sqm", 100, 450, 45000),
-        ("4.3.2", "Artwork mounting system", "lot", 1, 5000, 5000),
-        ("4.3.3", "Planters", "pc", 10, 800, 8000),
+        ("DIV 4", "FLOORING & STAIRS", "", "", "", ""),
+        ("4.1", "Floor Finishing", "", "", "", ""),
+        ("4.1.1", "Ceramic tiles (300x300mm)", "sqm", 800, 450, 360000),
+        ("4.1.2", "Marble tiles (600x600mm)", "sqm", 200, 850, 170000),
+        ("4.1.3", "Wood flooring (engineered)", "sqm", 300, 650, 195000),
+        ("4.2", "Stairs", "", "", "", ""),
+        ("4.2.1", "Concrete stairs", "lm", 50, 1200, 60000),
+        ("4.2.2", "Stair railings (stainless steel)", "lm", 50, 450, 22500),
 
-        ("DIV 5", "EXTERIOR ELEMENTS", "", "", "", ""),
-        ("5.1", "Facade", "", "", "", ""),
-        ("5.1.1", "Aluminum cladding", "sqm", 200, 850, 170000),
-        ("5.1.2", "Glass curtain wall", "sqm", 300, 1200, 360000),
-        ("5.1.3", "Stone cladding", "sqm", 150, 650, 97500),
-        ("5.1.4", "Facade lighting", "pc", 30, 1200, 36000),
-        ("5.2", "Entrance Features", "", "", "", ""),
-        ("5.2.1", "Canopy", "sqm", 50, 1200, 60000),
-        ("5.2.2", "Entrance awning", "sqm", 30, 850, 25500),
-        ("5.2.3", "Entrance signage", "pc", 2, 15000, 30000),
-        ("5.2.4", "Landscaping", "sqm", 200, 120, 24000),
-        ("5.3", "Exterior Finishing", "", "", "", ""),
-        ("5.3.1", "Exterior paint", "sqm", 500, 120, 60000),
-        ("5.3.2", "Exterior waterproofing", "sqm", 500, 85, 42500),
-        ("5.3.3", "Exterior cleaning", "sqm", 500, 25, 12500),
+        ("DIV 5", "FURNITURE & FIXTURES", "", "", "", ""),
+        ("5.1", "Built-in Furniture", "", "", "", ""),
+        ("5.1.1", "Reception desk", "pc", 1, 25000, 25000),
+        ("5.1.2", "Office cabinets", "lm", 50, 1200, 60000),
+        ("5.1.3", "Bathroom vanities", "pc", 8, 4500, 36000),
+
+        ("DIV 6", "EXTERIOR ELEMENTS", "", "", "", ""),
+        ("6.1", "Facade", "", "", "", ""),
+        ("6.1.1", "Aluminum cladding", "sqm", 200, 850, 170000),
+        ("6.1.2", "Glass curtain wall", "sqm", 300, 1200, 360000),
+        ("6.1.3", "Facade lighting", "pc", 30, 1200, 36000),
     ]
 
     start_row = 10
@@ -907,10 +886,10 @@ def create_architectural_boq_template() -> bytes:
         for c_idx, value in enumerate(row, start=1):
             cell = ws.cell(row=row_idx, column=c_idx, value=value)
             cell.border = border
-        # Level formula
         ws.cell(row=row_idx, column=7, value=f"=LEN(A{row_idx})-LEN(SUBSTITUTE(A{row_idx},'.',''))")
-        # Styling for division rows
+
         code_val = str(row[0])
+        # Highlight divisions
         if code_val.upper().startswith("DIV ") and "." not in code_val:
             ws.cell(row=row_idx, column=1).font = Font(bold=True)
             ws.cell(row=row_idx, column=2).font = Font(bold=True)
@@ -923,7 +902,7 @@ def create_architectural_boq_template() -> bytes:
         if code_val.count('.') == 1:
             ws.cell(row=row_idx, column=2).font = Font(bold=True)
 
-    # Widths and formatting
+    # Adjust widths
     widths = [18, 50, 12, 12, 14, 16, 8]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[chr(64 + idx)].width = w
@@ -932,12 +911,12 @@ def create_architectural_boq_template() -> bytes:
     # Notes
     notes = (
         "Notes:"\
-        "\n- Specialized template for Architectural Works"\
-        "\n- Includes doors, windows, ceilings, flooring, and interior finishes"\
+        "\n- Standard BOQ template for Architectural Works"\
+        "\n- Includes general requirements, doors, windows, ceilings, flooring, and finishes"\
         "\n- Quantities based on 2000 sqm commercial building"\
         "\n- Unit costs in PHP (Philippine Peso)"\
-        "\n- All architectural work must comply with local building codes"\
-        "\n- Requires licensed architect for design and supervision"
+        "\n- All works must comply with NBCP and local architectural standards"\
+        "\n- Supervision must be done by a licensed architect"
     )
     notes_row = start_row + len(sample_rows) + 2
     ws.merge_cells(f"A{notes_row}:G{notes_row + 4}")
@@ -948,5 +927,3 @@ def create_architectural_boq_template() -> bytes:
     buf = BytesIO()
     wb.save(buf)
     return buf.getvalue()
-
-

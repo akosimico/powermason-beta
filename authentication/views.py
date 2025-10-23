@@ -198,10 +198,22 @@ def update_avatar(request):
         profile.avatar = avatar_file
         profile.save()
         print(f"Avatar saved: {profile.avatar.url}")
+        print(f"Avatar name: {profile.avatar.name}")
+        print(f"Avatar path: {profile.avatar.path}")
+        
+        # Test if file exists
+        import os
+        if os.path.exists(profile.avatar.path):
+            print(f"File exists at: {profile.avatar.path}")
+        else:
+            print(f"File NOT found at: {profile.avatar.path}")
+        
+        avatar_url = profile.avatar.url
+        print(f"Returning avatar_url: {avatar_url}")
         
         return JsonResponse({
             'success': True,
-            'avatar_url': profile.avatar.url
+            'avatar_url': avatar_url
         })
         
     except Exception as e:
