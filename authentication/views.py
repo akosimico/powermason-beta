@@ -65,45 +65,168 @@ def debug_email_config(request):
     if not request.user.is_superuser:
         messages.error(request, "Access denied.")
         return redirect('dashboard')
-    
+
+    # Initialize debug log
+    debug_log = []
+    error_details = None
+
     if request.method == 'POST':
         import socket
         import smtplib
+        import traceback
         from time import time
+        from django.core.mail import get_connection
 
         start_time = time()
-        try:
-            # Get test email from form
-            test_email = request.POST.get('test_email', request.user.email)
+        test_email = request.POST.get('test_email', request.user.email)
 
-            # Send test email with explicit timeout
+        debug_log.append(f"[{time():.2f}] Starting email test to: {test_email}")
+        debug_log.append(f"[{time():.2f}] Using backend: {settings.EMAIL_BACKEND}")
+        debug_log.append(f"[{time():.2f}] SMTP Host: {getattr(settings, 'EMAIL_HOST', 'Not set')}")
+        debug_log.append(f"[{time():.2f}] SMTP Port: {getattr(settings, 'EMAIL_PORT', 'Not set')}")
+        debug_log.append(f"[{time():.2f}] Email Timeout: {getattr(settings, 'EMAIL_TIMEOUT', 'Not set')} seconds")
+        debug_log.append(f"[{time():.2f}] Connection Timeout: {getattr(settings, 'EMAIL_CONNECTION_TIMEOUT', 'Not set')} seconds")
+
+        try:
+            debug_log.append(f"[{time():.2f}] Opening SMTP connection...")
+
+            # Test connection first
+            connection = get_connection(fail_silently=False)
+            debug_log.append(f"[{time():.2f}] Connection object created")
+
+            connection.open()
+            debug_log.append(f"[{time():.2f}] Connection opened successfully")
+
+            # Send test email
+            debug_log.append(f"[{time():.2f}] Sending email...")
             send_mail(
                 subject='Test Email from Powermason',
                 message='This is a test email to verify email configuration.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[test_email],
                 fail_silently=False,
+                connection=connection,
             )
 
+            connection.close()
+            debug_log.append(f"[{time():.2f}] Connection closed")
+
             elapsed_time = time() - start_time
+            debug_log.append(f"[{time():.2f}] Email sent successfully in {elapsed_time:.2f} seconds")
             messages.success(request, f'Test email sent successfully to {test_email} in {elapsed_time:.2f} seconds!')
 
-        except socket.timeout:
+        except socket.timeout as e:
             elapsed_time = time() - start_time
-            messages.error(request, f'Email timeout after {elapsed_time:.1f}s. Check your SMTP server connection or increase EMAIL_TIMEOUT in settings.')
+            error_details = {
+                'type': 'Socket Timeout',
+                'message': f'Connection timed out after {elapsed_time:.1f} seconds',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Your EMAIL_TIMEOUT is set to 5 seconds but connection is taking longer',
+                    'Check if smtp.sendgrid.net:587 is accessible from Render',
+                    'Verify SendGrid API key is correct',
+                    'Try increasing EMAIL_TIMEOUT to 10 seconds temporarily for testing',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: Socket timeout")
+            messages.error(request, f'Email timeout after {elapsed_time:.1f}s')
+
         except smtplib.SMTPAuthenticationError as e:
-            messages.error(request, f'SMTP Authentication failed. Check your email credentials. Error: {str(e)}')
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'SMTP Authentication Error',
+                'message': 'Failed to authenticate with SMTP server',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Check that SENDGRID_API_KEY environment variable is set correctly',
+                    'API key should start with "SG." and be around 69 characters',
+                    'Verify the API key has "Mail Send" permissions in SendGrid',
+                    'Check if EMAIL_HOST_USER is set to "apikey" (not your email)',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: Authentication failed")
+            messages.error(request, 'SMTP Authentication failed')
+
         except smtplib.SMTPSenderRefused as e:
-            messages.error(request, f'Sender email rejected. Verify your sender email in SendGrid. Error: {str(e)}')
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'SMTP Sender Refused',
+                'message': 'Sender email address was rejected',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Verify sender email in SendGrid Dashboard',
+                    'Go to: Settings -> Sender Authentication -> Verify a Single Sender',
+                    'Check your email inbox for SendGrid verification email',
+                    f'Current FROM email: {settings.DEFAULT_FROM_EMAIL}',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: Sender refused")
+            messages.error(request, 'Sender email rejected')
+
         except smtplib.SMTPRecipientsRefused as e:
-            messages.error(request, f'Recipient email rejected: {str(e)}')
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'SMTP Recipients Refused',
+                'message': 'Recipient email address was rejected',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    f'Check if {test_email} is a valid email address',
+                    'Try with a different email address',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: Recipients refused")
+            messages.error(request, 'Recipient email rejected')
+
         except smtplib.SMTPException as e:
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'SMTP Exception',
+                'message': 'General SMTP error occurred',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Check all SMTP settings in settings.py',
+                    'Verify network connectivity to SMTP server',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: SMTP exception")
             messages.error(request, f'SMTP error: {str(e)}')
+
         except (ConnectionError, OSError) as e:
-            messages.error(request, f'Connection error. SMTP server may be unreachable: {str(e)}')
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'Connection Error',
+                'message': 'Failed to connect to SMTP server',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Check if Render can access smtp.sendgrid.net on port 587',
+                    'Verify firewall/security group settings',
+                    'Check if SMTP host and port are correct',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: Connection error")
+            messages.error(request, f'Connection error: {str(e)}')
+
         except Exception as e:
+            elapsed_time = time() - start_time
+            error_details = {
+                'type': 'Unknown Error',
+                'message': 'An unexpected error occurred',
+                'details': str(e),
+                'traceback': traceback.format_exc(),
+                'suggestions': [
+                    'Check the full traceback below for more details',
+                    'Verify all email settings in settings.py',
+                ]
+            }
+            debug_log.append(f"[{elapsed_time:.2f}] ERROR: {type(e).__name__}: {str(e)}")
             messages.error(request, f'Failed to send test email: {str(e)}')
-    
+
     # Email configuration info
     email_config = {
         'backend': settings.EMAIL_BACKEND,
@@ -111,12 +234,14 @@ def debug_email_config(request):
         'port': getattr(settings, 'EMAIL_PORT', 'Not set'),
         'user': getattr(settings, 'EMAIL_HOST_USER', 'Not set'),
         'password_set': bool(getattr(settings, 'EMAIL_HOST_PASSWORD', None)),
+        'password_length': len(getattr(settings, 'EMAIL_HOST_PASSWORD', '')) if getattr(settings, 'EMAIL_HOST_PASSWORD', None) else 0,
         'use_tls': getattr(settings, 'EMAIL_USE_TLS', 'Not set'),
         'use_ssl': getattr(settings, 'EMAIL_USE_SSL', 'Not set'),
         'timeout': getattr(settings, 'EMAIL_TIMEOUT', 'Not set'),
+        'connection_timeout': getattr(settings, 'EMAIL_CONNECTION_TIMEOUT', 'Not set'),
         'from_email': settings.DEFAULT_FROM_EMAIL,
     }
-    
+
     # Environment info
     env_info = {
         'environment': os.getenv('ENVIRONMENT', 'Not set'),
@@ -124,18 +249,23 @@ def debug_email_config(request):
         'debug': settings.DEBUG,
         'email_address_set': bool(os.getenv('EMAIL_ADDRESS')),
         'email_password_set': bool(os.getenv('EMAIL_HOST_PASSWORD')),
+        'sendgrid_api_key_set': bool(os.getenv('SENDGRID_API_KEY')),
+        'sendgrid_api_key_length': len(os.getenv('SENDGRID_API_KEY', '')),
+        'sendgrid_api_key_starts_with': os.getenv('SENDGRID_API_KEY', '')[:3] if os.getenv('SENDGRID_API_KEY') else 'N/A',
         'postgres_locally': os.getenv('POSTGRES_LOCALLY', 'Not set'),
     }
-    
+
     # All environment variables (for debugging)
-    all_env_vars = {k: v for k, v in os.environ.items() if 'EMAIL' in k or 'ENVIRONMENT' in k or 'RENDER' in k}
-    
+    all_env_vars = {k: v for k, v in os.environ.items() if 'EMAIL' in k or 'ENVIRONMENT' in k or 'RENDER' in k or 'SENDGRID' in k}
+
     context = {
         'email_config': email_config,
         'env_info': env_info,
         'all_env_vars': all_env_vars,
+        'debug_log': debug_log,
+        'error_details': error_details,
     }
-    
+
     return render(request, 'authentication/debug_email.html', context)
 
 # -----------------------------

@@ -5,93 +5,213 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Email Configuration Debug</h1>
-        
+
         <!-- Test Email Form -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4">Test Email</h2>
-            <form method="post" class="space-y-4">
+            <form method="post" class="space-y-4" id="emailTestForm">
                 {% csrf_token %}
                 <div>
                     <label for="test_email" class="block text-sm font-medium text-gray-700">Test Email Address:</label>
-                    <input type="email" id="test_email" name="test_email" 
-                           value="{{ user.email }}" 
+                    <input type="email" id="test_email" name="test_email"
+                           value="{{ user.email }}"
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                    Send Test Email
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2">
+                    <span id="buttonText">Send Test Email</span>
+                    <svg id="loadingSpinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                 </button>
+                <p class="text-sm text-gray-600">This will attempt to send a test email and show detailed debugging information below.</p>
             </form>
         </div>
 
+        <!-- Debug Log -->
+        {% if debug_log %}
+        <div class="bg-gray-900 text-green-400 rounded-lg shadow-md p-6 mb-8 font-mono text-sm">
+            <h2 class="text-xl font-semibold mb-4 text-white">Debug Log (Step-by-Step Execution)</h2>
+            <div class="space-y-1 overflow-x-auto">
+                {% for log_entry in debug_log %}
+                <div class="{% if 'ERROR' in log_entry %}text-red-400{% elif 'successfully' in log_entry %}text-green-400{% else %}text-gray-300{% endif %}">
+                    {{ log_entry }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Error Details -->
+        {% if error_details %}
+        <div class="bg-red-50 border-2 border-red-500 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-red-900 mb-4">❌ Error Details</h2>
+
+            <div class="space-y-4">
+                <div class="bg-white p-4 rounded border border-red-300">
+                    <h3 class="font-bold text-red-800 mb-2">Error Type:</h3>
+                    <p class="text-gray-900 font-semibold text-lg">{{ error_details.type }}</p>
+                </div>
+
+                <div class="bg-white p-4 rounded border border-red-300">
+                    <h3 class="font-bold text-red-800 mb-2">Error Message:</h3>
+                    <p class="text-gray-900">{{ error_details.message }}</p>
+                </div>
+
+                <div class="bg-white p-4 rounded border border-red-300">
+                    <h3 class="font-bold text-red-800 mb-2">Error Details:</h3>
+                    <p class="text-gray-900 font-mono text-sm bg-gray-100 p-3 rounded">{{ error_details.details }}</p>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded border border-yellow-400">
+                    <h3 class="font-bold text-yellow-800 mb-2">💡 Suggestions to Fix:</h3>
+                    <ul class="list-disc list-inside space-y-2 text-gray-900">
+                        {% for suggestion in error_details.suggestions %}
+                        <li>{{ suggestion }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="bg-white p-4 rounded border border-red-300">
+                    <h3 class="font-bold text-red-800 mb-2">Full Traceback:</h3>
+                    <pre class="text-xs bg-gray-900 text-green-400 p-4 rounded overflow-x-auto">{{ error_details.traceback }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Email Configuration -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Email Configuration</h2>
+        <div class="bg-blue-50 border-2 border-blue-500 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-900">📧 Email Configuration (From settings.py)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <strong>Backend:</strong> {{ email_config.backend }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Backend:</strong>
+                    <span class="font-mono text-sm">{{ email_config.backend }}</span>
                 </div>
-                <div>
-                    <strong>Host:</strong> {{ email_config.host }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Host:</strong>
+                    <span class="font-mono text-sm">{{ email_config.host }}</span>
                 </div>
-                <div>
-                    <strong>Port:</strong> {{ email_config.port }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Port:</strong>
+                    <span class="font-mono text-sm">{{ email_config.port }}</span>
                 </div>
-                <div>
-                    <strong>User:</strong> {{ email_config.user }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">User:</strong>
+                    <span class="font-mono text-sm">{{ email_config.user }}</span>
                 </div>
-                <div>
-                    <strong>Password Set:</strong> {{ email_config.password_set|yesno:"Yes,No" }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Password Set:</strong>
+                    <span class="{% if email_config.password_set %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                        {{ email_config.password_set|yesno:"Yes,No" }}
+                    </span>
+                    {% if email_config.password_set %}
+                    <span class="text-gray-600">({{ email_config.password_length }} chars)</span>
+                    {% endif %}
                 </div>
-                <div>
-                    <strong>Use TLS:</strong> {{ email_config.use_tls }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Use TLS:</strong>
+                    <span class="{% if email_config.use_tls %}text-green-600{% else %}text-gray-600{% endif %}">{{ email_config.use_tls }}</span>
                 </div>
-                <div>
-                    <strong>Use SSL:</strong> {{ email_config.use_ssl }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Use SSL:</strong>
+                    <span class="{% if email_config.use_ssl %}text-green-600{% else %}text-gray-600{% endif %}">{{ email_config.use_ssl }}</span>
                 </div>
-                <div>
-                    <strong>Timeout:</strong> {{ email_config.timeout }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Timeout:</strong>
+                    <span class="font-mono text-sm {% if email_config.timeout < 10 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {{ email_config.timeout }} seconds
+                    </span>
+                    {% if email_config.timeout < 10 %}
+                    <span class="text-xs text-yellow-600">⚠️ Low timeout</span>
+                    {% endif %}
                 </div>
-                <div>
-                    <strong>From Email:</strong> {{ email_config.from_email }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">Connection Timeout:</strong>
+                    <span class="font-mono text-sm">{{ email_config.connection_timeout }} seconds</span>
+                </div>
+                <div class="bg-white p-3 rounded md:col-span-2">
+                    <strong class="text-gray-700">From Email:</strong>
+                    <span class="font-mono text-sm">{{ email_config.from_email }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Environment Info -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Environment Information</h2>
+        <div class="bg-purple-50 border-2 border-purple-500 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-purple-900">🌍 Environment Information</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <strong>ENVIRONMENT:</strong> {{ env_info.environment }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">ENVIRONMENT:</strong>
+                    <span class="font-mono text-sm font-bold {% if env_info.environment == 'production' %}text-red-600{% else %}text-green-600{% endif %}">
+                        {{ env_info.environment }}
+                    </span>
                 </div>
-                <div>
-                    <strong>RENDER:</strong> {{ env_info.render }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">RENDER:</strong>
+                    <span class="font-mono text-sm {% if env_info.render == 'true' %}text-blue-600{% else %}text-gray-600{% endif %}">
+                        {{ env_info.render }}
+                    </span>
                 </div>
-                <div>
-                    <strong>DEBUG:</strong> {{ env_info.debug|yesno:"True,False" }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">DEBUG:</strong>
+                    <span class="{% if env_info.debug %}text-yellow-600{% else %}text-green-600{% endif %} font-semibold">
+                        {{ env_info.debug|yesno:"True,False" }}
+                    </span>
                 </div>
-                <div>
-                    <strong>EMAIL_ADDRESS Set:</strong> {{ env_info.email_address_set|yesno:"Yes,No" }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">EMAIL_ADDRESS Set:</strong>
+                    <span class="{% if env_info.email_address_set %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ env_info.email_address_set|yesno:"Yes,No" }}
+                    </span>
                 </div>
-                <div>
-                    <strong>EMAIL_HOST_PASSWORD Set:</strong> {{ env_info.email_password_set|yesno:"Yes,No" }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">EMAIL_HOST_PASSWORD Set:</strong>
+                    <span class="{% if env_info.email_password_set %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ env_info.email_password_set|yesno:"Yes,No" }}
+                    </span>
                 </div>
-                <div>
-                    <strong>POSTGRES_LOCALLY:</strong> {{ env_info.postgres_locally }}
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">SENDGRID_API_KEY Set:</strong>
+                    <span class="{% if env_info.sendgrid_api_key_set %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                        {{ env_info.sendgrid_api_key_set|yesno:"Yes,No" }}
+                    </span>
+                </div>
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">SendGrid API Key Length:</strong>
+                    <span class="font-mono text-sm {% if env_info.sendgrid_api_key_length > 60 %}text-green-600{% elif env_info.sendgrid_api_key_length > 0 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {{ env_info.sendgrid_api_key_length }} chars
+                    </span>
+                    {% if env_info.sendgrid_api_key_length > 0 and env_info.sendgrid_api_key_length < 60 %}
+                    <span class="text-xs text-yellow-600">⚠️ Seems too short</span>
+                    {% endif %}
+                </div>
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">SendGrid Key Starts With:</strong>
+                    <span class="font-mono text-sm {% if env_info.sendgrid_api_key_starts_with == 'SG.' %}text-green-600{% elif env_info.sendgrid_api_key_starts_with != 'N/A' %}text-red-600{% else %}text-gray-600{% endif %}">
+                        {{ env_info.sendgrid_api_key_starts_with }}
+                    </span>
+                    {% if env_info.sendgrid_api_key_starts_with != 'SG.' and env_info.sendgrid_api_key_starts_with != 'N/A' %}
+                    <span class="text-xs text-red-600">❌ Should start with "SG."</span>
+                    {% endif %}
+                </div>
+                <div class="bg-white p-3 rounded">
+                    <strong class="text-gray-700">POSTGRES_LOCALLY:</strong>
+                    <span class="font-mono text-sm">{{ env_info.postgres_locally }}</span>
                 </div>
             </div>
         </div>
 
         <!-- All Environment Variables -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-4">Relevant Environment Variables</h2>
+        <div class="bg-gray-50 border-2 border-gray-400 rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900">🔧 All Relevant Environment Variables</h2>
             <div class="space-y-2">
                 {% for key, value in all_env_vars.items %}
-                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span class="font-mono text-sm"><strong>{{ key }}:</strong></span>
-                    <span class="font-mono text-sm">
+                <div class="flex justify-between items-center p-3 bg-white rounded border border-gray-300">
+                    <span class="font-mono text-sm font-bold text-gray-700">{{ key }}:</span>
+                    <span class="font-mono text-sm text-gray-900">
                         {% if 'PASSWORD' in key or 'SECRET' in key or 'KEY' in key %}
                             {{ value|length }} characters (hidden)
                         {% else %}
@@ -102,6 +222,77 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- Quick Diagnostics -->
+        <div class="bg-green-50 border-2 border-green-500 rounded-lg shadow-md p-6 mt-8">
+            <h2 class="text-xl font-semibold mb-4 text-green-900">✅ Quick Diagnostics</h2>
+            <div class="space-y-3">
+                <div class="flex items-start gap-3 p-3 bg-white rounded">
+                    <span class="text-2xl">{% if email_config.backend == 'django.core.mail.backends.smtp.EmailBackend' %}✅{% else %}⚠️{% endif %}</span>
+                    <div>
+                        <p class="font-semibold">Email Backend</p>
+                        <p class="text-sm text-gray-600">Using SMTP backend: {{ email_config.backend == 'django.core.mail.backends.smtp.EmailBackend'|yesno:"Yes,No" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 p-3 bg-white rounded">
+                    <span class="text-2xl">{% if env_info.sendgrid_api_key_set %}✅{% else %}❌{% endif %}</span>
+                    <div>
+                        <p class="font-semibold">SendGrid API Key</p>
+                        <p class="text-sm text-gray-600">
+                            {% if env_info.sendgrid_api_key_set %}
+                                Set ({{ env_info.sendgrid_api_key_length }} chars, starts with "{{ env_info.sendgrid_api_key_starts_with }}")
+                            {% else %}
+                                Not set - Required for Render deployment
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 p-3 bg-white rounded">
+                    <span class="text-2xl">{% if email_config.timeout >= 5 %}✅{% else %}⚠️{% endif %}</span>
+                    <div>
+                        <p class="font-semibold">Timeout Settings</p>
+                        <p class="text-sm text-gray-600">Timeout: {{ email_config.timeout }}s, Connection: {{ email_config.connection_timeout }}s</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 p-3 bg-white rounded">
+                    <span class="text-2xl">{% if email_config.use_tls %}✅{% else %}⚠️{% endif %}</span>
+                    <div>
+                        <p class="font-semibold">TLS Encryption</p>
+                        <p class="text-sm text-gray-600">TLS enabled for secure connection: {{ email_config.use_tls|yesno:"Yes,No" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 p-3 bg-white rounded">
+                    <span class="text-2xl">{% if env_info.render == 'true' %}🌐{% else %}💻{% endif %}</span>
+                    <div>
+                        <p class="font-semibold">Environment</p>
+                        <p class="text-sm text-gray-600">
+                            {% if env_info.render == 'true' %}
+                                Running on Render
+                            {% else %}
+                                Running locally
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    // Show loading spinner when form is submitted
+    document.getElementById('emailTestForm').addEventListener('submit', function(e) {
+        const button = this.querySelector('button[type="submit"]');
+        const spinner = document.getElementById('loadingSpinner');
+        const buttonText = document.getElementById('buttonText');
+
+        button.disabled = true;
+        spinner.classList.remove('hidden');
+        buttonText.textContent = 'Sending...';
+    });
+</script>
 {% endblock %}
