@@ -231,7 +231,7 @@
                     <span class="text-2xl">{% if email_config.backend == 'django.core.mail.backends.smtp.EmailBackend' %}✅{% else %}⚠️{% endif %}</span>
                     <div>
                         <p class="font-semibold">Email Backend</p>
-                        <p class="text-sm text-gray-600">Using SMTP backend: {{ email_config.backend == 'django.core.mail.backends.smtp.EmailBackend'|yesno:"Yes,No" }}</p>
+                        <p class="text-sm text-gray-600">Using SMTP backend: {% if email_config.backend == 'django.core.mail.backends.smtp.EmailBackend' %}Yes{% else %}No{% endif %}</p>
                     </div>
                 </div>
 
