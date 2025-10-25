@@ -199,20 +199,13 @@ XERO_REDIRECT_URI = "http://localhost:8000/accounts/xero/login/callback/"
 # Use SendGrid for production (Render-compatible)
 if ENVIRONMENT == "production" or POSTGRES_LOCALLY == True:
     if os.getenv("SENDGRID_API_KEY"):
-        # Use SendGrid (recommended for Render)
-        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-        EMAIL_HOST = "smtp.sendgrid.net"
-        EMAIL_HOST_USER = "apikey"  # This is always 'apikey' for SendGrid
-        EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
-        EMAIL_PORT = 587
-        EMAIL_USE_TLS = True
-        EMAIL_USE_SSL = False
-        EMAIL_TIMEOUT = 5  # Reduced from 30 to prevent Render request timeouts
-        EMAIL_CONNECTION_TIMEOUT = 3  # Reduced from 10 for faster failures
+        # Use SendGrid HTTP API (works on Render - bypasses SMTP port blocking)
+        EMAIL_BACKEND = "authentication.backends.sendgrid_backend.SendGridHTTPBackend"
+        SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")  # Used by custom backend
         ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
         DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
         SERVER_EMAIL = "powermasonwebsite@gmail.com"
-        print("Email configured for production with SendGrid")
+        print("Email configured for production with SendGrid HTTP API")
     elif os.getenv("EMAIL_ADDRESS") and os.getenv("EMAIL_HOST_PASSWORD"):
         # Fallback to Gmail SMTP (may not work on Render)
         EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

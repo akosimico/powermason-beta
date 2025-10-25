@@ -228,18 +228,22 @@ def debug_email_config(request):
             messages.error(request, f'Failed to send test email: {str(e)}')
 
     # Email configuration info
+    is_http_backend = 'sendgrid_backend' in settings.EMAIL_BACKEND.lower()
+
     email_config = {
         'backend': settings.EMAIL_BACKEND,
-        'host': getattr(settings, 'EMAIL_HOST', 'Not set'),
-        'port': getattr(settings, 'EMAIL_PORT', 'Not set'),
-        'user': getattr(settings, 'EMAIL_HOST_USER', 'Not set'),
+        'backend_type': 'HTTP API' if is_http_backend else 'SMTP',
+        'host': getattr(settings, 'EMAIL_HOST', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
+        'port': getattr(settings, 'EMAIL_PORT', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
+        'user': getattr(settings, 'EMAIL_HOST_USER', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
         'password_set': bool(getattr(settings, 'EMAIL_HOST_PASSWORD', None)),
         'password_length': len(getattr(settings, 'EMAIL_HOST_PASSWORD', '')) if getattr(settings, 'EMAIL_HOST_PASSWORD', None) else 0,
-        'use_tls': getattr(settings, 'EMAIL_USE_TLS', 'Not set'),
-        'use_ssl': getattr(settings, 'EMAIL_USE_SSL', 'Not set'),
-        'timeout': getattr(settings, 'EMAIL_TIMEOUT', 'Not set'),
-        'connection_timeout': getattr(settings, 'EMAIL_CONNECTION_TIMEOUT', 'Not set'),
+        'use_tls': getattr(settings, 'EMAIL_USE_TLS', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
+        'use_ssl': getattr(settings, 'EMAIL_USE_SSL', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
+        'timeout': getattr(settings, 'EMAIL_TIMEOUT', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
+        'connection_timeout': getattr(settings, 'EMAIL_CONNECTION_TIMEOUT', 'N/A (HTTP API)' if is_http_backend else 'Not set'),
         'from_email': settings.DEFAULT_FROM_EMAIL,
+        'is_http_backend': is_http_backend,
     }
 
     # Environment info

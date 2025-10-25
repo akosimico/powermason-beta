@@ -85,10 +85,29 @@
         <!-- Email Configuration -->
         <div class="bg-blue-50 border-2 border-blue-500 rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-blue-900">📧 Email Configuration (From settings.py)</h2>
+
+            {% if email_config.is_http_backend %}
+            <div class="bg-green-100 border border-green-400 rounded p-3 mb-4">
+                <p class="text-green-800 font-semibold">✅ Using SendGrid HTTP API (Port 443 - Works on Render!)</p>
+                <p class="text-sm text-green-700">This bypasses SMTP port blocking and is faster than SMTP.</p>
+            </div>
+            {% else %}
+            <div class="bg-yellow-100 border border-yellow-400 rounded p-3 mb-4">
+                <p class="text-yellow-800 font-semibold">⚠️ Using SMTP (May be blocked on Render)</p>
+                <p class="text-sm text-yellow-700">Consider switching to HTTP API if emails are timing out.</p>
+            </div>
+            {% endif %}
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-3 rounded">
-                    <strong class="text-gray-700">Backend:</strong>
-                    <span class="font-mono text-sm">{{ email_config.backend }}</span>
+                <div class="bg-white p-3 rounded md:col-span-2">
+                    <strong class="text-gray-700">Backend Type:</strong>
+                    <span class="font-mono text-sm font-bold {% if email_config.is_http_backend %}text-green-600{% else %}text-yellow-600{% endif %}">
+                        {{ email_config.backend_type }}
+                    </span>
+                </div>
+                <div class="bg-white p-3 rounded md:col-span-2">
+                    <strong class="text-gray-700">Backend Class:</strong>
+                    <span class="font-mono text-xs">{{ email_config.backend }}</span>
                 </div>
                 <div class="bg-white p-3 rounded">
                     <strong class="text-gray-700">Host:</strong>
