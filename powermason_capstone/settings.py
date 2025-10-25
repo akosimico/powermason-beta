@@ -207,12 +207,12 @@ if ENVIRONMENT == "production" or POSTGRES_LOCALLY == True:
         EMAIL_PORT = 587
         EMAIL_USE_TLS = True
         EMAIL_USE_SSL = False
-        EMAIL_TIMEOUT = 30
-        EMAIL_CONNECTION_TIMEOUT = 10
+        EMAIL_TIMEOUT = 5  # Reduced from 30 to prevent Render request timeouts
+        EMAIL_CONNECTION_TIMEOUT = 3  # Reduced from 10 for faster failures
         ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
         DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
         SERVER_EMAIL = "powermasonwebsite@gmail.com"
-        print("📧 Email configured for production with SendGrid")
+        print("Email configured for production with SendGrid")
     elif os.getenv("EMAIL_ADDRESS") and os.getenv("EMAIL_HOST_PASSWORD"):
         # Fallback to Gmail SMTP (may not work on Render)
         EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -222,8 +222,8 @@ if ENVIRONMENT == "production" or POSTGRES_LOCALLY == True:
         EMAIL_PORT = 587
         EMAIL_USE_TLS = True
         EMAIL_USE_SSL = False
-        EMAIL_TIMEOUT = 30
-        EMAIL_CONNECTION_TIMEOUT = 10
+        EMAIL_TIMEOUT = 5  # Reduced from 30 to prevent Render request timeouts
+        EMAIL_CONNECTION_TIMEOUT = 3  # Reduced from 10 for faster failures
         ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
         DEFAULT_FROM_EMAIL = "Powermason <powermasonwebsite@gmail.com>"
         SERVER_EMAIL = "powermasonwebsite@gmail.com"

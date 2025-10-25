@@ -67,11 +67,16 @@ def debug_email_config(request):
         return redirect('dashboard')
     
     if request.method == 'POST':
+        import socket
+        import smtplib
+        from time import time
+
+        start_time = time()
         try:
             # Get test email from form
             test_email = request.POST.get('test_email', request.user.email)
-            
-            # Send test email
+
+            # Send test email with explicit timeout
             send_mail(
                 subject='Test Email from Powermason',
                 message='This is a test email to verify email configuration.',
@@ -79,11 +84,25 @@ def debug_email_config(request):
                 recipient_list=[test_email],
                 fail_silently=False,
             )
-            
-            messages.success(request, f'✅ Test email sent successfully to {test_email}!')
-            
+
+            elapsed_time = time() - start_time
+            messages.success(request, f'Test email sent successfully to {test_email} in {elapsed_time:.2f} seconds!')
+
+        except socket.timeout:
+            elapsed_time = time() - start_time
+            messages.error(request, f'Email timeout after {elapsed_time:.1f}s. Check your SMTP server connection or increase EMAIL_TIMEOUT in settings.')
+        except smtplib.SMTPAuthenticationError as e:
+            messages.error(request, f'SMTP Authentication failed. Check your email credentials. Error: {str(e)}')
+        except smtplib.SMTPSenderRefused as e:
+            messages.error(request, f'Sender email rejected. Verify your sender email in SendGrid. Error: {str(e)}')
+        except smtplib.SMTPRecipientsRefused as e:
+            messages.error(request, f'Recipient email rejected: {str(e)}')
+        except smtplib.SMTPException as e:
+            messages.error(request, f'SMTP error: {str(e)}')
+        except (ConnectionError, OSError) as e:
+            messages.error(request, f'Connection error. SMTP server may be unreachable: {str(e)}')
         except Exception as e:
-            messages.error(request, f'❌ Failed to send test email: {str(e)}')
+            messages.error(request, f'Failed to send test email: {str(e)}')
     
     # Email configuration info
     email_config = {

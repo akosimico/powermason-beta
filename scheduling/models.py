@@ -1,6 +1,9 @@
 from django.db import models
-from authentication.models import UserProfile      
+from authentication.models import UserProfile
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ProjectScope(models.Model):
     project = models.ForeignKey(
@@ -141,7 +144,7 @@ class ProgressReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.project.project_code} - {self.report_date}"
+        return f"{self.project.project_id} - {self.report_date}"
     
     
 class ProgressUpdate(models.Model):
@@ -412,3 +415,180 @@ class TaskManpower(models.Model):
 
     def __str__(self):
         return f"{self.task.task_name} - {self.get_labor_type_display()}: {self.description} x{self.number_of_workers}"
+
+
+# ========================================
+# PROJECT SCHEDULE MODELS
+# Excel template generation and upload management
+# ========================================
+
+class ScheduleTemplate(models.Model):
+    """Generated Excel templates for project scheduling"""
+    project = models.ForeignKey(
+        "project_profiling.ProjectProfile",
+        on_delete=models.CASCADE,
+        related_name="schedule_templates"
+    )
+    template_file = models.FileField(
+        upload_to="schedule_templates/",
+        help_text="Generated Excel template file"
+    )
+    generated_at = models.DateTimeField(auto_now_add=True)
+    generated_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="generated_templates"
+    )
+    is_downloaded = models.BooleanField(
+        default=False,
+        help_text="Track if PM has downloaded the template"
+    )
+
+    class Meta:
+        verbose_name = "Schedule Template"
+        verbose_name_plural = "Schedule Templates"
+        ordering = ['-generated_at']
+
+    def __str__(self):
+        return f"Template for {self.project.project_id} - {self.generated_at.strftime('%Y-%m-%d')}"
+
+
+class ProjectSchedule(models.Model):
+    """Uploaded project schedules with approval workflow"""
+
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PENDING', 'Pending Approval'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    project = models.ForeignKey(
+        "project_profiling.ProjectProfile",
+        on_delete=models.CASCADE,
+        related_name="project_schedules"
+    )
+    uploaded_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="uploaded_schedules"
+    )
+    file = models.FileField(
+        upload_to="project_schedules/",
+        help_text="Uploaded schedule Excel file"
+    )
+    version = models.IntegerField(
+        default=1,
+        help_text="Upload attempt number (max 5)"
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='DRAFT'
+    )
+
+    # Timestamps
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    # Approval data
+    reviewed_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_schedules"
+    )
+    rejection_reason = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Reason for rejection (required if rejected)"
+    )
+
+    # Schedule metadata
+    is_active = models.BooleanField(
+        default=False,
+        help_text="Only one approved schedule can be active per project"
+    )
+    task_count = models.IntegerField(
+        default=0,
+        help_text="Total number of tasks in this schedule"
+    )
+    validation_errors = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Store scope matching errors and validation issues"
+    )
+    parsed_data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Store parsed schedule data before task creation"
+    )
+
+    class Meta:
+        verbose_name = "Project Schedule"
+        verbose_name_plural = "Project Schedules"
+        ordering = ['-uploaded_at']
+        # Ensure only one active schedule per project
+        constraints = [
+            models.UniqueConstraint(
+                fields=['project'],
+                condition=models.Q(is_active=True),
+                name='unique_active_schedule_per_project'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.project.project_id} Schedule v{self.version} - {self.get_status_display()}"
+
+    @property
+    def can_submit(self):
+        """Check if schedule can be submitted for approval"""
+        # Check if status is DRAFT and there are no actual errors (warnings are OK)
+        has_errors = False
+
+        logger.info(f"=== can_submit CHECK for Schedule {self.id} ===")
+        logger.info(f"Status: {self.status}")
+        logger.info(f"Validation Errors: {self.validation_errors}")
+        logger.info(f"Validation Errors Type: {type(self.validation_errors)}")
+
+        if self.validation_errors and isinstance(self.validation_errors, dict):
+            errors_list = self.validation_errors.get('errors', [])
+            warnings_list = self.validation_errors.get('warnings', [])
+            has_errors = bool(errors_list)
+
+            logger.info(f"Errors List: {errors_list}")
+            logger.info(f"Has Errors: {has_errors}")
+            logger.info(f"Warnings List: {warnings_list}")
+        else:
+            logger.info(f"validation_errors is empty or not a dict")
+
+        result = self.status == 'DRAFT' and not has_errors
+        logger.info(f"Final can_submit result: {result} (status=='DRAFT': {self.status == 'DRAFT'}, not has_errors: {not has_errors})")
+        logger.info(f"=== END can_submit CHECK ===")
+
+        return result
+
+    @property
+    def can_approve(self):
+        """Check if schedule can be approved"""
+        return self.status == 'PENDING'
+
+    @property
+    def attempts_remaining(self):
+        """Calculate remaining upload attempts"""
+        max_attempts = 5
+        current_version = ProjectSchedule.objects.filter(
+            project=self.project
+        ).count()
+        return max(0, max_attempts - current_version)
+
+    def deactivate_other_schedules(self):
+        """Deactivate all other schedules for this project"""
+        ProjectSchedule.objects.filter(
+            project=self.project,
+            is_active=True
+        ).exclude(id=self.id).update(is_active=False)

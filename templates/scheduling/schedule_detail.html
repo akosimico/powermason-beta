@@ -1,0 +1,698 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Schedule Upload Successful</h1>
+                        <p class="text-gray-600 mt-1">{{ schedule.project.project_name }} - Version {{ schedule.version }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if schedule.file %}
+                    <a href="{{ schedule.file.url }}" download class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Download Excel
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'project_view' schedule.project.project_source schedule.project.id %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Project
+                    </a>
+                </div>
+            </div>
+
+            <!-- File Information -->
+            {% if schedule.file %}
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">{{ schedule.file.name }}</p>
+                            <p class="text-xs text-gray-600">Uploaded {{ schedule.uploaded_at|date:"M d, Y g:i A" }}</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        File Saved
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-900">{{ schedule.task_count }}</p>
+                            <p class="text-sm text-blue-700">Total Tasks</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-purple-900">{{ schedule.parsed_data.scopes|length }}</p>
+                            <p class="text-sm text-purple-700">Scopes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-green-900">{{ schedule.version }}</p>
+                            <p class="text-sm text-green-700">Version</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-yellow-900">{{ schedule.status }}</p>
+                            <p class="text-sm text-yellow-700">Status</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Messages -->
+        {% if errors %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-6 mb-8 rounded-r-lg">
+            <div class="flex">
+                <svg class="h-6 w-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-lg font-medium text-red-800 mb-2">Validation Errors ({{ errors|length }})</h3>
+                    <p class="text-sm text-red-700 mb-3">These errors must be fixed before you can submit for approval. Please re-upload your schedule after corrections.</p>
+                    <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                        {% for error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if warnings %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-r-lg">
+            <div class="flex">
+                <svg class="h-6 w-6 text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-lg font-medium text-yellow-800 mb-2">Warnings ({{ warnings|length }})</h3>
+                    <p class="text-sm text-yellow-700 mb-3">These are informational warnings. You can still submit your schedule, but you may want to review these items.</p>
+                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                        {% for warning in warnings %}
+                            <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Schedule Summary -->
+        {% if summary and summary.earliest_date %}
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Schedule Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-semibold text-blue-900 uppercase">Start Date</h3>
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-900">{{ summary.earliest_date|date:"M d, Y" }}</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-semibold text-purple-900 uppercase">End Date</h3>
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-2xl font-bold text-purple-900">{{ summary.latest_date|date:"M d, Y" }}</p>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-semibold text-green-900 uppercase">Duration</h3>
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-2xl font-bold text-green-900">{{ summary.total_duration }} days</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submission Requirements Info -->
+        {% if schedule.status == 'DRAFT' %}
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8 rounded-r-lg">
+            <div class="flex">
+                <svg class="h-6 w-6 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-lg font-medium text-blue-800 mb-2">Submission Requirements</h3>
+                    <div class="text-sm text-blue-700 space-y-2">
+                        <p><strong>To submit this schedule for approval, you need:</strong></p>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>Status must be DRAFT {% if schedule.status == 'DRAFT' %}<span class="text-green-700 font-semibold">✓</span>{% else %}<span class="text-red-700 font-semibold">✗ (Current: {{ schedule.status }})</span>{% endif %}</li>
+                            <li>No validation errors {% if not errors %}<span class="text-green-700 font-semibold">✓</span>{% else %}<span class="text-red-700 font-semibold">✗ ({{ errors|length }} error{{ errors|length|pluralize }})</span>{% endif %}</li>
+                            <li>Warnings are allowed - they won't block submission</li>
+                        </ul>
+                        <p class="mt-3"><strong>Current Status:</strong>
+                            {% if can_submit %}
+                                <span class="text-green-700 font-semibold">✓ Ready to submit</span>
+                            {% else %}
+                                <span class="text-red-700 font-semibold">✗ Cannot submit - please fix errors above</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Schedule Details -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+            <div class="px-8 py-6 bg-gradient-to-r from-blue-500 to-indigo-600">
+                <h2 class="text-2xl font-bold text-white">Schedule Details</h2>
+                <p class="text-blue-100 mt-1">Review your uploaded schedule before submitting for approval</p>
+            </div>
+
+            <div class="p-8">
+                {% for scope_data in schedule.parsed_data.scopes %}
+                <div class="mb-8 last:mb-0">
+                    <!-- Scope Header -->
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-indigo-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ scope_data.scope_name }}</h3>
+                                <p class="text-sm text-gray-600">{{ scope_data.tasks|length }} task{{ scope_data.tasks|length|pluralize }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manhours</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for task in scope_data.tasks %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ task.item_number }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900">{{ task.task_name }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                        {% if task.start_date %}
+                                            {{ task.start_date|slice:":10" }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                        {% if task.end_date %}
+                                            {{ task.end_date|slice:":10" }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ task.duration_days|floatformat:0 }} day{{ task.duration_days|pluralize }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ task.manhours|floatformat:0 }} hrs</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div class="flex items-center justify-between">
+                {% if schedule.status == 'DRAFT' %}
+                    <button onclick="openUploadModal()" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        Re-upload
+                    </button>
+
+                    {% if can_submit %}
+                        <form id="submitApprovalForm" method="post" action="{% url 'submit_schedule_for_approval' schedule.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex items-center px-8 py-3 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Submit for Approval
+                            </button>
+                        </form>
+                    {% else %}
+                        <button type="button" disabled class="inline-flex items-center px-8 py-3 border border-transparent rounded-lg text-sm font-medium text-white bg-gray-400 cursor-not-allowed opacity-60">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            Cannot Submit (Fix Errors Above)
+                        </button>
+                    {% endif %}
+                {% elif schedule.status == 'PENDING' %}
+                    <div class="flex items-center space-x-4 w-full justify-center">
+                        <div class="flex items-center space-x-2 text-yellow-700">
+                            <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-lg font-semibold">Schedule is pending approval from OM/EG</span>
+                        </div>
+                    </div>
+                {% elif schedule.status == 'APPROVED' %}
+                    <div class="flex items-center space-x-4 w-full justify-center">
+                        <div class="flex items-center space-x-2 text-green-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-lg font-semibold">Schedule has been approved</span>
+                        </div>
+                    </div>
+                {% elif schedule.status == 'REJECTED' %}
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 text-red-700 mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-lg font-semibold">Schedule was rejected</span>
+                        </div>
+                        {% if schedule.rejection_reason %}
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm font-medium text-red-800 mb-1">Rejection Reason:</p>
+                            <p class="text-sm text-red-700">{{ schedule.rejection_reason }}</p>
+                        </div>
+                        {% endif %}
+                        <button onclick="openUploadModal()" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                            Upload New Version
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Schedule Modal -->
+<div id="uploadScheduleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900">Re-upload Project Schedule</h3>
+                    <p class="text-sm text-gray-600">{{ schedule.project.project_name }}</p>
+                </div>
+            </div>
+            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="mt-4">
+            <form id="uploadScheduleForm" method="post" action="{% url 'upload_project_schedule' schedule.project.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Upload Attempts Info -->
+                <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-blue-900">Upload Attempts</p>
+                                <p class="text-xs text-blue-700">Current version: {{ schedule.version }} of 5</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-yellow-900 mb-2">Before Uploading</h4>
+                            <ul class="text-sm text-yellow-800 space-y-1">
+                                <li>• Generate and download the template first if you haven't already</li>
+                                <li>• Fill in all required task information (Activity, Start Date, End Date)</li>
+                                <li>• Ensure scope names match exactly with your project scopes</li>
+                                <li>• Use the correct date format: DD-MMM-YY (e.g., 02-Aug-24)</li>
+                                <li>• Maximum file size: 10MB</li>
+                            </ul>
+                            <a href="{% url 'generate_schedule_template' schedule.project.id %}" class="inline-flex items-center mt-2 text-sm font-medium text-yellow-700 hover:text-yellow-900">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Download Template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Area -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Schedule File *
+                    </label>
+
+                    <!-- Drag & Drop Zone -->
+                    <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                        <div id="drop-zone-content">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="mt-4">
+                                <label for="id_file" class="cursor-pointer">
+                                    <span class="text-blue-600 hover:text-blue-700 font-medium">Click to upload</span>
+                                    <span class="text-gray-600"> or drag and drop</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">Excel files only (.xlsx, .xls) - Max 10MB</p>
+                            </div>
+                        </div>
+
+                        <!-- File Selected -->
+                        <div id="file-selected" class="hidden">
+                            <div class="flex items-center justify-center space-x-3">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="text-left">
+                                    <p id="file-name" class="text-sm font-medium text-gray-900"></p>
+                                    <p id="file-size" class="text-xs text-gray-500"></p>
+                                </div>
+                                <button type="button" id="remove-file" class="ml-4 text-red-600 hover:text-red-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="id_file" name="file" accept=".xlsx,.xls" class="hidden" required>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" id="upload-button" disabled class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Upload Schedule
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Uploading Animation Overlay -->
+<div id="uploadingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+        <div class="mb-4">
+            <!-- Spinning loader -->
+            <svg class="animate-spin h-16 w-16 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Uploading Schedule...</h3>
+        <p class="text-sm text-gray-600">Please wait while we process your file</p>
+        <div class="mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full animate-pulse" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submitting Animation Overlay -->
+<div id="submittingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+        <div class="mb-4">
+            <!-- Spinning loader -->
+            <svg class="animate-spin h-16 w-16 mx-auto text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Submitting for Approval...</h3>
+        <p class="text-sm text-gray-600">Please wait while we process your request</p>
+        <div class="mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-600 h-2 rounded-full animate-pulse" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Format ISO dates to readable format
+document.addEventListener('DOMContentLoaded', function() {
+    // Format all date cells in task tables
+    document.querySelectorAll('td').forEach(function(cell) {
+        const text = cell.textContent.trim();
+        // Check if it matches ISO date format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+            const date = new Date(text);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            cell.textContent = date.toLocaleDateString('en-US', options);
+        }
+    });
+});
+
+// Debug: Log schedule validation information
+console.log('=== SCHEDULE DEBUG INFO ===');
+console.log('Schedule Status:', '{{ schedule.status }}');
+console.log('Can Submit:', {{ can_submit|lower }});
+console.log('Errors:', {{ errors|length }});
+console.log('Warnings:', {{ warnings|length }});
+console.log('Validation Errors Field:', {{ schedule.validation_errors|safe }});
+{% if errors %}
+console.log('Error List:', {{ errors|safe }});
+{% endif %}
+{% if warnings %}
+console.log('Warning List:', {{ warnings|safe }});
+{% endif %}
+console.log('=== END DEBUG INFO ===');
+
+// Upload Schedule Modal Functions
+function openUploadModal() {
+    document.getElementById('uploadScheduleModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadScheduleModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    // Reset form
+    document.getElementById('uploadScheduleForm').reset();
+    resetFileUpload();
+}
+
+function resetFileUpload() {
+    const dropZoneContent = document.getElementById('drop-zone-content');
+    const fileSelected = document.getElementById('file-selected');
+    const uploadButton = document.getElementById('upload-button');
+
+    if (dropZoneContent) dropZoneContent.classList.remove('hidden');
+    if (fileSelected) fileSelected.classList.add('hidden');
+    if (uploadButton) uploadButton.disabled = true;
+}
+
+// File Upload Modal Script
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('id_file');
+    const dropZoneContent = document.getElementById('drop-zone-content');
+    const fileSelected = document.getElementById('file-selected');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const uploadButton = document.getElementById('upload-button');
+    const uploadForm = document.getElementById('uploadScheduleForm');
+    const uploadingOverlay = document.getElementById('uploadingOverlay');
+
+    // Show uploading animation on form submit
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            // Show uploading overlay
+            uploadingOverlay.classList.remove('hidden');
+            // Form will submit normally and redirect
+        });
+    }
+
+    // Show submitting animation on approval form submit
+    const submitApprovalForm = document.getElementById('submitApprovalForm');
+    const submittingOverlay = document.getElementById('submittingOverlay');
+
+    if (submitApprovalForm && submittingOverlay) {
+        submitApprovalForm.addEventListener('submit', function(e) {
+            // Show submitting overlay
+            submittingOverlay.classList.remove('hidden');
+            // Form will submit normally and redirect
+        });
+    }
+
+    if (dropZone && fileInput) {
+        // Click to upload
+        dropZone.addEventListener('click', function(e) {
+            if (e.target.id !== 'remove-file' && !e.target.closest('#remove-file')) {
+                fileInput.click();
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                displayFile(this.files[0]);
+            }
+        });
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-blue-500', 'bg-blue-50');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                // Check if it's an Excel file
+                if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                    // Create a new FileList-like object
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                    displayFile(file);
+                } else {
+                    alert('Please upload an Excel file (.xlsx or .xls)');
+                }
+            }
+        });
+
+        // Remove file
+        if (removeFileBtn) {
+            removeFileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                fileInput.value = '';
+                dropZoneContent.classList.remove('hidden');
+                fileSelected.classList.add('hidden');
+                uploadButton.disabled = true;
+            });
+        }
+
+        function displayFile(file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            dropZoneContent.classList.add('hidden');
+            fileSelected.classList.remove('hidden');
+            uploadButton.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    }
+});
+</script>
+
+{% endblock %}

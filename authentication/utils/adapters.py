@@ -18,15 +18,15 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         Called after email is confirmed
         """
-        print("🔍 CONFIRM_EMAIL DEBUG:")
-        print(f"📧 Request path: {request.path}")
-        print(f"👤 User: {email_address.user}")
-        print(f"✅ Email verified: {email_address.verified}")
-    
+        print("CONFIRM_EMAIL DEBUG:")
+        print(f"Request path: {request.path}")
+        print(f"User: {email_address.user}")
+        print(f"Email verified: {email_address.verified}")
+
         # Call the parent method first
         result = super().confirm_email(request, email_address)
-        print("✅ Super confirm_email completed")
-        
+        print("Super confirm_email completed")
+
         # DON'T add messages here - they get lost in redirect
         return result
 
@@ -34,18 +34,18 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         Custom email sending with better context
         """
-        print("🚀 CUSTOM ADAPTER IS BEING USED!")
-        print(f"📝 Signup: {signup}")
-        print(f"📧 EmailConfirmation type: {type(emailconfirmation)}")
-        print(f"🔑 Key: {emailconfirmation.key}")
-        print(f"📬 Email address: {emailconfirmation.email_address}")
-        
+        print("CUSTOM ADAPTER IS BEING USED!")
+        print(f"Signup: {signup}")
+        print(f"EmailConfirmation type: {type(emailconfirmation)}")
+        print(f"Key: {emailconfirmation.key}")
+        print(f"Email address: {emailconfirmation.email_address}")
+
         current_site = Site.objects.get_current()
         activate_url = self.get_email_confirmation_url(request, emailconfirmation)
-        
-        print(f"🔗 Generated URL: {activate_url}")
-        print(f"📧 Using site: {current_site.name}")
-        
+
+        print(f"Generated URL: {activate_url}")
+        print(f"Using site: {current_site.name}")
+
         ctx = {
             "user": emailconfirmation.email_address.user,
             "activate_url": activate_url,
@@ -53,7 +53,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             "key": emailconfirmation.key,
             "expiration_days": settings.ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS,
         }
-        
+
         email_template = "account/email/email_confirmation"
         self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
 

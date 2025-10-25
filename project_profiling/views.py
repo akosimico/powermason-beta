@@ -430,12 +430,21 @@ def project_view(request, project_source, pk):
     project.timeline_progress = calculate_progress(project.start_date, project.target_completion_date)
     request.session['project_return_url'] = request.get_full_path()
     request.session['task_list_return_url'] = request.get_full_path()
-    
+
+    # Get schedule status for the schedule management section
+    from scheduling.models import ProjectSchedule
+    approved_schedule = ProjectSchedule.objects.filter(project=project, status='APPROVED').first()
+    pending_schedule = ProjectSchedule.objects.filter(project=project, status='PENDING').first()
+    draft_schedule = ProjectSchedule.objects.filter(project=project, status='DRAFT').first()
+
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
         'role': user_role,  # always valid
         'project_source': project_source,
         'current_project_id': pk,
+        'approved_schedule': approved_schedule,
+        'pending_schedule': pending_schedule,
+        'draft_schedule': draft_schedule,
     })
 
 

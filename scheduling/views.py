@@ -2,11 +2,15 @@
 import os
 import json
 import tempfile
+import logging
 from decimal import Decimal
 
 # Third-party libraries
 
 from django.core.serializers.json import DjangoJSONEncoder
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Django imports
 from django.shortcuts import render, get_object_or_404, redirect
@@ -616,7 +620,7 @@ def scope_budget_allocation(request, project_id):
     # Check if budget is approved
     if not project.approved_budget:
         messages.warning(request, "Budget must be approved before scope allocation can begin.")
-        return redirect('project_detail', project_id=project_id)
+        return redirect('project_view', project_source=project.project_source, pk=project_id)
     
     # Get all scopes for this project
     scopes = project.scopes.filter(is_deleted=False)
@@ -694,5 +698,459 @@ def scope_budget_allocation(request, project_id):
         'total_allocated': total_allocated,
         'remaining_budget': remaining_budget,
         'budget_utilization': (total_allocated / project.approved_budget * 100) if project.approved_budget > 0 else 0,
+        'role': verified_profile.role,
+    })
+
+
+# ========================================
+# SCHEDULE MANAGEMENT VIEWS
+# Excel template generation and upload workflow
+# ========================================
+
+@login_required
+@verified_email_required
+@role_required("PM", "OM", "EG")
+def generate_schedule_template(request, project_id):
+    """Generate Excel template for project schedule"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ScheduleTemplate, ProjectSchedule
+    from .schedule_generator import generate_schedule_template as generate_template
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    project = get_object_or_404(ProjectProfile, id=project_id)
+
+    # Check if schedule already approved
+    approved_schedule = ProjectSchedule.objects.filter(
+        project=project,
+        status='APPROVED'
+    ).first()
+
+    if approved_schedule:
+        set_toast_message(request, "This project already has an approved schedule.", "error")
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+    # Check if project has scopes
+    if not project.scopes.filter(is_deleted=False).exists():
+        set_toast_message(request, "Cannot generate template: Project has no scopes defined.", "error")
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+    try:
+        # Generate template
+        relative_path = generate_template(project)
+
+        # Save template record
+        template = ScheduleTemplate.objects.create(
+            project=project,
+            template_file=relative_path,
+            generated_by=verified_profile
+        )
+
+        set_toast_message(request, "Schedule template generated successfully!", "success")
+
+        # Return file download
+        from django.http import FileResponse
+        import os
+        from django.conf import settings
+
+        file_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+        response = FileResponse(open(file_path, 'rb'))
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+
+        # Mark as downloaded
+        template.is_downloaded = True
+        template.save()
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating schedule template: {str(e)}")
+        set_toast_message(request, f"Error generating template: {str(e)}", "error")
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+
+@login_required
+@verified_email_required
+@role_required("PM")
+def upload_project_schedule(request, project_id):
+    """Upload and parse project schedule Excel file"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ProjectSchedule
+    from .forms import ProjectScheduleForm
+    from .schedule_reader import parse_schedule_excel
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    project = get_object_or_404(ProjectProfile, id=project_id)
+
+    # Check if approved schedule exists
+    approved_schedule = ProjectSchedule.objects.filter(
+        project=project,
+        status='APPROVED'
+    ).first()
+
+    if approved_schedule:
+        set_toast_message(request, "Cannot upload: Project already has an approved schedule.", "error")
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+    # Check upload limit
+    existing_count = ProjectSchedule.objects.filter(project=project).count()
+    if existing_count >= 5:
+        set_toast_message(request, "Maximum upload limit reached (5 attempts).", "error")
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+    if request.method == 'POST':
+        form = ProjectScheduleForm(request.POST, request.FILES, project=project)
+
+        if form.is_valid():
+            schedule = form.save(commit=False)
+            schedule.project = project
+            schedule.uploaded_by = verified_profile
+            schedule.version = existing_count + 1
+            schedule.status = 'DRAFT'
+            schedule.save()
+
+            # Parse the uploaded file
+            file_path = schedule.file.path
+
+            try:
+                parse_result = parse_schedule_excel(file_path, project)
+
+                # Store parsed data and validation results
+                schedule.parsed_data = {
+                    'scopes': parse_result.get('scopes', []),
+                    'task_count': parse_result.get('task_count', 0)
+                }
+                schedule.task_count = parse_result.get('task_count', 0)
+                schedule.validation_errors = {
+                    'errors': parse_result.get('errors', []),
+                    'warnings': parse_result.get('warnings', [])
+                }
+                schedule.save()
+
+                if parse_result.get('success'):
+                    set_toast_message(
+                        request,
+                        f"Schedule uploaded successfully! Found {schedule.task_count} tasks.",
+                        "success"
+                    )
+                    return redirect('schedule_detail', schedule_id=schedule.id)
+                else:
+                    set_toast_message(
+                        request,
+                        f"Schedule uploaded but has validation errors. Please review.",
+                        "warning"
+                    )
+                    return redirect('schedule_detail', schedule_id=schedule.id)
+
+            except Exception as e:
+                logger.error(f"Error parsing schedule: {str(e)}")
+                schedule.validation_errors = {
+                    'errors': [f"Error parsing file: {str(e)}"],
+                    'warnings': []
+                }
+                schedule.save()
+                set_toast_message(request, f"Error parsing schedule: {str(e)}", "error")
+                return redirect('schedule_detail', schedule_id=schedule.id)
+        else:
+            set_toast_message(request, "Please fix the form errors.", "error")
+    else:
+        form = ProjectScheduleForm(project=project)
+
+    attempts_remaining = 5 - existing_count
+
+    return render(request, 'scheduling/schedule_upload.html', {
+        'form': form,
+        'project': project,
+        'role': verified_profile.role,
+        'existing_count': existing_count,
+        'attempts_remaining': attempts_remaining,
+    })
+
+
+@login_required
+@verified_email_required
+def schedule_detail(request, schedule_id):
+    """View schedule details and parsed data"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ProjectSchedule
+    from .task_creator import get_schedule_summary
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    schedule = get_object_or_404(ProjectSchedule, id=schedule_id)
+    project = schedule.project
+
+    # Get summary statistics
+    summary = get_schedule_summary(schedule)
+
+    # Get validation errors
+    validation_errors = schedule.validation_errors.get('errors', [])
+    validation_warnings = schedule.validation_errors.get('warnings', [])
+
+    return render(request, 'scheduling/schedule_detail.html', {
+        'schedule': schedule,
+        'project': project,
+        'role': verified_profile.role,
+        'summary': summary,
+        'errors': validation_errors,
+        'warnings': validation_warnings,
+        'can_submit': schedule.can_submit and verified_profile.role == 'PM',
+        'can_approve': schedule.can_approve and verified_profile.role in ['OM', 'EG'],
+    })
+
+
+@login_required
+@verified_email_required
+@role_required("PM")
+def submit_schedule_for_approval(request, schedule_id):
+    """Submit schedule for OM/EG approval"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ProjectSchedule
+    from notifications.utils import send_notification
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    schedule = get_object_or_404(ProjectSchedule, id=schedule_id)
+
+    # Verify PM owns this schedule
+    if schedule.uploaded_by != verified_profile:
+        set_toast_message(request, "You can only submit schedules you uploaded.", "error")
+        return redirect('schedule_detail', schedule_id=schedule.id)
+
+    # Check if can submit with detailed logging
+    if not schedule.can_submit:
+        # Debug logging to understand why submission failed
+        logger.error(f"=== SCHEDULE SUBMISSION BLOCKED ===")
+        logger.error(f"Schedule ID: {schedule.id}")
+        logger.error(f"Project: {schedule.project.project_id}")
+        logger.error(f"Status: {schedule.status}")
+        logger.error(f"Validation Errors Field: {schedule.validation_errors}")
+        logger.error(f"Validation Errors Type: {type(schedule.validation_errors)}")
+
+        # Check what's in validation_errors
+        if schedule.validation_errors:
+            errors_list = schedule.validation_errors.get('errors', [])
+            warnings_list = schedule.validation_errors.get('warnings', [])
+            logger.error(f"Errors List: {errors_list}")
+            logger.error(f"Errors Count: {len(errors_list)}")
+            logger.error(f"Warnings List: {warnings_list}")
+            logger.error(f"Warnings Count: {len(warnings_list)}")
+
+        logger.error(f"can_submit result: {schedule.can_submit}")
+        logger.error(f"=== END DEBUG ===")
+
+        # Provide detailed error message based on the reason
+        if schedule.status != 'DRAFT':
+            error_msg = f"Cannot submit: Schedule is already {schedule.get_status_display()}. Only DRAFT schedules can be submitted."
+        elif schedule.validation_errors:
+            errors_list = schedule.validation_errors.get('errors', [])
+            if errors_list:
+                error_msg = f"Cannot submit: {len(errors_list)} validation error(s) found. Please fix and re-upload."
+            else:
+                error_msg = "Cannot submit: Unknown validation issue. Check logs for details."
+        else:
+            error_msg = "Cannot submit: Unknown error. Check logs for details."
+
+        set_toast_message(request, error_msg, "error")
+        return redirect('schedule_detail', schedule_id=schedule.id)
+
+    if request.method == 'POST':
+        # Change status to PENDING
+        schedule.status = 'PENDING'
+        schedule.submitted_at = timezone.now()
+        schedule.save()
+
+        # Notify OM and EG users
+        om_eg_users = UserProfile.objects.filter(role__in=['OM', 'EG'])
+        notif_message = f'Schedule Pending Approval: Project {schedule.project.project_id} v{schedule.version} submitted by {verified_profile.full_name}'
+
+        if om_eg_users.exists():
+            notif = Notification.objects.create(
+                message=notif_message,
+                link=reverse('review_project_schedule', args=[schedule.id])
+            )
+            for user in om_eg_users:
+                NotificationStatus.objects.create(notification=notif, user=user)
+
+        set_toast_message(request, "Schedule submitted for approval!", "success")
+        return redirect('schedule_detail', schedule_id=schedule.id)
+
+    return redirect('schedule_detail', schedule_id=schedule.id)
+
+
+@login_required
+@verified_email_required
+@role_required("OM", "EG")
+def review_schedules(request):
+    """List all pending schedules for review"""
+    from .models import ProjectSchedule
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    pending_schedules = ProjectSchedule.objects.filter(
+        status='PENDING'
+    ).select_related('project', 'uploaded_by').order_by('-submitted_at')
+
+    return render(request, 'scheduling/review_schedules.html', {
+        'schedules': pending_schedules,
+        'role': verified_profile.role,
+    })
+
+
+@login_required
+@verified_email_required
+@role_required("OM", "EG")
+def review_project_schedule(request, schedule_id):
+    """Review a specific schedule for approval/rejection"""
+    from .models import ProjectSchedule
+    from .task_creator import get_schedule_summary
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    schedule = get_object_or_404(ProjectSchedule, id=schedule_id)
+    project = schedule.project
+
+    # Get summary statistics
+    summary = get_schedule_summary(schedule)
+
+    # Get parsed scope data
+    scopes_data = schedule.parsed_data.get('scopes', [])
+
+    return render(request, 'scheduling/schedule_review.html', {
+        'schedule': schedule,
+        'project': project,
+        'role': verified_profile.role,
+        'summary': summary,
+        'scopes_data': scopes_data,
+    })
+
+
+@login_required
+@verified_email_required
+@role_required("OM", "EG")
+def approve_schedule(request, schedule_id):
+    """Approve schedule and create tasks"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ProjectSchedule
+    from .task_creator import create_tasks_from_schedule
+    from notifications.utils import send_notification
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    schedule = get_object_or_404(ProjectSchedule, id=schedule_id)
+
+    if not schedule.can_approve:
+        set_toast_message(request, "This schedule cannot be approved.", "error")
+        return redirect('review_project_schedule', schedule_id=schedule.id)
+
+    if request.method == 'POST':
+        try:
+            # Create tasks from schedule
+            result = create_tasks_from_schedule(schedule)
+
+            if result['success']:
+                # Update schedule status
+                schedule.status = 'APPROVED'
+                schedule.reviewed_by = verified_profile
+                schedule.reviewed_at = timezone.now()
+                schedule.is_active = True
+                schedule.deactivate_other_schedules()
+                schedule.save()
+
+                # Notify PM
+                notif = Notification.objects.create(
+                    message=f'Schedule Approved: Your schedule for {schedule.project.project_id} has been approved. {result["created_count"]} tasks created.',
+                    link=reverse('task_list', args=[schedule.project.id])
+                )
+                NotificationStatus.objects.create(notification=notif, user=schedule.uploaded_by)
+
+                set_toast_message(
+                    request,
+                    f"Schedule approved! {result['created_count']} tasks created successfully.",
+                    "success"
+                )
+                return redirect('task_list', project_id=schedule.project.id)
+            else:
+                set_toast_message(
+                    request,
+                    f"Error creating tasks: {result.get('error', 'Unknown error')}",
+                    "error"
+                )
+                return redirect('review_project_schedule', schedule_id=schedule.id)
+
+        except Exception as e:
+            logger.error(f"Error approving schedule: {str(e)}")
+            set_toast_message(request, f"Error approving schedule: {str(e)}", "error")
+            return redirect('review_project_schedule', schedule_id=schedule.id)
+
+    return redirect('review_project_schedule', schedule_id=schedule.id)
+
+
+@login_required
+@verified_email_required
+@role_required("OM", "EG")
+def reject_schedule(request, schedule_id):
+    """Reject schedule with reason"""
+    from authentication.utils.toast_helpers import set_toast_message
+    from .models import ProjectSchedule
+    from .forms import ScheduleRejectionForm
+    from notifications.utils import send_notification
+
+    verified_profile = get_user_profile(request)
+    if not verified_profile:
+        return redirect("unauthorized")
+
+    schedule = get_object_or_404(ProjectSchedule, id=schedule_id)
+
+    if not schedule.can_approve:
+        set_toast_message(request, "This schedule cannot be rejected.", "error")
+        return redirect('review_project_schedule', schedule_id=schedule.id)
+
+    if request.method == 'POST':
+        form = ScheduleRejectionForm(request.POST)
+
+        if form.is_valid():
+            rejection_reason = form.cleaned_data['rejection_reason']
+
+            # Update schedule
+            schedule.status = 'REJECTED'
+            schedule.reviewed_by = verified_profile
+            schedule.reviewed_at = timezone.now()
+            schedule.rejection_reason = rejection_reason
+            schedule.save()
+
+            # Notify PM
+            notif = Notification.objects.create(
+                message=f'Schedule Rejected: Your schedule for {schedule.project.project_id} has been rejected. Reason: {rejection_reason[:100]}...',
+                link=reverse('schedule_detail', args=[schedule.id])
+            )
+            NotificationStatus.objects.create(notification=notif, user=schedule.uploaded_by)
+
+            set_toast_message(request, "Schedule rejected. PM has been notified.", "success")
+            return redirect('review_schedules')
+        else:
+            set_toast_message(request, "Please provide a rejection reason.", "error")
+    else:
+        form = ScheduleRejectionForm()
+
+    return render(request, 'scheduling/schedule_reject.html', {
+        'form': form,
+        'schedule': schedule,
+        'project': schedule.project,
         'role': verified_profile.role,
     })

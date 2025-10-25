@@ -67,4 +67,19 @@ urlpatterns = [
     path('api/materials/<int:allocation_id>/delete/', api_delete_task_material, name='api_delete_task_material'),
     path('api/equipment/<int:allocation_id>/delete/', api_delete_task_equipment, name='api_delete_task_equipment'),
     path('api/manpower/<int:allocation_id>/delete/', api_delete_task_manpower, name='api_delete_task_manpower'),
+
+    # ---------------------------
+    # Schedule Management
+    # ---------------------------
+    # Template Generation & Upload
+    path('<int:project_id>/schedule/generate/', views.generate_schedule_template, name='generate_schedule_template'),
+    path('<int:project_id>/schedule/upload/', views.upload_project_schedule, name='upload_project_schedule'),
+    path('schedule/<int:schedule_id>/detail/', views.schedule_detail, name='schedule_detail'),
+    path('schedule/<int:schedule_id>/submit/', views.submit_schedule_for_approval, name='submit_schedule_for_approval'),
+
+    # Schedule Approval (OM/EG)
+    path('schedule/review/', views.review_schedules, name='review_schedules'),
+    path('schedule/<int:schedule_id>/review/', views.review_project_schedule, name='review_project_schedule'),
+    path('schedule/<int:schedule_id>/approve/', views.approve_schedule, name='approve_schedule'),
+    path('schedule/<int:schedule_id>/reject/', views.reject_schedule, name='reject_schedule'),
 ]

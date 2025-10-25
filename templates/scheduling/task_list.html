@@ -51,7 +51,7 @@
                 
                 {% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
                 <div class="flex gap-3">
-                    <a href="{% url 'task_create' project.id  %}" 
+                    <!-- <a href="{% url 'task_create' project.id  %}" 
                        class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -64,7 +64,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
                         Add Scope
-                    </a>
+                    </a> -->
                     <a href="{% url 'review_updates' %}" 
                        class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

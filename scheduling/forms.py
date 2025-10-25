@@ -1,6 +1,9 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import ProjectTask, ProgressUpdate, ProgressFile, ProjectScope, TaskMaterial, TaskEquipment, TaskManpower
+from .models import (
+    ProjectTask, ProgressUpdate, ProgressFile, ProjectScope,
+    TaskMaterial, TaskEquipment, TaskManpower, ProjectSchedule
+)
 from authentication.models import UserProfile
 from materials_equipment.models import Material, Equipment, ProjectManpower
 from datetime import timedelta
@@ -333,3 +336,87 @@ TaskManpowerFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+
+
+# ========================================
+# PROJECT SCHEDULE FORMS
+# ========================================
+
+class ProjectScheduleForm(forms.ModelForm):
+    """Form for uploading project schedule Excel files"""
+
+    class Meta:
+        model = ProjectSchedule
+        fields = ['file']
+        widgets = {
+            'file': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none',
+                'accept': '.xlsx,.xls',
+                'id': 'schedule_file_input'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.project = kwargs.pop('project', None)
+        super().__init__(*args, **kwargs)
+        self.fields['file'].label = 'Upload Schedule File'
+        self.fields['file'].help_text = 'Upload Excel file (.xlsx or .xls) - Maximum 10MB'
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+
+        if not file:
+            raise forms.ValidationError('Please select a file to upload.')
+
+        # Check file extension
+        file_name = file.name.lower()
+        if not (file_name.endswith('.xlsx') or file_name.endswith('.xls')):
+            raise forms.ValidationError('Only Excel files (.xlsx, .xls) are allowed.')
+
+        # Check file size (10MB max)
+        max_size = 10 * 1024 * 1024  # 10MB
+        if file.size > max_size:
+            raise forms.ValidationError(f'File size must not exceed 10MB. Your file is {file.size / (1024*1024):.2f}MB.')
+
+        return file
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Check if project has reached upload limit (5 attempts)
+        if self.project:
+            existing_schedules = ProjectSchedule.objects.filter(project=self.project).count()
+            if existing_schedules >= 5:
+                raise forms.ValidationError(
+                    'Maximum upload limit reached (5 attempts). Please contact OM or EG for assistance.'
+                )
+
+            # Check if an approved schedule already exists
+            approved_schedule = ProjectSchedule.objects.filter(
+                project=self.project,
+                status='APPROVED'
+            ).first()
+
+            if approved_schedule:
+                raise forms.ValidationError(
+                    'This project already has an approved schedule. Cannot upload new schedules.'
+                )
+
+        return cleaned_data
+
+
+class ScheduleRejectionForm(forms.Form):
+    """Form for rejecting a schedule with reason"""
+
+    rejection_reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500',
+            'placeholder': 'Please provide a detailed reason for rejection...',
+            'rows': 4,
+            'required': True
+        }),
+        label='Rejection Reason',
+        help_text='This will be sent to the Project Manager who uploaded the schedule',
+        min_length=10,
+        max_length=500
+    )
