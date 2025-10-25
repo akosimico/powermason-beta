@@ -53,6 +53,32 @@ class SendGridHTTPBackend(BaseEmailBackend):
             if from_name:
                 from_obj['name'] = from_name
 
+            # Build content array (supports both plain text and HTML)
+            content = []
+
+            # Add plain text content
+            if email_message.body:
+                content.append({
+                    'type': 'text/plain',
+                    'value': email_message.body,
+                })
+
+            # Add HTML content if present (for EmailMultiAlternatives)
+            if hasattr(email_message, 'alternatives') and email_message.alternatives:
+                for alternative_content, mimetype in email_message.alternatives:
+                    if mimetype == 'text/html':
+                        content.append({
+                            'type': 'text/html',
+                            'value': alternative_content,
+                        })
+
+            # If no content was added, use empty plain text
+            if not content:
+                content.append({
+                    'type': 'text/plain',
+                    'value': '',
+                })
+
             # Build SendGrid API payload
             payload = {
                 'personalizations': [{
@@ -60,10 +86,7 @@ class SendGridHTTPBackend(BaseEmailBackend):
                 }],
                 'from': from_obj,
                 'subject': email_message.subject,
-                'content': [{
-                    'type': 'text/plain',
-                    'value': email_message.body,
-                }],
+                'content': content,
             }
 
             # Add CC if present
