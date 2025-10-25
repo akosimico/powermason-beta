@@ -23,6 +23,9 @@ def progress_monitoring(request):
     search_query = request.GET.get("search", "").strip()
     
     # Fetch projects based on role
+    # Initialize projects as empty queryset
+    projects = ProjectProfile.objects.none()
+
     # --- Fetch projects by role ---
     if user_role == "PM":
         projects = ProjectProfile.objects.filter(project_manager=verified_profile)
@@ -33,8 +36,15 @@ def progress_monitoring(request):
                 matching_clients = Client.objects.filter(email=user_email)
                 if matching_clients.exists():
                     projects = ProjectProfile.objects.filter(client__in=matching_clients)
+                else:
+                    # No matching clients found - projects remains empty
+                    projects = ProjectProfile.objects.none()
+            else:
+                # No email - projects remains empty
+                projects = ProjectProfile.objects.none()
         except Client.DoesNotExist:
-            pass
+            # Client lookup failed - projects remains empty
+            projects = ProjectProfile.objects.none()
     else:
         projects = ProjectProfile.objects.all()
     # Filter by archived status
