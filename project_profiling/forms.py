@@ -104,6 +104,12 @@ class ProjectProfileForm(forms.ModelForm):
         # Handle Project Manager field
         # ----------------------------
         self.fields["project_manager"].required = False
+
+        # ----------------------------
+        # Handle Status field - make it optional (defaults to "PL" in model)
+        # ----------------------------
+        if "status" in self.fields:
+            self.fields["status"].required = False
         
         # ----------------------------
         # Handle BOQ fields - make them non-required
