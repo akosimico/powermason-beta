@@ -4913,7 +4913,8 @@ function updateSuggestedRolesDisplay(suggestedRoles) {
         'PM': 'Project Manager',
         'PIC': 'Project In Charge',
         'SO': 'Safety Officer',
-        'QA': 'Quality Assurance',
+        'QA': 'Quality Assurance Officer',
+        'QO': 'Quality Officer',
         'FM': 'Foreman',
         'ENG': 'Engineer',
         'TECH': 'Technician',
@@ -5666,17 +5667,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // Form submission function
 window.submitForm = function() {
     console.log('Submitting project form...');
-    
+
     const form = document.getElementById('projectForm');
     if (!form) {
         console.error('Project form not found');
         return;
     }
-    
+
     // Validate required fields
     const requiredFields = form.querySelectorAll('[required]');
     let isValid = true;
-    
+
     requiredFields.forEach(field => {
         if (!field.value.trim()) {
             field.classList.add('border-red-500');
@@ -5685,15 +5686,30 @@ window.submitForm = function() {
             field.classList.remove('border-red-500');
         }
     });
-    
+
+    // Validate Project Manager (required)
+    const projectManagerId = document.getElementById('project_manager_id');
+    const projectManagerInput = document.getElementById('project_manager_input');
+    if (!projectManagerId || !projectManagerId.value) {
+        if (projectManagerInput) {
+            projectManagerInput.classList.add('border-red-500');
+        }
+        showProjectToast('Project Manager is required. Please select a project manager.', 'error');
+        isValid = false;
+    } else {
+        if (projectManagerInput) {
+            projectManagerInput.classList.remove('border-red-500');
+        }
+    }
+
     if (!isValid) {
         showProjectToast('Please fill in all required fields', 'error');
         return;
     }
-    
+
     // Show creating project overlay
     showCreatingProjectOverlay();
-    
+
     // Submit the form
     form.submit();
 };

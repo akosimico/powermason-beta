@@ -2903,6 +2903,7 @@ def api_document_stats(request):
         total_documents = documents.count()
         contracts = documents.filter(document_type='CONTRACT').count()
         reports = documents.filter(document_type='REPORT').count()
+        quotations_count = documents.filter(document_type='QUOTATION').count()
 
         # Calculate total size
         total_size_bytes = documents.aggregate(
@@ -2910,8 +2911,8 @@ def api_document_stats(request):
         )['total'] or 0
 
         # Add old system documents to stats
-        from .models import ProjectProfile
-        
+        from .models import ProjectProfile, SupplierQuotation
+
         # Get old system documents based on user role
         if user_profile.role in ['EG', 'OM']:
             old_projects = ProjectProfile.objects.filter(
@@ -2931,10 +2932,35 @@ def api_document_stats(request):
         # Count old system documents
         old_contracts = old_projects.filter(contract_agreement__isnull=False).exclude(contract_agreement='').count()
         old_permits = old_projects.filter(permits_licenses__isnull=False).exclude(permits_licenses='').count()
-        
+
+        # Count BOQ documents
+        if user_profile.role in ['EG', 'OM']:
+            boq_count = ProjectProfile.objects.filter(boq_items__isnull=False).exclude(boq_items={}).count()
+        elif user_profile.role == 'PM':
+            boq_count = ProjectProfile.objects.filter(
+                boq_items__isnull=False,
+                project_manager=user_profile
+            ).exclude(boq_items={}).count()
+        else:
+            boq_count = 0
+
+        # Count approved quotations
+        if user_profile.role in ['EG', 'OM']:
+            approved_quotations_count = SupplierQuotation.objects.filter(status='APPROVED').count()
+        elif user_profile.role == 'PM':
+            pm_project_ids = ProjectProfile.objects.filter(project_manager=user_profile).values_list('id', flat=True)
+            approved_quotations_count = SupplierQuotation.objects.filter(
+                status='APPROVED',
+                project_type='profile',
+                project_id__in=pm_project_ids
+            ).count()
+        else:
+            approved_quotations_count = 0
+
         # Update totals
-        total_documents += old_contracts + old_permits
+        total_documents += old_contracts + old_permits + boq_count + approved_quotations_count
         contracts += old_contracts
+        quotations_count += approved_quotations_count
 
         # Convert to MB
         total_size_mb = total_size_bytes / (1024 * 1024)
@@ -2947,6 +2973,8 @@ def api_document_stats(request):
             'total_documents': total_documents,
             'contracts': contracts,
             'reports': reports,
+            'quotations': quotations_count,
+            'boq_documents': boq_count,
             'total_size': total_size
         })
 
@@ -3144,6 +3172,151 @@ def api_documents_list(request):
                     'download_url': project.permits_licenses.url
                 })
 
+        # Add BOQ documents for projects that have BOQ data
+        # Only show one BOQ per project (latest/current version)
+        if user_profile.role in ['EG', 'OM']:
+            projects_with_boq = ProjectProfile.objects.filter(
+                boq_items__isnull=False
+            ).exclude(boq_items={}).distinct()
+        elif user_profile.role == 'PM':
+            projects_with_boq = ProjectProfile.objects.filter(
+                boq_items__isnull=False,
+                project_manager=user_profile
+            ).exclude(boq_items={}).distinct()
+        else:
+            projects_with_boq = ProjectProfile.objects.none()
+
+        # Apply project filter if specified
+        if project_id and not project_id.startswith('pending_'):
+            projects_with_boq = projects_with_boq.filter(id=project_id)
+
+        # Apply document type filter
+        if doc_type == 'ALL' or doc_type == 'OTHER':
+            for project in projects_with_boq:
+                # Extract BOQ info
+                boq_info = project.boq_project_info or {}
+                project_name_from_boq = boq_info.get('project_name', project.project_name)
+                floor_area = boq_info.get('floor_area', project.floor_area or 0)
+
+                # Calculate total amount from boq_items
+                total_amount = 0
+                if project.boq_items and isinstance(project.boq_items, list):
+                    for item in project.boq_items:
+                        if item.get('amount'):
+                            try:
+                                total_amount += float(item['amount'])
+                            except (ValueError, TypeError):
+                                pass
+
+                data.append({
+                    'id': f"boq_{project.id}",
+                    'title': f'BOQ - {project.project_name}',
+                    'description': f'Bill of Quantities for {project.project_name}. Floor Area: {floor_area} sqm, Total Cost: ₱{total_amount:,.2f}',
+                    'document_type': 'OTHER',
+                    'document_type_display': 'BOQ (Bill of Quantities)',
+                    'project_stage': 'PLAN',
+                    'project_stage_display': 'Planning',
+                    'project_name': project.project_name,
+                    'version': '1.0',
+                    'file_size': 'N/A',
+                    'file_extension': 'json',
+                    'uploaded_by': project.created_by.full_name if project.created_by else (project.project_manager.full_name if project.project_manager else 'System'),
+                    'uploaded_at': localtime(project.created_at).strftime('%b %d, %Y %I:%M %p'),
+                    'tags': 'boq, bill of quantities, costing',
+                    'is_archived': False,
+                    'is_boq': True,
+                    'project_id': project.id
+                })
+
+        # Add approved quotations (latest per project only)
+        from .models import SupplierQuotation
+        from django.db.models import Max
+
+        if user_profile.role in ['EG', 'OM']:
+            approved_quotations = SupplierQuotation.objects.filter(status='APPROVED')
+        elif user_profile.role == 'PM':
+            # Get quotations for projects managed by this PM
+            approved_quotations = SupplierQuotation.objects.filter(
+                status='APPROVED',
+                project_type='profile'
+            )
+            # Filter by PM's projects
+            pm_project_ids = ProjectProfile.objects.filter(
+                project_manager=user_profile
+            ).values_list('id', flat=True)
+            approved_quotations = approved_quotations.filter(project_id__in=pm_project_ids)
+        else:
+            approved_quotations = SupplierQuotation.objects.none()
+
+        # Apply project filter if specified
+        if project_id and not project_id.startswith('pending_'):
+            approved_quotations = approved_quotations.filter(
+                project_id=project_id,
+                project_type='profile'
+            )
+
+        # Get only the latest quotation per project (most recent date_submitted)
+        # Group by project_id and get the latest quotation for each
+        latest_quotation_ids = []
+        seen_projects = set()
+        for quotation in approved_quotations.order_by('-date_submitted'):
+            if quotation.project_id not in seen_projects:
+                latest_quotation_ids.append(quotation.id)
+                seen_projects.add(quotation.project_id)
+
+        approved_quotations = approved_quotations.filter(id__in=latest_quotation_ids)
+
+        # Apply document type filter
+        if doc_type == 'ALL' or doc_type == 'QUOTATION':
+            for quotation in approved_quotations:
+                # Get project name
+                try:
+                    if quotation.project_type == 'profile':
+                        project_obj = ProjectProfile.objects.get(id=quotation.project_id)
+                        project_name = project_obj.project_name
+                    else:
+                        project_name = 'N/A'
+                except ProjectProfile.DoesNotExist:
+                    project_name = 'N/A'
+
+                # Get file size
+                file_size = 0
+                file_extension = ''
+                if quotation.quotation_file:
+                    try:
+                        file_size = quotation.quotation_file.size
+                        file_extension = quotation.quotation_file.name.split('.')[-1] if '.' in quotation.quotation_file.name else ''
+                    except:
+                        pass
+
+                if file_size >= 1024 * 1024:
+                    file_size_str = f"{file_size / (1024 * 1024):.1f} MB"
+                elif file_size >= 1024:
+                    file_size_str = f"{file_size / 1024:.1f} KB"
+                else:
+                    file_size_str = f"{file_size} Bytes" if file_size > 0 else "N/A"
+
+                data.append({
+                    'id': f"quotation_{quotation.id}",
+                    'title': f'Quotation - {quotation.supplier_name}',
+                    'description': f'Approved quotation from {quotation.supplier_name} for {project_name}. Amount: ₱{quotation.total_amount:,.2f}' if quotation.total_amount else f'Approved quotation from {quotation.supplier_name}',
+                    'document_type': 'QUOTATION',
+                    'document_type_display': 'Supplier Quotation',
+                    'project_stage': 'PLAN',
+                    'project_stage_display': 'Planning',
+                    'project_name': project_name,
+                    'version': '1.0',
+                    'file_size': file_size_str,
+                    'file_extension': file_extension,
+                    'uploaded_by': quotation.uploaded_by.full_name if quotation.uploaded_by else 'Unknown',
+                    'uploaded_at': localtime(quotation.date_submitted).strftime('%b %d, %Y %I:%M %p'),
+                    'tags': f'quotation, supplier, {quotation.supplier_name}',
+                    'is_archived': False,
+                    'is_quotation': True,
+                    'quotation_id': quotation.id,
+                    'download_url': quotation.quotation_file.url if quotation.quotation_file else None
+                })
+
         return JsonResponse({
             'documents': data,
             'count': len(data)
@@ -3159,6 +3332,140 @@ def api_document_detail(request, doc_id):
     try:
         user_profile = request.user.userprofile
 
+        # Handle BOQ details
+        if str(doc_id).startswith('boq_'):
+            project_id = int(doc_id.replace('boq_', ''))
+
+            # Permission check
+            if user_profile.role in ['EG', 'OM']:
+                project = get_object_or_404(ProjectProfile, id=project_id)
+            elif user_profile.role == 'PM':
+                project = get_object_or_404(ProjectProfile, id=project_id, project_manager=user_profile)
+            else:
+                return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+            # Extract BOQ info
+            boq_info = project.boq_project_info or {}
+            floor_area = boq_info.get('floor_area', project.floor_area or 0)
+
+            # Calculate total from boq_items
+            total_amount = 0
+            item_count = 0
+            divisions = set()
+            if project.boq_items and isinstance(project.boq_items, list):
+                for item in project.boq_items:
+                    if item.get('amount'):
+                        try:
+                            total_amount += float(item['amount'])
+                            item_count += 1
+                        except (ValueError, TypeError):
+                            pass
+                    if item.get('division'):
+                        divisions.add(item['division'])
+
+            data = {
+                'id': doc_id,
+                'title': f'BOQ - {project.project_name}',
+                'description': f'Bill of Quantities for {project.project_name}',
+                'document_type': 'OTHER',
+                'document_type_display': 'BOQ (Bill of Quantities)',
+                'project_stage': 'PLAN',
+                'project_stage_display': 'Planning',
+                'project_name': project.project_name,
+                'project_id': project.id,
+                'project_code': project.project_code,
+                'version': '1.0',
+                'file_size': 'N/A',
+                'file_extension': 'json',
+                'uploaded_by': project.created_by.full_name if project.created_by else (project.project_manager.full_name if project.project_manager else 'System'),
+                'uploaded_at': localtime(project.created_at).strftime('%b %d, %Y %I:%M %p'),
+                'tags': 'boq, bill of quantities, costing',
+                'is_boq': True,
+                'boq_details': {
+                    'floor_area': float(floor_area),
+                    'total_cost': float(total_amount),
+                    'item_count': item_count,
+                    'divisions': list(divisions),
+                    'project_info': boq_info
+                }
+            }
+            return JsonResponse(data)
+
+        # Handle Quotation details
+        elif str(doc_id).startswith('quotation_'):
+            quotation_id = int(doc_id.replace('quotation_', ''))
+            from .models import SupplierQuotation
+
+            # Permission check
+            if user_profile.role in ['EG', 'OM']:
+                quotation = get_object_or_404(SupplierQuotation, id=quotation_id, status='APPROVED')
+            elif user_profile.role == 'PM':
+                quotation = get_object_or_404(SupplierQuotation, id=quotation_id, status='APPROVED')
+                # Verify PM has access
+                if quotation.project_type == 'profile':
+                    project = ProjectProfile.objects.filter(id=quotation.project_id, project_manager=user_profile).first()
+                    if not project:
+                        return JsonResponse({'error': 'Unauthorized'}, status=403)
+            else:
+                return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+            # Get project info
+            project_name = 'N/A'
+            project_code = 'N/A'
+            if quotation.project_type == 'profile':
+                try:
+                    project = ProjectProfile.objects.get(id=quotation.project_id)
+                    project_name = project.project_name
+                    project_code = project.project_code
+                except ProjectProfile.DoesNotExist:
+                    pass
+
+            # Get file size
+            file_size = 0
+            file_extension = ''
+            if quotation.quotation_file:
+                try:
+                    file_size = quotation.quotation_file.size
+                    file_extension = quotation.quotation_file.name.split('.')[-1] if '.' in quotation.quotation_file.name else ''
+                except:
+                    pass
+
+            if file_size >= 1024 * 1024:
+                file_size_str = f"{file_size / (1024 * 1024):.1f} MB"
+            elif file_size >= 1024:
+                file_size_str = f"{file_size / 1024:.1f} KB"
+            else:
+                file_size_str = f"{file_size} Bytes" if file_size > 0 else "N/A"
+
+            data = {
+                'id': doc_id,
+                'title': f'Quotation - {quotation.supplier_name}',
+                'description': f'Approved quotation from {quotation.supplier_name}',
+                'document_type': 'QUOTATION',
+                'document_type_display': 'Supplier Quotation',
+                'project_stage': 'PLAN',
+                'project_stage_display': 'Planning',
+                'project_name': project_name,
+                'project_id': quotation.project_id,
+                'project_code': project_code,
+                'version': '1.0',
+                'file_size': file_size_str,
+                'file_extension': file_extension,
+                'uploaded_by': quotation.uploaded_by.full_name if quotation.uploaded_by else 'Unknown',
+                'uploaded_at': localtime(quotation.date_submitted).strftime('%b %d, %Y %I:%M %p'),
+                'tags': f'quotation, supplier, {quotation.supplier_name}',
+                'is_quotation': True,
+                'quotation_details': {
+                    'supplier_name': quotation.supplier_name,
+                    'total_amount': float(quotation.total_amount) if quotation.total_amount else 0,
+                    'status': quotation.status,
+                    'date_submitted': localtime(quotation.date_submitted).strftime('%b %d, %Y %I:%M %p'),
+                    'download_url': quotation.quotation_file.url if quotation.quotation_file else None
+                }
+            }
+            return JsonResponse(data)
+
+        # Regular document details
         # Get document with permission check
         if user_profile.role in ['EG', 'OM']:
             document = get_object_or_404(
@@ -3353,6 +3660,58 @@ def api_document_download(request, doc_id):
     try:
         user_profile = request.user.userprofile
 
+        # Check if this is a special document type (BOQ or quotation)
+        if str(doc_id).startswith('boq_'):
+            # Handle BOQ download
+            project_id = int(doc_id.replace('boq_', ''))
+
+            # Permission check
+            if user_profile.role in ['EG', 'OM']:
+                project = get_object_or_404(ProjectProfile, id=project_id)
+            elif user_profile.role == 'PM':
+                project = get_object_or_404(ProjectProfile, id=project_id, project_manager=user_profile)
+            else:
+                return HttpResponse('Unauthorized', status=403)
+
+            # Export BOQ to Excel
+            if project.boq_items:
+                from .file_preview_views import export_boq_to_excel
+                # Create a mock request for export function
+                class MockRequest:
+                    def __init__(self, user):
+                        self.user = user
+                mock_request = MockRequest(request.user)
+                return export_boq_to_excel(mock_request, project_id)
+            else:
+                return HttpResponse('BOQ data not found', status=404)
+
+        elif str(doc_id).startswith('quotation_'):
+            # Handle quotation download
+            quotation_id = int(doc_id.replace('quotation_', ''))
+            from .models import SupplierQuotation
+
+            # Permission check
+            if user_profile.role in ['EG', 'OM']:
+                quotation = get_object_or_404(SupplierQuotation, id=quotation_id, status='APPROVED')
+            elif user_profile.role == 'PM':
+                quotation = get_object_or_404(SupplierQuotation, id=quotation_id, status='APPROVED')
+                # Verify PM has access to this project
+                if quotation.project_type == 'profile':
+                    project = ProjectProfile.objects.filter(id=quotation.project_id, project_manager=user_profile).first()
+                    if not project:
+                        return HttpResponse('Unauthorized', status=403)
+            else:
+                return HttpResponse('Unauthorized', status=403)
+
+            # Serve the quotation file
+            if quotation.quotation_file:
+                response = HttpResponse(quotation.quotation_file.read(), content_type='application/octet-stream')
+                response['Content-Disposition'] = f'attachment; filename="{os.path.basename(quotation.quotation_file.name)}"'
+                return response
+            else:
+                return HttpResponse('File not found', status=404)
+
+        # Regular document download
         # Get document with permission check
         if user_profile.role in ['EG', 'OM']:
             document = get_object_or_404(ProjectDocument, id=doc_id)

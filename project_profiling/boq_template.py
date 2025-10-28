@@ -258,6 +258,194 @@ def create_hierarchical_boq_template() -> bytes:
     return buf.getvalue()
 
 
+def create_blank_boq_template() -> bytes:
+    """Create blank BOQ template for custom projects"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Blank BOQ"
+
+    header_fill = PatternFill(start_color="6C757D", end_color="6C757D", fill_type="solid")  # Gray
+    header_font = Font(bold=True, color="FFFFFF")
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin = Side(style="thin")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Title
+    ws.merge_cells("A1:G1")
+    ws["A1"].value = "Blank Bill of Quantities Template"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws["A1"].alignment = center
+
+    # Instructions banner (row 2)
+    ws.merge_cells("A2:D2")
+    ws["A2"].value = "📋 INSTRUCTIONS: Fill project info below, then add your items starting at row 10"
+    ws["A2"].font = Font(bold=True, size=10, color="0066CC")
+    ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
+    info_fill = PatternFill(start_color="E7F3FF", end_color="E7F3FF", fill_type="solid")
+    ws["A2"].fill = info_fill
+
+    # Top total amount
+    ws["E2"].value = "Total Amount (PHP)"
+    ws["E2"].font = Font(bold=True)
+    ws["F2"].value = "=SUMIF($G$10:$G$1000,0,$F$10:$F$1000)"
+    ws["F2"].number_format = "#,##0.00"
+    ws.merge_cells("G2:G2")
+
+    # Coding guide (row 3)
+    ws.merge_cells("A3:G3")
+    ws["A3"].value = "💡 CODE FORMAT: 'DIV X' (Division), 'X.Y' (Task), 'X.Y.Z' (Material/Item with qty & cost)"
+    ws["A3"].font = Font(bold=False, size=9, color="666666", italic=True)
+    ws["A3"].alignment = Alignment(horizontal="left", vertical="center")
+    ws["A3"].fill = info_fill
+
+    # Project Info section (blank/editable)
+    project_info = [
+        ("Project Name", "👈 Enter your project name here"),
+        ("Lot Size (sqm)", ""),
+        ("Floor Area (sqm)", ""),
+        ("Project Location", ""),
+        ("Project Duration", ""),
+        ("Contractor", ""),
+    ]
+    base_row = 4
+    for idx, (label, val) in enumerate(project_info):
+        r = base_row + idx
+        ws.cell(row=r, column=1, value=label).font = Font(bold=True)
+        ws.cell(row=r, column=2, value=val)
+        if val and "👈" in val:
+            ws.cell(row=r, column=2).font = Font(italic=True, color="999999")
+
+    # Column headers
+    headers = [
+        "Code",
+        "Description",
+        "UOM",
+        "Quantity",
+        "Unit Cost",
+        "Amount",
+        "Level",
+    ]
+    for col_idx, title in enumerate(headers, start=1):
+        cell = ws.cell(row=9, column=col_idx, value=title)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+
+    # Sample structure (minimal examples to show the pattern)
+    sample_rows = [
+        ("DIV 1", "GENERAL REQUIREMENTS ← Division (no dots, auto-totals)", "", "", "", ""),
+        ("1.1", "Mobilization & Demobilization ← Task (1 dot)", "", "", "", ""),
+        ("1.1.1", "Site mobilization and setup ← Enter Qty & Cost here →", "lot", 1, 50000, "=D10*E10"),
+        ("1.1.2", "Temporary facilities", "lot", 1, 30000, "=D11*E11"),
+        ("1.2", "Project Management & Supervision", "", "", "", ""),
+        ("1.2.1", "Project Manager", "mo", 3, 40000, "=D13*E13"),
+        ("1.2.2", "Site Engineer", "mo", 3, 30000, "=D14*E14"),
+        ("1.3", "Permits & Licenses", "", "", "", ""),
+        ("1.3.1", "Building permit", "lot", 1, 15000, "=D16*E16"),
+        ("1.3.2", "Electrical permit", "lot", 1, 8000, "=D17*E17"),
+
+        ("DIV 2", "SITE PREPARATION ← Add your divisions here", "", "", "", ""),
+        ("2.1", "Earthworks ← Add your tasks here", "", "", "", ""),
+        ("2.1.1", "Excavation ← Replace with your materials", "cum", 10, 850, "=D20*E20"),
+        ("2.1.2", "Backfilling", "cum", 8, 450, "=D21*E21"),
+
+        ("DIV 3", "YOUR CUSTOM CATEGORY ← Delete sample rows, add yours", "", "", "", ""),
+        ("3.1", "Your Task Category", "", "", "", ""),
+        ("3.1.1", "Your material/item description", "unit", "", "", ""),
+    ]
+
+    start_row = 10
+    for r_offset, row in enumerate(sample_rows):
+        row_idx = start_row + r_offset
+        for c_idx, value in enumerate(row, start=1):
+            cell = ws.cell(row=row_idx, column=c_idx, value=value)
+            cell.border = border
+        # Level formula
+        ws.cell(row=row_idx, column=7, value=f"=LEN(A{row_idx})-LEN(SUBSTITUTE(A{row_idx},'.',''))")
+        # Styling for division rows
+        code_val = str(row[0])
+        if code_val.upper().startswith("DIV ") and "." not in code_val:
+            ws.cell(row=row_idx, column=1).font = Font(bold=True)
+            ws.cell(row=row_idx, column=2).font = Font(bold=True)
+            div_fill = PatternFill(start_color="E9ECEF", end_color="E9ECEF", fill_type="solid")
+            for c in range(1, 7):
+                ws.cell(row=row_idx, column=c).fill = div_fill
+            ws.cell(row=row_idx, column=5, value="TOTAL:").font = Font(bold=True)
+            ws.cell(row=row_idx, column=6, value=f"=SUMPRODUCT((LEFT($A$10:$A$1000,LEN(SUBSTITUTE(A{row_idx},\"DIV \",\"\"))+1)=SUBSTITUTE(A{row_idx},\"DIV \",\"\")&\".\")*($G$10:$G$1000=2)*($F$10:$F$1000))")
+            ws.cell(row=row_idx, column=6).number_format = "#,##0.00"
+        if code_val.count('.') == 1:
+            ws.cell(row=row_idx, column=2).font = Font(bold=True)
+
+    # Widths and formatting
+    widths = [18, 50, 12, 12, 14, 16, 8]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[chr(64 + idx)].width = w
+    ws.column_dimensions['G'].hidden = True
+
+    # Notes
+    notes = (
+        "INSTRUCTIONS FOR USING THIS BLANK BOQ TEMPLATE:"\
+        "\n"\
+        "\n1. PROJECT INFORMATION (Rows 4-9):"\
+        "\n   - Fill in your project details in Column B (Project Name, Lot Size, Floor Area, Location, Duration, Contractor)"\
+        "\n   - These fields help identify and track your project"\
+        "\n"\
+        "\n2. CODING STRUCTURE (Column A - Code):"\
+        "\n   - DIV X = Division (no dots) - Major work categories (e.g., DIV 1, DIV 2, DIV 3)"\
+        "\n     Example: DIV 1 = GENERAL REQUIREMENTS, DIV 2 = SITE PREPARATION"\
+        "\n   - X.Y = Task (one dot) - Sub-categories within divisions (e.g., 1.1, 1.2, 2.1)"\
+        "\n     Example: 1.1 = Mobilization, 1.2 = Permits, 2.1 = Earthworks"\
+        "\n   - X.Y.Z = Material/Item (two dots) - Specific items with quantities (e.g., 1.1.1, 1.2.1)"\
+        "\n     Example: 1.1.1 = Site mobilization and setup, 1.2.1 = Building permit"\
+        "\n"\
+        "\n3. FILLING OUT THE BOQ:"\
+        "\n   - Column A (Code): Use the coding structure above (DIV X, X.Y, X.Y.Z)"\
+        "\n   - Column B (Description): Describe the work, task, or material"\
+        "\n   - Column C (UOM): Unit of Measurement (e.g., sqm, lm, pc, lot, kg, cum, mo)"\
+        "\n   - Column D (Quantity): Enter the quantity needed"\
+        "\n   - Column E (Unit Cost): Enter the cost per unit in PHP"\
+        "\n   - Column F (Amount): This is AUTO-CALCULATED (Quantity × Unit Cost)"\
+        "\n   - Column G (Level): This is AUTO-CALCULATED (hidden column, do not edit)"\
+        "\n"\
+        "\n4. AUTOMATIC CALCULATIONS:"\
+        "\n   - Amount (Column F) = Quantity × Unit Cost (automatically calculated)"\
+        "\n   - Division Totals = Automatically sum all materials/items under that division"\
+        "\n   - Total Amount (Cell F2) = Sum of all division totals"\
+        "\n"\
+        "\n5. COMMON UNITS OF MEASUREMENT (UOM):"\
+        "\n   - sqm = square meter    - lm = linear meter    - pc = piece"\
+        "\n   - lot = lump sum        - kg = kilogram        - cum = cubic meter"\
+        "\n   - mo = month            - set = set            - unit = unit"\
+        "\n"\
+        "\n6. TIPS FOR BEST RESULTS:"\
+        "\n   - Keep Division codes simple: DIV 1, DIV 2, DIV 3, etc."\
+        "\n   - Always fill in Quantity and Unit Cost for material items (X.Y.Z level)"\
+        "\n   - Leave Quantity and Unit Cost EMPTY for Division and Task rows (they show totals)"\
+        "\n   - Add as many rows as needed - just insert new rows and follow the coding pattern"\
+        "\n   - Delete sample rows and replace with your actual project items"\
+        "\n"\
+        "\n7. EXAMPLE DIVISIONS YOU CAN USE:"\
+        "\n   - DIV 1 = General Requirements (permits, mobilization, supervision)"\
+        "\n   - DIV 2 = Site Preparation (clearing, excavation, grading)"\
+        "\n   - DIV 3 = Concrete Works (foundation, slabs, columns)"\
+        "\n   - DIV 4 = Masonry Works (blockwork, plastering, tiling)"\
+        "\n   - DIV 5 = Carpentry & Woodworks (doors, windows, roofing)"\
+        "\n   - DIV 6 = Electrical Works (wiring, outlets, fixtures)"\
+        "\n   - DIV 7 = Plumbing Works (pipes, fixtures, drainage)"\
+        "\n   - DIV 8 = Painting & Finishing (paint, flooring, hardware)"
+    )
+    notes_row = start_row + len(sample_rows) + 2
+    ws.merge_cells(f"A{notes_row}:G{notes_row + 4}")
+    ncell = ws[f"A{notes_row}"]
+    ncell.value = notes
+    ncell.alignment = Alignment(wrap_text=True)
+
+    buf = BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 def create_electrical_boq_template() -> bytes:
     """Create specialized BOQ template for Electrical Works"""
     wb = Workbook()
