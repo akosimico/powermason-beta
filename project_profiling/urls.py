@@ -161,6 +161,7 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     # BOQ Upload API
     path('api/boq-upload/', file_preview_views.BOQUploadAPIView.as_view(), name='api_boq_upload'),
     path('boq/template/', file_preview_views.download_boq_template, name='download_boq_template'),
+    path('boq/template/blank/', file_preview_views.download_blank_boq_template, name='download_blank_boq_template'),
     path('boq/template/electrical/', file_preview_views.download_electrical_boq_template, name='download_electrical_boq_template'),
     path('boq/template/mechanical/', file_preview_views.download_mechanical_boq_template, name='download_mechanical_boq_template'),
     path('boq/template/civil/', file_preview_views.download_civil_boq_template, name='download_civil_boq_template'),

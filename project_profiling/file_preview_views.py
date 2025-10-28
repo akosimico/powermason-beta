@@ -18,6 +18,7 @@ from authentication.utils.decorators import verified_email_required, role_requir
 from .file_processing import FileProcessor, extract_cost_summary
 from .boq_template import (
     create_hierarchical_boq_template,
+    create_blank_boq_template,
     create_electrical_boq_template,
     create_mechanical_boq_template,
     create_civil_boq_template,
@@ -718,6 +719,20 @@ def download_architectural_boq_template(request):
         content = create_architectural_boq_template()
         response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="Architectural_BOQ_Template.xlsx"'
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_blank_boq_template(request):
+    try:
+        content = create_blank_boq_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Blank_BOQ_Template.xlsx"'
         return response
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
