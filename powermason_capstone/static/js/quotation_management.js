@@ -263,14 +263,14 @@ function updateQuotationDisplay() {
                 </td>
                 <td class="px-4 py-4">
                     <div class="flex items-center space-x-2">
-                        <a href="${quotation.file_url || '#'}" target="_blank" 
+                        <button onclick="openQuotationPreview('${quotation.file_url || '#'}', '${(quotation.supplier_name || 'Unknown').replace(/'/g, "\\'")}', '${(quotation.file_name || 'No file').replace(/'/g, "\\'")}');"
                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                             View
-                        </a>
+                        </button>
                         ${quotation.status === 'PENDING' ? `
                             <button data-quotation-id="${quotation.id}" 
                                     onclick="approveQuotation(this.getAttribute('data-quotation-id'))" 
@@ -980,9 +980,411 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+/**
+ * Open quotation preview modal
+ */
+function openQuotationPreview(fileUrl, supplierName, fileName) {
+    console.log('Opening preview for:', fileUrl, supplierName, fileName);
+
+    const modal = document.getElementById('quotationPreviewModal');
+    const previewIframe = document.getElementById('previewIframe');
+    const previewLoading = document.getElementById('previewLoading');
+    const previewError = document.getElementById('previewError');
+    const downloadBtn = document.getElementById('downloadQuotationBtn');
+    const modalTitle = document.getElementById('previewModalTitle');
+    const modalSubtitle = document.getElementById('previewModalSubtitle');
+
+    if (!modal) {
+        console.error('Preview modal not found');
+        return;
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Update modal title
+    if (modalTitle) {
+        modalTitle.textContent = `Quotation from ${supplierName}`;
+    }
+    if (modalSubtitle) {
+        modalSubtitle.textContent = fileName;
+    }
+
+    // Set download button
+    if (downloadBtn) {
+        downloadBtn.href = fileUrl;
+        downloadBtn.download = fileName;
+    }
+
+    // Reset states
+    if (previewLoading) previewLoading.classList.remove('hidden');
+    if (previewIframe) previewIframe.classList.add('hidden');
+    if (previewError) previewError.classList.add('hidden');
+
+    // Determine file type from URL or filename
+    const extension = fileName.split('.').pop().toLowerCase();
+
+    // Check if file can be previewed
+    if (canPreviewFile(extension)) {
+        // Load preview
+        loadFilePreview(fileUrl, extension, previewIframe, previewLoading, previewError);
+    } else {
+        // Show error for unsupported file types
+        if (previewLoading) previewLoading.classList.add('hidden');
+        if (previewError) previewError.classList.remove('hidden');
+    }
+}
+
+/**
+ * Close quotation preview modal
+ */
+function closePreviewModal() {
+    const modal = document.getElementById('quotationPreviewModal');
+    const previewIframe = document.getElementById('previewIframe');
+
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Clear iframe to stop any loading
+    if (previewIframe) {
+        previewIframe.src = 'about:blank';
+        previewIframe.classList.add('hidden');
+    }
+}
+
+/**
+ * Check if file type can be previewed
+ */
+function canPreviewFile(extension) {
+    const previewableTypes = [
+        'pdf',
+        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg',
+        'txt', 'csv',
+        'xlsx', 'xls', 'xlsm',  // Excel files
+        'doc', 'docx',          // Word documents
+        'ppt', 'pptx'           // PowerPoint presentations
+    ];
+    return previewableTypes.includes(extension);
+}
+
+/**
+ * Load file preview into iframe
+ */
+function loadFilePreview(fileUrl, extension, previewIframe, previewLoading, previewError) {
+    try {
+        // For Excel files, use SheetJS to read and display
+        if (['xlsx', 'xls', 'xlsm'].includes(extension)) {
+            loadExcelPreview(fileUrl, previewIframe, previewLoading, previewError);
+        }
+        // For Word/PowerPoint - show not supported message
+        else if (['doc', 'docx', 'ppt', 'pptx'].includes(extension)) {
+            showUnsupportedFileMessage(extension, previewIframe, previewLoading, previewError);
+        }
+        // For images, create an img element
+        else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension)) {
+            const img = new Image();
+            img.onload = function() {
+                // Create a simple HTML page to display the image centered
+                const imgHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                min-height: 100vh;
+                                background: #f9fafb;
+                            }
+                            img {
+                                max-width: 100%;
+                                max-height: 90vh;
+                                object-fit: contain;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${fileUrl}" alt="Quotation Image" />
+                    </body>
+                    </html>
+                `;
+
+                if (previewIframe) {
+                    previewIframe.srcdoc = imgHtml;
+                    previewIframe.classList.remove('hidden');
+                }
+                if (previewLoading) previewLoading.classList.add('hidden');
+            };
+            img.onerror = function() {
+                if (previewLoading) previewLoading.classList.add('hidden');
+                if (previewError) previewError.classList.remove('hidden');
+            };
+            img.src = fileUrl;
+        }
+        // For PDF files, use Google Docs Viewer or direct embed
+        else if (extension === 'pdf') {
+            // Try to use iframe with PDF
+            if (previewIframe) {
+                // Use Google Docs Viewer as fallback for better compatibility
+                const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+
+                previewIframe.onload = function() {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                };
+
+                previewIframe.onerror = function() {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                    if (previewError) previewError.classList.remove('hidden');
+                };
+
+                // First try direct PDF embedding
+                previewIframe.src = fileUrl;
+                previewIframe.classList.remove('hidden');
+
+                // If direct embedding fails after 3 seconds, try Google Docs Viewer
+                setTimeout(() => {
+                    if (previewLoading && !previewLoading.classList.contains('hidden')) {
+                        previewIframe.src = viewerUrl;
+                    }
+                }, 3000);
+            }
+        }
+        // For text/CSV files
+        else if (['txt', 'csv'].includes(extension)) {
+            fetch(fileUrl)
+                .then(response => response.text())
+                .then(text => {
+                    const textHtml = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body {
+                                    margin: 0;
+                                    padding: 20px;
+                                    font-family: monospace;
+                                    background: #f9fafb;
+                                    white-space: pre-wrap;
+                                    word-wrap: break-word;
+                                }
+                            </style>
+                        </head>
+                        <body>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
+                        </html>
+                    `;
+
+                    if (previewIframe) {
+                        previewIframe.srcdoc = textHtml;
+                        previewIframe.classList.remove('hidden');
+                    }
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                })
+                .catch(() => {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                    if (previewError) previewError.classList.remove('hidden');
+                });
+        }
+        else {
+            // Unsupported type
+            if (previewLoading) previewLoading.classList.add('hidden');
+            if (previewError) previewError.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error loading preview:', error);
+        if (previewLoading) previewLoading.classList.add('hidden');
+        if (previewError) previewError.classList.remove('hidden');
+    }
+}
+
+/**
+ * Load Excel file preview using SheetJS
+ */
+function loadExcelPreview(fileUrl, previewIframe, previewLoading, previewError) {
+    fetch(fileUrl)
+        .then(response => response.arrayBuffer())
+        .then(data => {
+            // Read the Excel file
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // Get all sheet names
+            const sheetNames = workbook.SheetNames;
+
+            // Build HTML for all sheets
+            let htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 20px;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            background: #f9fafb;
+                        }
+                        .sheet-tabs {
+                            background: white;
+                            padding: 10px 20px;
+                            border-bottom: 2px solid #e5e7eb;
+                            margin-bottom: 20px;
+                            border-radius: 8px 8px 0 0;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                            position: sticky;
+                            top: 0;
+                            z-index: 10;
+                        }
+                        .sheet-tab {
+                            display: inline-block;
+                            padding: 8px 16px;
+                            margin-right: 8px;
+                            background: #f3f4f6;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 500;
+                            transition: all 0.2s;
+                            border: 2px solid transparent;
+                        }
+                        .sheet-tab:hover {
+                            background: #e5e7eb;
+                        }
+                        .sheet-tab.active {
+                            background: #3b82f6;
+                            color: white;
+                            border-color: #2563eb;
+                        }
+                        .sheet-content {
+                            display: none;
+                            background: white;
+                            border-radius: 8px;
+                            padding: 20px;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                            overflow-x: auto;
+                        }
+                        .sheet-content.active {
+                            display: block;
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            font-size: 13px;
+                        }
+                        th, td {
+                            border: 1px solid #e5e7eb;
+                            padding: 8px 12px;
+                            text-align: left;
+                            white-space: nowrap;
+                        }
+                        th {
+                            background: #f9fafb;
+                            font-weight: 600;
+                            color: #374151;
+                            position: sticky;
+                            top: 60px;
+                            z-index: 5;
+                        }
+                        tr:hover {
+                            background: #f9fafb;
+                        }
+                        .empty-cell {
+                            color: #9ca3af;
+                            font-style: italic;
+                        }
+                        .file-info {
+                            background: #eff6ff;
+                            border: 1px solid #bfdbfe;
+                            border-radius: 6px;
+                            padding: 12px;
+                            margin-bottom: 20px;
+                            font-size: 13px;
+                            color: #1e40af;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="file-info">
+                        📊 <strong>Excel Spreadsheet Preview</strong> - Showing ${sheetNames.length} sheet(s)
+                    </div>
+            `;
+
+            // Add sheet tabs if multiple sheets
+            if (sheetNames.length > 1) {
+                htmlContent += '<div class="sheet-tabs">';
+                sheetNames.forEach((name, index) => {
+                    htmlContent += `<span class="sheet-tab ${index === 0 ? 'active' : ''}" onclick="switchSheet(${index})">${name}</span>`;
+                });
+                htmlContent += '</div>';
+            }
+
+            // Add content for each sheet
+            sheetNames.forEach((sheetName, index) => {
+                const worksheet = workbook.Sheets[sheetName];
+                const htmlTable = XLSX.utils.sheet_to_html(worksheet, {
+                    header: '',
+                    editable: false
+                });
+
+                htmlContent += `
+                    <div class="sheet-content ${index === 0 ? 'active' : ''}" id="sheet-${index}">
+                        ${sheetNames.length === 1 ? `<h3 style="margin-top: 0; color: #374151;">${sheetName}</h3>` : ''}
+                        ${htmlTable}
+                    </div>
+                `;
+            });
+
+            htmlContent += `
+                    <script>
+                        function switchSheet(index) {
+                            // Hide all sheets
+                            document.querySelectorAll('.sheet-content').forEach(sheet => {
+                                sheet.classList.remove('active');
+                            });
+                            // Remove active from all tabs
+                            document.querySelectorAll('.sheet-tab').forEach(tab => {
+                                tab.classList.remove('active');
+                            });
+                            // Show selected sheet
+                            document.getElementById('sheet-' + index).classList.add('active');
+                            // Activate tab
+                            document.querySelectorAll('.sheet-tab')[index].classList.add('active');
+                        }
+                    </script>
+                </body>
+                </html>
+            `;
+
+            // Display the preview
+            if (previewIframe) {
+                previewIframe.srcdoc = htmlContent;
+                previewIframe.classList.remove('hidden');
+            }
+            if (previewLoading) previewLoading.classList.add('hidden');
+        })
+        .catch(error => {
+            console.error('Error loading Excel file:', error);
+            if (previewLoading) previewLoading.classList.add('hidden');
+            if (previewError) previewError.classList.remove('hidden');
+        });
+}
+
+/**
+ * Show message for unsupported file types
+ */
+function showUnsupportedFileMessage(extension, previewIframe, previewLoading, previewError) {
+    if (previewLoading) previewLoading.classList.add('hidden');
+    if (previewError) previewError.classList.remove('hidden');
+}
+
 // Make functions globally available
 window.openUploadModal = openUploadModal;
 window.closeUploadModal = closeUploadModal;
 window.approveQuotation = approveQuotation;
 window.deleteQuotation = deleteQuotation;
 window.downloadRFS = downloadRFS;
+window.openQuotationPreview = openQuotationPreview;
+window.closePreviewModal = closePreviewModal;

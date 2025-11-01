@@ -4045,12 +4045,12 @@ def forward_geocode(request):
         query = request.GET.get('q')
         limit = request.GET.get('limit', '5')
         countrycodes = request.GET.get('countrycodes', 'ph')
-        
+
         if not query:
             return JsonResponse({
                 'error': 'Query parameter is required'
             }, status=400)
-        
+
         # Build the Nominatim API URL
         nominatim_url = 'https://nominatim.openstreetmap.org/search'
         params = {
@@ -4060,27 +4060,27 @@ def forward_geocode(request):
             'countrycodes': countrycodes,
             'addressdetails': '1',
         }
-        
+
         # Add User-Agent header as required by Nominatim
         headers = {
             'User-Agent': 'PowerMason/1.0 (Project Management System)'
         }
-        
+
         # Make the request to Nominatim
         response = requests.get(nominatim_url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
-        
+
         # Parse the response
         data = response.json()
-        
+
         # Return the data with proper CORS headers
         json_response = JsonResponse(data, safe=False)
         json_response['Access-Control-Allow-Origin'] = '*'
         json_response['Access-Control-Allow-Methods'] = 'GET'
         json_response['Access-Control-Allow-Headers'] = 'Content-Type'
-        
+
         return json_response
-        
+
     except requests.exceptions.RequestException as e:
         return JsonResponse({
             'error': f'Failed to fetch geocoding data: {str(e)}'
@@ -4093,3 +4093,49 @@ def forward_geocode(request):
         return JsonResponse({
             'error': f'Unexpected error: {str(e)}'
         }, status=500)
+
+
+@login_required
+def update_downpayment(request, project_id):
+    """
+    Update downpayment status and evidence for a project
+    """
+    try:
+        project = get_object_or_404(ProjectProfile, id=project_id)
+
+        # Check permissions (only OM and EG can update)
+        if request.user.userprofile.role not in ['OM', 'EG']:
+            messages.error(request, 'You do not have permission to update downpayment status.')
+            return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+        if request.method == 'POST':
+            # Get the payment status
+            downpayment_paid = request.POST.get('downpayment_paid') == 'true'
+
+            # Update the project
+            project.downpayment_paid = downpayment_paid
+
+            # If marked as paid, set the date
+            if downpayment_paid:
+                from django.utils import timezone
+                if not project.downpayment_date:
+                    project.downpayment_date = timezone.now()
+            else:
+                # If marked as not paid, clear the date
+                project.downpayment_date = None
+
+            # Handle file upload
+            if 'downpayment_evidence' in request.FILES:
+                project.downpayment_evidence = request.FILES['downpayment_evidence']
+
+            project.save()
+
+            # Success message
+            status_text = "paid" if downpayment_paid else "not paid"
+            messages.success(request, f'Downpayment status updated to {status_text} successfully.')
+
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+    except Exception as e:
+        messages.error(request, f'Error updating downpayment: {str(e)}')
+        return redirect('project_view', project_source=project.project_source, pk=project.id)

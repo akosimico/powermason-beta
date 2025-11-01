@@ -431,11 +431,13 @@ function updateQuotationDisplay() {
             ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>Rejected</span>'
             : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><svg class="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Pending</span>';
         
+        const viewButtonHtml = `<button onclick="openQuotationPreview('${quotation.quotation_file?.url || '#'}', '${(quotation.supplier_name || 'Unknown').replace(/'/g, "\\'")}', '${(quotation.quotation_file?.name || 'No file').replace(/'/g, "\\'")}')" class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>View
+                 </button>`;
+
         const actions = quotation.status === 'PENDING'
             ? `<div class="flex items-center space-x-2">
-                 <a href="${quotation.quotation_file?.url || '#'}" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
-                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>View
-                 </a>
+                 ${viewButtonHtml}
                  <button data-quotation-id="${quotation.id}" onclick="approveQuotation(this.getAttribute('data-quotation-id'))" class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors">
                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Approve
                  </button>
@@ -444,9 +446,7 @@ function updateQuotationDisplay() {
                  </button>
                </div>`
             : `<div class="flex items-center space-x-2">
-                 <a href="${quotation.quotation_file?.url || '#'}" target="_blank" class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
-                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>View
-                 </a>
+                 ${viewButtonHtml}
                </div>`;
         
         row.innerHTML = `
@@ -795,9 +795,219 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+/**
+ * Open quotation preview modal
+ */
+function openQuotationPreview(fileUrl, supplierName, fileName) {
+    console.log('Opening preview for:', fileUrl, supplierName, fileName);
+
+    const modal = document.getElementById('quotationPreviewModal');
+    const previewIframe = document.getElementById('previewIframe');
+    const previewLoading = document.getElementById('previewLoading');
+    const previewError = document.getElementById('previewError');
+    const downloadBtn = document.getElementById('downloadQuotationBtn');
+    const modalTitle = document.getElementById('previewModalTitle');
+    const modalSubtitle = document.getElementById('previewModalSubtitle');
+
+    if (!modal) {
+        console.error('Preview modal not found');
+        return;
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Update modal title
+    if (modalTitle) {
+        modalTitle.textContent = `Quotation from ${supplierName}`;
+    }
+    if (modalSubtitle) {
+        modalSubtitle.textContent = fileName;
+    }
+
+    // Set download button
+    if (downloadBtn) {
+        downloadBtn.href = fileUrl;
+        downloadBtn.download = fileName;
+    }
+
+    // Reset states
+    if (previewLoading) previewLoading.classList.remove('hidden');
+    if (previewIframe) previewIframe.classList.add('hidden');
+    if (previewError) previewError.classList.add('hidden');
+
+    // Determine file type from URL or filename
+    const extension = fileName.split('.').pop().toLowerCase();
+
+    // Check if file can be previewed
+    if (canPreviewFile(extension)) {
+        // Load preview
+        loadFilePreview(fileUrl, extension, previewIframe, previewLoading, previewError);
+    } else {
+        // Show error for unsupported file types
+        if (previewLoading) previewLoading.classList.add('hidden');
+        if (previewError) previewError.classList.remove('hidden');
+    }
+}
+
+/**
+ * Close quotation preview modal
+ */
+function closePreviewModal() {
+    const modal = document.getElementById('quotationPreviewModal');
+    const previewIframe = document.getElementById('previewIframe');
+
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Clear iframe to stop any loading
+    if (previewIframe) {
+        previewIframe.src = 'about:blank';
+        previewIframe.classList.add('hidden');
+    }
+}
+
+/**
+ * Check if file type can be previewed
+ */
+function canPreviewFile(extension) {
+    const previewableTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'txt', 'csv'];
+    return previewableTypes.includes(extension);
+}
+
+/**
+ * Load file preview into iframe
+ */
+function loadFilePreview(fileUrl, extension, previewIframe, previewLoading, previewError) {
+    try {
+        // For images, create an img element
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+            const img = new Image();
+            img.onload = function() {
+                // Create a simple HTML page to display the image centered
+                const imgHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                min-height: 100vh;
+                                background: #f9fafb;
+                            }
+                            img {
+                                max-width: 100%;
+                                max-height: 90vh;
+                                object-fit: contain;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${fileUrl}" alt="Quotation Image" />
+                    </body>
+                    </html>
+                `;
+
+                if (previewIframe) {
+                    previewIframe.srcdoc = imgHtml;
+                    previewIframe.classList.remove('hidden');
+                }
+                if (previewLoading) previewLoading.classList.add('hidden');
+            };
+            img.onerror = function() {
+                if (previewLoading) previewLoading.classList.add('hidden');
+                if (previewError) previewError.classList.remove('hidden');
+            };
+            img.src = fileUrl;
+        }
+        // For PDF files, use Google Docs Viewer or direct embed
+        else if (extension === 'pdf') {
+            // Try to use iframe with PDF
+            if (previewIframe) {
+                // Use Google Docs Viewer as fallback for better compatibility
+                const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+
+                previewIframe.onload = function() {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                };
+
+                previewIframe.onerror = function() {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                    if (previewError) previewError.classList.remove('hidden');
+                };
+
+                // First try direct PDF embedding
+                previewIframe.src = fileUrl;
+                previewIframe.classList.remove('hidden');
+
+                // If direct embedding fails after 3 seconds, try Google Docs Viewer
+                setTimeout(() => {
+                    if (previewLoading && !previewLoading.classList.contains('hidden')) {
+                        previewIframe.src = viewerUrl;
+                    }
+                }, 3000);
+            }
+        }
+        // For text/CSV files
+        else if (['txt', 'csv'].includes(extension)) {
+            fetch(fileUrl)
+                .then(response => response.text())
+                .then(text => {
+                    const textHtml = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body {
+                                    margin: 0;
+                                    padding: 20px;
+                                    font-family: monospace;
+                                    background: #f9fafb;
+                                    white-space: pre-wrap;
+                                    word-wrap: break-word;
+                                }
+                            </style>
+                        </head>
+                        <body>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
+                        </html>
+                    `;
+
+                    if (previewIframe) {
+                        previewIframe.srcdoc = textHtml;
+                        previewIframe.classList.remove('hidden');
+                    }
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                })
+                .catch(() => {
+                    if (previewLoading) previewLoading.classList.add('hidden');
+                    if (previewError) previewError.classList.remove('hidden');
+                });
+        }
+        else {
+            // Unsupported type
+            if (previewLoading) previewLoading.classList.add('hidden');
+            if (previewError) previewError.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error loading preview:', error);
+        if (previewLoading) previewLoading.classList.add('hidden');
+        if (previewError) previewError.classList.remove('hidden');
+    }
+}
+
 // Make functions globally available
 window.openUploadModal = openUploadModal;
 window.closeUploadModal = closeUploadModal;
 window.approveQuotation = approveQuotation;
 window.deleteQuotation = deleteQuotation;
 window.downloadRFS = downloadRFS;
+window.openQuotationPreview = openQuotationPreview;
+window.closePreviewModal = closePreviewModal;

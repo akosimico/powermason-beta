@@ -428,7 +428,15 @@ class ProjectProfile(models.Model):
     approved_budget = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
     expense = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
     payment_terms = models.TextField(blank=True, null=True)
-    
+    downpayment_paid = models.BooleanField(default=False, help_text="Whether client has paid the downpayment")
+    downpayment_evidence = models.FileField(
+        upload_to='downpayment_evidence/',
+        blank=True,
+        null=True,
+        help_text="Evidence of downpayment (receipt, bank transfer, etc.)"
+    )
+    downpayment_date = models.DateTimeField(blank=True, null=True, help_text="Date when downpayment was received")
+
     # ----------------------------
     # 7. Team & Resources
     # ----------------------------
