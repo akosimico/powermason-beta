@@ -80,8 +80,7 @@ def task_gantt_view(request, project_id):
                 critical_tasks.append(task.id)
 
     context = {
-        'token': token,
-        'role': role,
+        'role': verified_profile.role,
         'project': project,
         'tasks': tasks,
         'scopes': scopes,
@@ -231,8 +230,7 @@ def three_week_lookahead(request, project_id):
     ).select_related('scope', 'assigned_to__user').order_by('start_date')
 
     context = {
-        'token': token,
-        'role': role,
+        'role': verified_profile.role,
         'project': project,
         'today': today,
         'week_1_start': today,

@@ -384,9 +384,13 @@ class ProjectScheduleForm(forms.ModelForm):
         cleaned_data = super().clean()
 
         # Check if project has reached upload limit (5 attempts)
+        # Only count non-rejected schedules (rejected schedules don't count towards limit)
         if self.project:
-            existing_schedules = ProjectSchedule.objects.filter(project=self.project).count()
-            if existing_schedules >= 5:
+            non_rejected_count = ProjectSchedule.objects.filter(
+                project=self.project
+            ).exclude(status='REJECTED').count()
+
+            if non_rejected_count >= 5:
                 raise forms.ValidationError(
                     'Maximum upload limit reached (5 attempts). Please contact OM or EG for assistance.'
                 )

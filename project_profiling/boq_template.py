@@ -1115,3 +1115,214 @@ def create_architectural_boq_template() -> bytes:
     buf = BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+def create_progress_report_template() -> bytes:
+    """
+    Create a blank progress report template based on the provided image
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Progress Report"
+
+    # Define styles
+    header_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # Yellow
+    light_green_fill = PatternFill(start_color="D4EDDA", end_color="D4EDDA", fill_type="solid")
+    light_blue_fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+    header_font = Font(bold=True, size=10)
+    title_font = Font(bold=True, size=12)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    right_align = Alignment(horizontal="right", vertical="center")
+    thin = Side(style="thin", color="000000")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Set column widths
+    ws.column_dimensions['A'].width = 8   # ITEM
+    ws.column_dimensions['B'].width = 35  # PARTICULARS
+    ws.column_dimensions['C'].width = 8   # QTY
+    ws.column_dimensions['D'].width = 8   # UNIT
+    ws.column_dimensions['E'].width = 12  # AMOUNT
+    ws.column_dimensions['F'].width = 10  # 12-Aug-24 MON
+    ws.column_dimensions['G'].width = 10  # 13-Aug-24 TUE
+    ws.column_dimensions['H'].width = 10  # 14-Aug-24 WED
+    ws.column_dimensions['I'].width = 10  # 15-Aug-24 THU
+    ws.column_dimensions['J'].width = 10  # 16-Aug-24 FRI
+    ws.column_dimensions['K'].width = 10  # 17-Aug-24 SAT
+    ws.column_dimensions['L'].width = 10  # 18-Aug-24 SUN
+    ws.column_dimensions['M'].width = 12  # TOTAL AMOUNT
+    ws.column_dimensions['N'].width = 12  # PERCENT
+
+    # Project Header Information (Row 1-3)
+    ws.merge_cells('A1:D1')
+    ws['A1'] = 'PROJECT:'
+    ws['A1'].font = header_font
+    ws['A1'].alignment = left_align
+
+    ws.merge_cells('E1:J1')
+    ws['E1'] = '[Enter Project Name Here]'
+    ws['E1'].alignment = left_align
+
+    ws.merge_cells('K1:L1')
+    ws['K1'] = 'PERIOD:'
+    ws['K1'].font = header_font
+    ws['K1'].alignment = right_align
+
+    ws.merge_cells('M1:N1')
+    ws['M1'] = '[Date Range]'
+    ws['M1'].alignment = center
+
+    ws.merge_cells('A2:D2')
+    ws['A2'] = 'PROJECT NO:'
+    ws['A2'].font = header_font
+    ws['A2'].alignment = left_align
+
+    ws.merge_cells('E2:J2')
+    ws['E2'] = '[Project Number]'
+    ws['E2'].alignment = left_align
+
+    ws.merge_cells('K2:L2')
+    ws['K2'] = 'AS OF'
+    ws['K2'].font = header_font
+    ws['K2'].alignment = right_align
+
+    ws.merge_cells('M2:N2')
+    ws['M2'] = '[Report Date]'
+    ws['M2'].alignment = center
+
+    ws.merge_cells('A3:D3')
+    ws['A3'] = 'LOCATION:'
+    ws['A3'].font = header_font
+    ws['A3'].alignment = left_align
+
+    ws.merge_cells('E3:N3')
+    ws['E3'] = '[Project Location]'
+    ws['E3'].alignment = left_align
+
+    # Title Row (Row 4)
+    ws.merge_cells('A4:N4')
+    ws['A4'] = 'PROGRESS REPORT - WEEK [X]'
+    ws['A4'].font = title_font
+    ws['A4'].alignment = center
+    ws['A4'].fill = header_fill
+    ws['A4'].border = border
+
+    # Progress This Week Header (Row 5)
+    ws.merge_cells('A5:E5')
+    ws['A5'] = ''
+    ws.merge_cells('F5:L5')
+    ws['F5'] = 'PROGRESS THIS WEEK'
+    ws['F5'].font = header_font
+    ws['F5'].alignment = center
+    ws['F5'].fill = header_fill
+    ws['F5'].border = border
+    ws.merge_cells('M5:N5')
+    ws['M5'] = ''
+
+    # Column Headers (Row 6)
+    headers = [
+        'ITEM',
+        'PARTICULARS',
+        'QTY',
+        'UNIT',
+        'APPROVED CONTRACT\nAMOUNT',
+        '[Date 1]\n[Day 1]',
+        '[Date 2]\n[Day 2]',
+        '[Date 3]\n[Day 3]',
+        '[Date 4]\n[Day 4]',
+        '[Date 5]\n[Day 5]',
+        '[Date 6]\n[Day 6]',
+        '[Date 7]\n[Day 7]',
+        'TOTAL\nAMOUNT OF PERCENT',
+        'AMOUNT\nPERCENT'
+    ]
+
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=6, column=col_idx, value=header)
+        cell.font = header_font
+        cell.alignment = center
+        cell.fill = light_blue_fill
+        cell.border = border
+
+    # Sample Data Structure (Rows 7+)
+    # Add instruction rows with proper structure matching the reference image
+    instruction_rows = [
+        ['', '** INSTRUCTIONS **', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '1. Fill in project details at the top (Project Name, Number, Location, Period)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '2. Update the date headers (Row 6) with your actual week dates', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '3. List all project items/tasks in the PARTICULARS column', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '4. Enter quantities, units, and approved contract amounts', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '5. Track daily progress by entering amounts in the date columns', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '6. Use SUB-TOTAL rows to sum up each section/division', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '7. APPROVED WORKS = Total contract value (sum of all divisions)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '8. Delete these instruction rows before using the template', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '** EXAMPLE ENTRIES - Structure from Reference Image **', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['A.', 'GENERAL REQUIREMENTS', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['A.01', 'MOBILIZATION/DEMOBILIZATION', '1.00', 'lot', '10,000.00', '238.10', '', '', '', '', '', '', '238.10', '2.38%'],
+        ['A.02', 'BONDS AND INSURANCE (by general)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'Site Engineer', '2.00', 'mos', '60,000.00', '1,428.57', '', '', '', '', '', '', '1,428.57', '2.38%'],
+        ['A.05', 'SAFETY REQUIREMENTS', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'First Aid Kit (by gencon)', '2.00', 'mos', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'SUB-TOTAL FOR GENERAL REQUIREMENTS', '', '', '100,000.00', '', '', '', '', '', '', '', '1,666.67', '1.67%'],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['DIV. 7', 'ELECTRICAL WORKS', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['7.1', 'Complete Supply, Delivery and Installation of all Roughing ins, pipes,', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'wires and fittings', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['7.1.1', 'Main and subfeeder conduit fittings', '1.00', 'lot', '14,838.80', '', '', '', '', '', '', '', '0.00', '0.00%'],
+        ['7.1.2', '25 mm diameter PVC', '7.00', 'lgth', '1,518.63', '', '', '', '', '', '', '', '0.00', '0.00%'],
+        ['7.1.3', '20 mm diameter PVC', '807.00', 'lgth', '115,204.45', '2,855.13', '5,308.97', '', '', '', '', '', '8,164.04', '0.34%'],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'SUB-TOTAL OF ELECTRICAL WORKS', '', '', '1,793,768.34', '', '', '', '', '', '', '', '8,164.04', '0.46%'],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['DIV. 9', 'FIRE ALARM SYSTEM', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['9.1', 'Addressable Fire Alarm System (complete with accessories as per Plan...)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'SUB-TOTAL FOR FIRE ALARM SYSTEM', '', '', '82,985.33', '', '', '', '', '', '', '', '0.00', '0.00%'],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', 'GENERAL REQUIREMENTS', '', '', '100,000.00', '', '', '', '', '', '', '', '', ''],
+        ['', 'APPROVED WORKS', '', '', '2,400,000.00', '', '', '', '', '', '', '', '', ''],
+        ['', 'APPROVED WORKS (VAT INCLUSIVE)', '', '', '', '', '', '', '', '', '', '', '12,891.69', '0.54%'],
+    ]
+
+    start_row = 7
+    for row_idx, row_data in enumerate(instruction_rows, start=start_row):
+        for col_idx, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.border = border
+            cell.alignment = left_align if col_idx in [1, 2] else right_align if col_idx >= 5 else center
+
+            # Highlight section headers
+            if col_idx == 2 and value and (value.startswith('**') or value.startswith('DIV') or 'SUB-TOTAL' in value or 'APPROVED' in value):
+                cell.font = header_font
+                if 'SUB-TOTAL' in value or 'APPROVED' in value:
+                    cell.fill = light_green_fill
+
+    # Add Notes Section
+    notes_row = start_row + len(instruction_rows) + 2
+    ws.merge_cells(f'A{notes_row}:N{notes_row}')
+    notes_cell = ws[f'A{notes_row}']
+    notes_cell.value = (
+        "INSTRUCTIONS FOR USE:\n"
+        "1. This template matches the standard progress report format shown in the reference image\n"
+        "2. Replace the sample data with your actual project information\n"
+        "3. The 'Approved Contract Amount' column should contain the budgeted/contract amount for each item\n"
+        "4. Enter daily progress amounts in the date columns (F through L)\n"
+        "5. Use formulas to calculate: Total Amount = SUM(daily amounts), Percent = (Total Amount / Approved Contract Amount) × 100\n"
+        "6. Sub-totals should sum up all items in their respective sections\n"
+        "7. Color coding: Yellow = Headers, Light Blue = Column headers, Light Green = Totals\n\n"
+        "READER IMPLEMENTATION NOTES:\n"
+        "- To extract data from filled reports, read cells E (Approved Contract Amount), M (Total Amount), and N (Percent)\n"
+        "- The Approved Contract Amount (Column E) represents the budget/contract value\n"
+        "- The Total Amount (Column M) shows cumulative progress amount\n"
+        "- The Percentage (Column N) = (Total Amount ÷ Approved Contract Amount) × 100"
+    )
+    notes_cell.alignment = Alignment(wrap_text=True, vertical='top')
+    notes_cell.font = Font(size=9, italic=True)
+    notes_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+
+    # Save to BytesIO buffer
+    buf = BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

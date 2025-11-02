@@ -517,6 +517,10 @@ window.addEventListener('click', function(e) {
                             <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                 Draft
                             </span>
+                        {% elif rejected_schedule %}
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                Rejected
+                            </span>
                         {% else %}
                             <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
                                 Not Started
@@ -541,9 +545,11 @@ window.addEventListener('click', function(e) {
                                             <a href="{% url 'task_list' project.id %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                                                 View Tasks
                                             </a>
-                                            <a href="{% url 'schedule_detail' approved_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50">
-                                                View Schedule
-                                            </a>
+                                            {% if role == 'PM' %}
+                                                <a href="{% url 'schedule_detail' approved_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50">
+                                                    View Schedule
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -563,9 +569,11 @@ window.addEventListener('click', function(e) {
                                             <p class="text-xs mt-1">Submitted on {{pending_schedule.submitted_at|date:"M d, Y h:i A"}}</p>
                                         </div>
                                         <div class="mt-4 flex gap-3">
-                                            <a href="{% url 'schedule_detail' pending_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50">
-                                                View Schedule
-                                            </a>
+                                            {% if role == 'PM' %}
+                                                <a href="{% url 'schedule_detail' pending_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50">
+                                                    View Schedule
+                                                </a>
+                                            {% endif %}
                                             {% if role == 'OM' or role == 'EG' %}
                                                 <a href="{% url 'review_project_schedule' pending_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                                                     Review Schedule
@@ -595,6 +603,42 @@ window.addEventListener('click', function(e) {
                                             <a href="{% url 'schedule_detail' draft_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
                                                 View Draft
                                             </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% elif rejected_schedule %}
+                            <!-- Rejected Schedule -->
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="ml-3 flex-1">
+                                        <h3 class="text-sm font-medium text-red-800">Schedule Rejected</h3>
+                                        <div class="mt-2 text-sm text-red-700">
+                                            <p>Schedule v{{rejected_schedule.version}} was rejected</p>
+                                            <p class="text-xs mt-1">Rejected by {{rejected_schedule.reviewed_by.full_name}} on {{rejected_schedule.reviewed_at|date:"M d, Y h:i A"}}</p>
+                                            {% if rejected_schedule.rejection_reason %}
+                                                <div class="mt-3 bg-white border border-red-200 rounded p-3">
+                                                    <p class="text-xs font-semibold text-red-900 mb-1">Rejection Reason:</p>
+                                                    <p class="text-xs text-red-800">{{rejected_schedule.rejection_reason}}</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="mt-4 flex gap-3">
+                                            <a href="{% url 'schedule_detail' rejected_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
+                                                View Rejected Schedule
+                                            </a>
+                                            {% if role == 'PM' %}
+                                                <button onclick="openUploadModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                    </svg>
+                                                    Upload New Version
+                                                </button>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

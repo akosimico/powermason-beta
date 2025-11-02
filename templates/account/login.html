@@ -83,11 +83,11 @@
 
             <!-- Sign up prompt -->
             {% if not SOCIALACCOUNT_ONLY %}
-                <p class="text-sm text-gray-500 mb-6 text-center md:text-left">
+                <!-- <p class="text-sm text-gray-500 mb-6 text-center md:text-left">
                     {% blocktranslate %}Don't have an account? 
                     <a href="{{ signup_url }}" class="text-blue-600 hover:text-blue-700 font-semibold">Sign up</a>.
                     {% endblocktranslate %}
-                </p>
+                </p> -->
 
                 {% url 'account_login' as login_url %}
                 <form method="post" action="{{ login_url }}" class="space-y-4" id="loginForm">

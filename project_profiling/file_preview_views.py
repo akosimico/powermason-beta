@@ -22,7 +22,8 @@ from .boq_template import (
     create_electrical_boq_template,
     create_mechanical_boq_template,
     create_civil_boq_template,
-    create_architectural_boq_template
+    create_architectural_boq_template,
+    create_progress_report_template
 )
 from .cost_learning import CostLearningEngine
 
@@ -879,5 +880,20 @@ def boq_preview_test(request):
         ext = os.path.splitext(file.name)[1].lower()
         data = extract_cost_summary(file_content, ext)
         return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@verified_email_required
+@role_required('EG', 'OM', 'PM')
+@require_http_methods(["GET"])
+def download_progress_report_template(request):
+    """Download blank Progress Report Excel template"""
+    try:
+        content = create_progress_report_template()
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="Progress_Report_Template.xlsx"'
+        return response
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

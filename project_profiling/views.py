@@ -136,10 +136,10 @@ def project_list_signed_with_role(request):
         project_id = request.POST.get("project_id")
         project = get_object_or_404(ProjectProfile, id=project_id)
 
-        if role == "PM" and project.project_manager != verified_profile:
-            return HttpResponse("Unauthorized upload")
-        if role == "OM" and not (project.created_by == verified_profile or project.assigned_to == verified_profile):
-            return HttpResponse("Unauthorized upload")
+        # if role == "PM" and project.project_manager != verified_profile:
+        #     return HttpResponse("Unauthorized upload")
+        # if role == "OM" and not (project.created_by == verified_profile or project.assigned_to == verified_profile):
+        #     return HttpResponse("Unauthorized upload")
 
         files = request.FILES.getlist("file")
         for f in files:
@@ -436,6 +436,7 @@ def project_view(request, project_source, pk):
     approved_schedule = ProjectSchedule.objects.filter(project=project, status='APPROVED').first()
     pending_schedule = ProjectSchedule.objects.filter(project=project, status='PENDING').first()
     draft_schedule = ProjectSchedule.objects.filter(project=project, status='DRAFT').first()
+    rejected_schedule = ProjectSchedule.objects.filter(project=project, status='REJECTED').order_by('-reviewed_at').first()
 
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
@@ -445,6 +446,7 @@ def project_view(request, project_source, pk):
         'approved_schedule': approved_schedule,
         'pending_schedule': pending_schedule,
         'draft_schedule': draft_schedule,
+        'rejected_schedule': rejected_schedule,
     })
 
 

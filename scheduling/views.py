@@ -797,9 +797,12 @@ def upload_project_schedule(request, project_id):
         set_toast_message(request, "Cannot upload: Project already has an approved schedule.", "error")
         return redirect('project_view', project_source=project.project_source, pk=project.id)
 
-    # Check upload limit
-    existing_count = ProjectSchedule.objects.filter(project=project).count()
-    if existing_count >= 5:
+    # Check upload limit - only count non-rejected schedules
+    non_rejected_count = ProjectSchedule.objects.filter(
+        project=project
+    ).exclude(status='REJECTED').count()
+
+    if non_rejected_count >= 5:
         set_toast_message(request, "Maximum upload limit reached (5 attempts).", "error")
         return redirect('project_view', project_source=project.project_source, pk=project.id)
 
@@ -810,7 +813,9 @@ def upload_project_schedule(request, project_id):
             schedule = form.save(commit=False)
             schedule.project = project
             schedule.uploaded_by = verified_profile
-            schedule.version = existing_count + 1
+            # Version number based on total count (including rejected)
+            total_count = ProjectSchedule.objects.filter(project=project).count()
+            schedule.version = total_count + 1
             schedule.status = 'DRAFT'
             schedule.save()
 
@@ -857,19 +862,23 @@ def upload_project_schedule(request, project_id):
                 set_toast_message(request, f"Error parsing schedule: {str(e)}", "error")
                 return redirect('schedule_detail', schedule_id=schedule.id)
         else:
-            set_toast_message(request, "Please fix the form errors.", "error")
+            # Log detailed form errors for debugging
+            logger.error(f"Form validation failed: {form.errors}")
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        error_messages.append(error)
+                    else:
+                        error_messages.append(f"{field}: {error}")
+
+            error_text = " | ".join(error_messages) if error_messages else "Please check the form and try again."
+            set_toast_message(request, error_text, "error")
+            return redirect('project_view', project_source=project.project_source, pk=project.id)
     else:
-        form = ProjectScheduleForm(project=project)
-
-    attempts_remaining = 5 - existing_count
-
-    return render(request, 'scheduling/schedule_upload.html', {
-        'form': form,
-        'project': project,
-        'role': verified_profile.role,
-        'existing_count': existing_count,
-        'attempts_remaining': attempts_remaining,
-    })
+        # GET request - redirect back to project view
+        # This endpoint should only be accessed via POST from the modal
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
 
 
 @login_required
@@ -991,21 +1000,26 @@ def submit_schedule_for_approval(request, schedule_id):
 @verified_email_required
 @role_required("OM", "EG")
 def review_schedules(request):
-    """List all pending schedules for review"""
+    """Redirect to first pending schedule or dashboard"""
     from .models import ProjectSchedule
+    from authentication.utils.toast_helpers import set_toast_message
 
     verified_profile = get_user_profile(request)
     if not verified_profile:
         return redirect("unauthorized")
 
-    pending_schedules = ProjectSchedule.objects.filter(
+    # Get the first pending schedule
+    pending_schedule = ProjectSchedule.objects.filter(
         status='PENDING'
-    ).select_related('project', 'uploaded_by').order_by('-submitted_at')
+    ).select_related('project').order_by('-submitted_at').first()
 
-    return render(request, 'scheduling/review_schedules.html', {
-        'schedules': pending_schedules,
-        'role': verified_profile.role,
-    })
+    if pending_schedule:
+        # Redirect to review that schedule
+        return redirect('review_project_schedule', schedule_id=pending_schedule.id)
+    else:
+        # No pending schedules, redirect to dashboard or project list
+        set_toast_message(request, "No pending schedules to review.", "info")
+        return redirect('dashboard')
 
 
 @login_required
@@ -1122,11 +1136,9 @@ def reject_schedule(request, schedule_id):
         return redirect('review_project_schedule', schedule_id=schedule.id)
 
     if request.method == 'POST':
-        form = ScheduleRejectionForm(request.POST)
+        rejection_reason = request.POST.get('rejection_reason', '').strip()
 
-        if form.is_valid():
-            rejection_reason = form.cleaned_data['rejection_reason']
-
+        if rejection_reason:
             # Update schedule
             schedule.status = 'REJECTED'
             schedule.reviewed_by = verified_profile
@@ -1142,15 +1154,11 @@ def reject_schedule(request, schedule_id):
             NotificationStatus.objects.create(notification=notif, user=schedule.uploaded_by)
 
             set_toast_message(request, "Schedule rejected. PM has been notified.", "success")
-            return redirect('review_schedules')
+            # Redirect back to the project view
+            return redirect('project_view', project_source=schedule.project.project_source, pk=schedule.project.id)
         else:
             set_toast_message(request, "Please provide a rejection reason.", "error")
-    else:
-        form = ScheduleRejectionForm()
+            return redirect('review_project_schedule', schedule_id=schedule.id)
 
-    return render(request, 'scheduling/schedule_reject.html', {
-        'form': form,
-        'schedule': schedule,
-        'project': schedule.project,
-        'role': verified_profile.role,
-    })
+    # If GET request, redirect back to review page (since modal is on that page)
+    return redirect('review_project_schedule', schedule_id=schedule.id)

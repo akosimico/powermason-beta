@@ -169,6 +169,7 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     path('boq/template/mechanical/', file_preview_views.download_mechanical_boq_template, name='download_mechanical_boq_template'),
     path('boq/template/civil/', file_preview_views.download_civil_boq_template, name='download_civil_boq_template'),
     path('boq/template/architectural/', file_preview_views.download_architectural_boq_template, name='download_architectural_boq_template'),
+    path('boq/template/progress-report/', file_preview_views.download_progress_report_template, name='download_progress_report_template'),
     path('boq/preview/', file_preview_views.boq_preview_test, name='boq_preview_test'),
         path('api/project-type-cost-data/<int:project_type_id>/', file_preview_views.check_project_type_cost_data, name='check_project_type_cost_data'),
         path('api/project-type-boq-breakdown/<int:project_type_id>/', file_preview_views.get_project_type_boq_breakdown, name='get_project_type_boq_breakdown'),
