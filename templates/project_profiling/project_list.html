@@ -97,14 +97,14 @@
             {% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
                         <div class="flex flex-wrap justify-center gap-2">
                             <!-- Delete -->
-                             <a href="{% url 'task_list' project.id %}" 
+                             <a href="{% url 'task_list' project.id %}"
                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700 transition">
                                 View Tasks
                             </a>
                         </div>
                         {% elif user|has_role:"PM" %}
                         <div class="flex flex-wrap justify-center gap-2">
-                            <a href="{% url 'task_list' project.id %}" 
+                            <a href="{% url 'task_list' project.id %}"
                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700 transition">
                                 View Tasks
                             </a>

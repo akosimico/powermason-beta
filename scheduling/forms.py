@@ -2,7 +2,8 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import (
     ProjectTask, ProgressUpdate, ProgressFile, ProjectScope,
-    TaskMaterial, TaskEquipment, TaskManpower, ProjectSchedule
+    TaskMaterial, TaskEquipment, TaskManpower, ProjectSchedule,
+    WeeklyProgressReport
 )
 from authentication.models import UserProfile
 from materials_equipment.models import Material, Equipment, ProjectManpower
@@ -423,4 +424,181 @@ class ScheduleRejectionForm(forms.Form):
         help_text='This will be sent to the Project Manager who uploaded the schedule',
         min_length=10,
         max_length=500
+    )
+
+
+# ========================================
+# WEEKLY PROGRESS REPORT FORMS
+# ========================================
+
+class WeeklyProgressReportForm(forms.Form):
+    """Form for submitting weekly progress report"""
+
+    week_start_date = forms.DateField(
+        widget=forms.DateInput(
+            attrs={
+                'type': 'date',
+                'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'required': True
+            },
+            format='%Y-%m-%d'
+        ),
+        input_formats=['%Y-%m-%d'],
+        label='Week Start Date',
+        help_text='First day of the reporting week (usually Monday)'
+    )
+
+    week_end_date = forms.DateField(
+        widget=forms.DateInput(
+            attrs={
+                'type': 'date',
+                'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'required': True
+            },
+            format='%Y-%m-%d'
+        ),
+        input_formats=['%Y-%m-%d'],
+        label='Week End Date',
+        help_text='Last day of the reporting week (usually Sunday)'
+    )
+
+    remarks = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'General remarks about this week\'s progress (optional)...',
+            'rows': 3
+        }),
+        label='General Remarks',
+        required=False
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('week_start_date')
+        end_date = cleaned_data.get('week_end_date')
+
+        if start_date and end_date:
+            # Validate that end date is after start date
+            if end_date < start_date:
+                raise forms.ValidationError("Week end date must be after start date")
+
+            # Validate that it's exactly 7 days (one week)
+            delta = (end_date - start_date).days
+            if delta != 6:  # 6 days difference = 7 day week
+                raise forms.ValidationError(
+                    f"Week range must be exactly 7 days. Current range is {delta + 1} days."
+                )
+
+        return cleaned_data
+
+
+class BOQItemProgressForm(forms.Form):
+    """Form for single BOQ item progress entry"""
+
+    boq_item_code = forms.CharField(
+        widget=forms.HiddenInput()
+    )
+
+    cumulative_percent = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=0,
+        max_value=100,
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': '0.00',
+            'step': '0.01',
+            'min': '0',
+            'max': '100'
+        }),
+        label='Cumulative Progress (%)',
+        help_text='Total completion percentage to date'
+    )
+
+    cumulative_amount = forms.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': '0.00',
+            'step': '0.01',
+            'min': '0'
+        }),
+        label='Cumulative Amount (₱)',
+        help_text='Total amount completed to date (optional - can be auto-calculated)'
+    )
+
+    remarks = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'Notes about this item (optional)...',
+            'rows': 2
+        }),
+        label='Remarks',
+        required=False
+    )
+
+    decrease_reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full rounded-lg border-yellow-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500',
+            'placeholder': 'Required if progress decreased (e.g., rework needed)...',
+            'rows': 2
+        }),
+        label='Reason for Progress Decrease',
+        required=False,
+        help_text='Required only if cumulative % is less than previous week'
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.previous_cumulative = kwargs.pop('previous_cumulative', 0)
+        self.approved_amount = kwargs.pop('approved_amount', 0)
+        super().__init__(*args, **kwargs)
+
+    def clean_cumulative_percent(self):
+        cumulative = self.cleaned_data.get('cumulative_percent')
+
+        if cumulative is None:
+            return cumulative
+
+        # Check if progress decreased
+        if cumulative < self.previous_cumulative:
+            # Check if decrease_reason was provided
+            decrease_reason = self.data.get('decrease_reason', '').strip()
+            if not decrease_reason:
+                raise forms.ValidationError(
+                    f'Progress decreased from {self.previous_cumulative}% to {cumulative}%. '
+                    'Please provide a reason for the decrease.'
+                )
+
+        return cumulative
+
+    def clean_cumulative_amount(self):
+        cumulative_amount = self.cleaned_data.get('cumulative_amount')
+
+        if cumulative_amount and self.approved_amount:
+            if cumulative_amount > self.approved_amount:
+                raise forms.ValidationError(
+                    f'Cumulative amount (₱{cumulative_amount:,.2f}) cannot exceed '
+                    f'approved contract amount (₱{self.approved_amount:,.2f})'
+                )
+
+        return cumulative_amount
+
+
+class ProgressReportRejectionForm(forms.Form):
+    """Form for rejecting a weekly progress report"""
+
+    rejection_reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500',
+            'placeholder': 'Please provide a detailed reason for rejection...',
+            'rows': 4,
+            'required': True
+        }),
+        label='Rejection Reason',
+        help_text='This will be sent to the Project Manager who submitted the report',
+        min_length=10,
+        max_length=1000
     )

@@ -1285,3 +1285,210 @@ class SupplierQuotation(models.Model):
         return self.file_extension == '.pdf'
 
 
+class BOQItemProgress(models.Model):
+    """
+    Tracks cumulative progress for individual BOQ line items.
+    This model enables detailed progress tracking at the BOQ item level
+    instead of just at the task level.
+    """
+    STATUS_CHOICES = [
+        ('P', 'Pending'),
+        ('A', 'Approved'),
+        ('R', 'Rejected'),
+    ]
+
+    # Link to project and weekly report
+    project = models.ForeignKey(
+        ProjectProfile,
+        on_delete=models.CASCADE,
+        related_name="boq_progress_items"
+    )
+    weekly_report = models.ForeignKey(
+        'scheduling.WeeklyProgressReport',
+        on_delete=models.CASCADE,
+        related_name="boq_items",
+        null=True,
+        blank=True
+    )
+
+    # BOQ Item Identification
+    boq_item_code = models.CharField(
+        max_length=50,
+        help_text="BOQ item code (e.g., 1.1.1, 7.1.3)"
+    )
+    description = models.CharField(max_length=500)
+    division = models.CharField(max_length=200, help_text="Division name from BOQ")
+    task_group = models.CharField(max_length=200, help_text="Task group from BOQ")
+
+    # Link to project task (if available)
+    project_task = models.ForeignKey(
+        'scheduling.ProjectTask',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="boq_items"
+    )
+
+    # Contract Amounts (from approved quotation)
+    approved_contract_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        help_text="Approved amount from quotation"
+    )
+    quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    unit_of_measurement = models.CharField(max_length=50, blank=True)
+
+    # Cumulative Progress Tracking
+    cumulative_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Total cumulative progress percentage (0-100)"
+    )
+    cumulative_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total cumulative amount completed"
+    )
+
+    # Period Progress (Auto-calculated)
+    previous_cumulative_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Cumulative % from previous report"
+    )
+    previous_cumulative_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Cumulative amount from previous report"
+    )
+    period_progress_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Progress % this period (current - previous)"
+    )
+    period_progress_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Amount completed this period"
+    )
+
+    # Schedule Information (for validation)
+    scheduled_start_date = models.DateField(null=True, blank=True)
+    scheduled_end_date = models.DateField(null=True, blank=True)
+
+    # Approval Workflow
+    status = models.CharField(
+        max_length=1,
+        choices=STATUS_CHOICES,
+        default='P'
+    )
+    reported_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="boq_progress_reported"
+    )
+    reviewed_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="boq_progress_reviewed"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    # Special Cases
+    progress_decreased = models.BooleanField(
+        default=False,
+        help_text="Flag if cumulative decreased (requires explanation)"
+    )
+    decrease_reason = models.TextField(
+        blank=True,
+        help_text="Reason for progress decrease (e.g., rework)"
+    )
+
+    # Remarks
+    remarks = models.TextField(blank=True)
+
+    # Timestamps
+    report_date = models.DateField(help_text="Date of this progress report")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['boq_item_code', '-report_date']
+        verbose_name = "BOQ Item Progress"
+        verbose_name_plural = "BOQ Item Progress Records"
+        indexes = [
+            models.Index(fields=['project', 'boq_item_code']),
+            models.Index(fields=['project', 'report_date']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"{self.boq_item_code} - {self.description[:50]} ({self.cumulative_percent}%)"
+
+    def save(self, *args, **kwargs):
+        """Auto-calculate period progress on save"""
+        # Calculate period progress
+        self.period_progress_percent = self.cumulative_percent - self.previous_cumulative_percent
+        self.period_progress_amount = self.cumulative_amount - self.previous_cumulative_amount
+
+        # Check if progress decreased
+        if self.cumulative_percent < self.previous_cumulative_percent:
+            self.progress_decreased = True
+
+        super().save(*args, **kwargs)
+
+    def get_previous_progress(self):
+        """Get the most recent approved progress record before this one"""
+        previous = BOQItemProgress.objects.filter(
+            project=self.project,
+            boq_item_code=self.boq_item_code,
+            status='A',
+            report_date__lt=self.report_date
+        ).order_by('-report_date').first()
+
+        return previous
+
+    def validate_cumulative_progress(self):
+        """Validate that cumulative progress doesn't decrease without reason"""
+        if self.progress_decreased and not self.decrease_reason:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                "Progress decreased but no reason provided. Please explain why progress went backwards."
+            )
+
+        if self.cumulative_percent > 100:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Cumulative progress cannot exceed 100%")
+
+        if self.cumulative_amount > self.approved_contract_amount:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                f"Cumulative amount (₱{self.cumulative_amount:,.2f}) cannot exceed "
+                f"approved contract amount (₱{self.approved_contract_amount:,.2f})"
+            )
+
+    @property
+    def remaining_percent(self):
+        """Calculate remaining progress percentage"""
+        return 100 - self.cumulative_percent
+
+    @property
+    def remaining_amount(self):
+        """Calculate remaining contract amount"""
+        return self.approved_contract_amount - self.cumulative_amount
+
+

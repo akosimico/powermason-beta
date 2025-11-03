@@ -57,7 +57,7 @@ class ProjectTask(models.Model):
 
     # Weight relative to scope
     weight = models.DecimalField(
-        max_digits=5, decimal_places=2, 
+        max_digits=5, decimal_places=2,
         help_text="Weight of task relative to its scope (%)"
     )
     progress = models.DecimalField(
@@ -66,7 +66,21 @@ class ProjectTask(models.Model):
     )
     dependencies = models.ManyToManyField("self", symmetrical=False, blank=True)
     is_completed = models.BooleanField(default=False)
-    status = models.CharField(max_length=2, choices=STATUS_CHOICES, default="PL") 
+    status = models.CharField(max_length=2, choices=STATUS_CHOICES, default="PL")
+
+    # BOQ Integration
+    boq_item_codes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of BOQ item codes linked to this task (e.g., ['1.1.1', '1.1.2'])"
+    )
+    approved_contract_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Total approved contract amount for linked BOQ items (from quotation)"
+    ) 
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -134,6 +148,87 @@ class ProjectTask(models.Model):
         self.project.save(update_fields=["progress"])
         return project_progress
 
+    def get_linked_boq_items(self):
+        """
+        Get BOQ items from project's BOQ that are linked to this task.
+        Returns list of BOQ item dictionaries.
+        """
+        if not self.boq_item_codes or not self.project.boq_items:
+            return []
+
+        linked_items = []
+        for item in self.project.boq_items:
+            if item.get('code') in self.boq_item_codes:
+                linked_items.append(item)
+
+        return linked_items
+
+    def calculate_approved_contract_amount(self):
+        """
+        Calculate total approved contract amount for linked BOQ items.
+        Uses approved quotation data if available, otherwise BOQ estimates.
+        """
+        from project_profiling.models import SupplierQuotation
+        from decimal import Decimal
+
+        # Try to get approved quotation
+        approved_quotation = SupplierQuotation.objects.filter(
+            project_id=self.project.id,
+            project_type='profile',
+            status='APPROVED'
+        ).first()
+
+        total_amount = Decimal('0.00')
+
+        if approved_quotation and self.boq_item_codes:
+            # TODO: Extract item-level costs from approved quotation file
+            # For now, use BOQ estimates
+            linked_items = self.get_linked_boq_items()
+            for item in linked_items:
+                amount = item.get('amount', 0)
+                if amount:
+                    total_amount += Decimal(str(amount))
+
+        return total_amount
+
+    def update_approved_amount(self):
+        """
+        Update the approved_contract_amount field based on linked BOQ items.
+        Should be called after boq_item_codes are set.
+        """
+        self.approved_contract_amount = self.calculate_approved_contract_amount()
+        self.save(update_fields=['approved_contract_amount'])
+
+    def get_boq_progress_summary(self):
+        """
+        Get summary of BOQ item progress for this task.
+        Returns dict with counts and percentages.
+        """
+        from project_profiling.models import BOQItemProgress
+
+        boq_items = BOQItemProgress.objects.filter(
+            project=self.project,
+            project_task=self,
+            status='A'  # Only approved items
+        ).order_by('boq_item_code', '-report_date').distinct('boq_item_code')
+
+        total_items = len(self.boq_item_codes) if self.boq_item_codes else 0
+        completed_items = boq_items.filter(cumulative_percent=100).count()
+        in_progress_items = boq_items.filter(
+            cumulative_percent__gt=0,
+            cumulative_percent__lt=100
+        ).count()
+
+        return {
+            'total_items': total_items,
+            'completed_items': completed_items,
+            'in_progress_items': in_progress_items,
+            'not_started_items': total_items - completed_items - in_progress_items,
+            'avg_progress': boq_items.aggregate(
+                models.Avg('cumulative_percent')
+            )['cumulative_percent__avg'] or 0
+        }
+
 
 class ProgressReport(models.Model):
     project = models.ForeignKey( "project_profiling.ProjectProfile", on_delete=models.CASCADE, related_name="progress_reports")
@@ -171,14 +266,36 @@ class ProgressUpdate(models.Model):
 
 class ProgressFile(models.Model):
     update = models.ForeignKey(
-    ProgressUpdate, 
-    on_delete=models.CASCADE, 
+    ProgressUpdate,
+    on_delete=models.CASCADE,
     related_name="attachments",
-    null=True, 
+    null=True,
     blank=True
 )
     file = models.FileField(upload_to="progress_proofs/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+class WeeklyReportAttachment(models.Model):
+    """Attachments (photos/documents) for weekly progress reports"""
+    weekly_report = models.ForeignKey(
+        'WeeklyProgressReport',
+        on_delete=models.CASCADE,
+        related_name='attachments'
+    )
+    file = models.FileField(
+        upload_to='progress_reports/attachments/',
+        help_text="Supporting files, images, or documents"
+    )
+    filename = models.CharField(max_length=255)
+    file_size = models.IntegerField(help_text="File size in bytes")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Attachment for Report #{self.weekly_report.report_number} - {self.filename}"
+
+    class Meta:
+        ordering = ['-uploaded_at']
 
 
 class SystemReport(models.Model):
@@ -592,3 +709,317 @@ class ProjectSchedule(models.Model):
             project=self.project,
             is_active=True
         ).exclude(id=self.id).update(is_active=False)
+
+
+class WeeklyProgressReport(models.Model):
+    """
+    Weekly progress report submitted by PM and approved/rejected by OM/EG.
+    Contains batch of BOQ item progress updates for a specific week.
+    """
+    STATUS_CHOICES = [
+        ('P', 'Pending'),
+        ('A', 'Approved'),
+        ('R', 'Rejected'),
+    ]
+
+    # Project Linkage
+    project = models.ForeignKey(
+        "project_profiling.ProjectProfile",
+        on_delete=models.CASCADE,
+        related_name="weekly_progress_reports"
+    )
+
+    # Report Period
+    week_start_date = models.DateField(help_text="Start date of reporting week")
+    week_end_date = models.DateField(help_text="End date of reporting week")
+    report_number = models.PositiveIntegerField(
+        help_text="Sequential report number for this project"
+    )
+
+    # Summary Metrics (Auto-calculated from BOQ items)
+    total_period_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Total progress % gained this week"
+    )
+    total_period_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total amount completed this week"
+    )
+    cumulative_project_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Overall project completion %"
+    )
+    cumulative_project_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total amount completed to date"
+    )
+
+    # Submission & Approval
+    status = models.CharField(
+        max_length=1,
+        choices=STATUS_CHOICES,
+        default='P'
+    )
+    submitted_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="weekly_reports_submitted"
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    reviewed_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="weekly_reports_reviewed"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    # Rejection handling
+    rejection_reason = models.TextField(
+        blank=True,
+        help_text="Reason for rejection (required if rejected)"
+    )
+
+    # General remarks from PM
+    remarks = models.TextField(blank=True)
+
+    # Supporting files/documents
+    excel_file = models.FileField(
+        upload_to='progress_reports/excel/',
+        blank=True,
+        null=True,
+        help_text="Uploaded Excel progress report file"
+    )
+
+    # Schedule Validation Flags
+    has_schedule_warnings = models.BooleanField(
+        default=False,
+        help_text="Flag if report has schedule validation warnings"
+    )
+    schedule_warnings = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of schedule validation warnings"
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-week_start_date']
+        verbose_name = "Weekly Progress Report"
+        verbose_name_plural = "Weekly Progress Reports"
+        unique_together = ['project', 'week_start_date']
+        indexes = [
+            models.Index(fields=['project', '-week_start_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['project', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Report #{self.report_number} - {self.project.project_name} ({self.week_start_date})"
+
+    def save(self, *args, **kwargs):
+        """Auto-assign report number if not set"""
+        if not self.report_number:
+            # Get the latest report number for this project
+            latest = WeeklyProgressReport.objects.filter(
+                project=self.project
+            ).order_by('-report_number').first()
+
+            self.report_number = (latest.report_number + 1) if latest else 1
+
+        super().save(*args, **kwargs)
+
+    def calculate_totals(self):
+        """
+        Calculate total period and cumulative amounts from all BOQ items.
+        Should be called after all BOQ items are added to the report.
+        """
+        from django.db.models import Sum
+        from project_profiling.models import BOQItemProgress
+
+        totals = BOQItemProgress.objects.filter(
+            weekly_report=self
+        ).aggregate(
+            period_amount=Sum('period_progress_amount'),
+            period_percent=Sum('period_progress_percent'),
+            cumulative_amount=Sum('cumulative_amount'),
+            cumulative_percent=Sum('cumulative_percent')
+        )
+
+        self.total_period_amount = totals['period_amount'] or 0
+        self.total_period_percent = totals['period_percent'] or 0
+        self.cumulative_project_amount = totals['cumulative_amount'] or 0
+        # Note: cumulative_project_percent needs weighted calculation
+        self.save(update_fields=[
+            'total_period_amount',
+            'total_period_percent',
+            'cumulative_project_amount',
+            'cumulative_project_percent'
+        ])
+
+    def validate_against_schedule(self):
+        """
+        Validate this progress report against the approved project schedule.
+        Returns list of warnings.
+        """
+        from project_profiling.models import BOQItemProgress
+        from django.utils import timezone
+
+        warnings = []
+
+        for boq_item in BOQItemProgress.objects.filter(weekly_report=self):
+            # Check if task started before scheduled start date
+            if boq_item.scheduled_start_date and self.week_start_date < boq_item.scheduled_start_date:
+                warnings.append({
+                    'item_code': boq_item.boq_item_code,
+                    'warning': f"Progress reported before scheduled start date ({boq_item.scheduled_start_date})",
+                    'severity': 'high'
+                })
+
+            # Check if task is overdue
+            if boq_item.scheduled_end_date and self.week_end_date > boq_item.scheduled_end_date:
+                if boq_item.cumulative_percent < 100:
+                    warnings.append({
+                        'item_code': boq_item.boq_item_code,
+                        'warning': f"Task overdue (scheduled end: {boq_item.scheduled_end_date}), only {boq_item.cumulative_percent}% complete",
+                        'severity': 'medium'
+                    })
+
+        self.schedule_warnings = warnings
+        self.has_schedule_warnings = len(warnings) > 0
+        self.save(update_fields=['schedule_warnings', 'has_schedule_warnings'])
+
+        return warnings
+
+    def approve(self, reviewer):
+        """
+        Approve this weekly report and update all related BOQ item progress.
+        This also recalculates task and project progress.
+        """
+        from django.utils import timezone
+        from project_profiling.models import BOQItemProgress
+
+        # Update report status
+        self.status = 'A'
+        self.reviewed_by = reviewer
+        self.reviewed_at = timezone.now()
+        self.save()
+
+        # Approve all BOQ items in this report
+        BOQItemProgress.objects.filter(
+            weekly_report=self,
+            status='P'
+        ).update(
+            status='A',
+            reviewed_by=reviewer,
+            reviewed_at=timezone.now()
+        )
+
+        # Update task progress (aggregate from BOQ items)
+        self._update_task_progress()
+
+        # Update project progress (weighted calculation)
+        self._update_project_progress()
+
+    def reject(self, reviewer, reason):
+        """Reject this weekly report with a reason"""
+        from django.utils import timezone
+        from project_profiling.models import BOQItemProgress
+
+        if not reason:
+            raise ValueError("Rejection reason is required")
+
+        self.status = 'R'
+        self.reviewed_by = reviewer
+        self.reviewed_at = timezone.now()
+        self.rejection_reason = reason
+        self.save()
+
+        # Reject all BOQ items in this report
+        BOQItemProgress.objects.filter(
+            weekly_report=self
+        ).update(
+            status='R',
+            reviewed_by=reviewer,
+            reviewed_at=timezone.now()
+        )
+
+    def _update_task_progress(self):
+        """
+        Update ProjectTask progress by aggregating approved BOQ items.
+        """
+        from django.db.models import Sum, Avg
+        from project_profiling.models import BOQItemProgress
+
+        # Get all unique tasks linked to BOQ items in this report
+        boq_items = BOQItemProgress.objects.filter(
+            weekly_report=self,
+            status='A',
+            project_task__isnull=False
+        )
+
+        tasks_to_update = set(item.project_task for item in boq_items if item.project_task)
+
+        for task in tasks_to_update:
+            # Get all approved BOQ items for this task
+            task_boq_items = BOQItemProgress.objects.filter(
+                project=self.project,
+                project_task=task,
+                status='A'
+            ).order_by('boq_item_code', '-report_date').distinct('boq_item_code')
+
+            # Calculate weighted average progress
+            if task_boq_items.exists():
+                avg_progress = task_boq_items.aggregate(
+                    avg=Avg('cumulative_percent')
+                )['avg'] or 0
+
+                task.progress = round(avg_progress, 2)
+                task.save(update_fields=['progress'])
+
+    def _update_project_progress(self):
+        """
+        Update overall project progress using weighted calculation from tasks.
+        """
+        from scheduling.models import ProjectTask
+
+        total_progress = 0
+        for scope in self.project.scopes.all():
+            for task in scope.tasks.all():
+                task_contrib = (task.progress or 0)/100 * (float(task.weight)/100) * float(scope.weight)
+                total_progress += task_contrib
+
+        self.project.progress = min(total_progress, 100)
+        self.project.save(update_fields=['progress'])
+
+    @property
+    def item_count(self):
+        """Get count of BOQ items in this report"""
+        from project_profiling.models import BOQItemProgress
+        return BOQItemProgress.objects.filter(weekly_report=self).count()
+
+    @property
+    def can_be_approved(self):
+        """Check if report can be approved"""
+        return self.status == 'P' and self.item_count > 0
+
+    @property
+    def has_attachments(self):
+        """Check if any BOQ items have file attachments"""
+        from project_profiling.models import BOQItemProgress
+        # This would require adding attachment model - placeholder for now
+        return False

@@ -9,6 +9,13 @@ from .resource_views import (
     api_delete_task_manpower, api_task_resource_summary
 )
 from .views import scope_budget_allocation
+from .weekly_progress_views import (
+    submit_weekly_progress, enter_boq_progress, view_weekly_report,
+    list_weekly_reports, review_weekly_reports, approve_weekly_report,
+    reject_weekly_report, export_report_excel, export_project_reports_excel,
+    download_progress_template, upload_progress_excel
+)
+
 
 urlpatterns = [
     # ---------------------------
@@ -82,4 +89,28 @@ urlpatterns = [
     path('schedule/<int:schedule_id>/review/', views.review_project_schedule, name='review_project_schedule'),
     path('schedule/<int:schedule_id>/approve/', views.approve_schedule, name='approve_schedule'),
     path('schedule/<int:schedule_id>/reject/', views.reject_schedule, name='reject_schedule'),
+
+    # ---------------------------
+    # Weekly Progress Reports (BOQ-Based)
+    # ---------------------------
+    # PM - Submit Weekly Progress
+    path('<int:project_id>/progress/weekly/submit/', submit_weekly_progress, name='submit_weekly_progress'),
+    path('<int:project_id>/progress/weekly/enter/', enter_boq_progress, name='enter_boq_progress'),
+
+    # View Reports
+    path('<int:project_id>/progress/weekly/list/', list_weekly_reports, name='list_weekly_reports'),
+    path('progress/weekly/<int:report_id>/', view_weekly_report, name='view_weekly_report'),
+
+    # OM/EG - Review & Approve
+    path('progress/weekly/review/', review_weekly_reports, name='review_weekly_reports'),
+    path('progress/weekly/<int:report_id>/approve/', approve_weekly_report, name='approve_weekly_report'),
+    path('progress/weekly/<int:report_id>/reject/', reject_weekly_report, name='reject_weekly_report'),
+
+    # Excel Export
+    path('progress/weekly/<int:report_id>/export/', export_report_excel, name='export_report_excel'),
+    path('<int:project_id>/progress/weekly/export-all/', export_project_reports_excel, name='export_project_reports_excel'),
+
+    # Excel Template Download & Upload
+    path('<int:project_id>/progress/weekly/download-template/', download_progress_template, name='download_progress_template'),
+    path('<int:project_id>/progress/weekly/upload-excel/', upload_progress_excel, name='upload_progress_excel'),
 ]

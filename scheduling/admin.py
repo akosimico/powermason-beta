@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     ProjectTask, ProgressUpdate, ProgressFile, SystemReport, TaskCost,
-    ProjectScope, ScopeBudget, TaskMaterial, TaskEquipment, TaskManpower
+    ProjectScope, ScopeBudget, TaskMaterial, TaskEquipment, TaskManpower,
+    WeeklyProgressReport, WeeklyReportAttachment
 )
 
 @admin.register(ProjectTask)
@@ -65,3 +66,16 @@ class TaskManpowerAdmin(admin.ModelAdmin):
     list_display = ("task", "labor_type", "description", "number_of_workers", "days_needed", "total_cost")
     list_filter = ("task__project", "labor_type")
     search_fields = ("task__task_name", "description")
+
+@admin.register(WeeklyProgressReport)
+class WeeklyProgressReportAdmin(admin.ModelAdmin):
+    list_display = ("report_number", "project", "week_start_date", "week_end_date", "status", "submitted_by", "submitted_at")
+    list_filter = ("status", "project", "week_start_date")
+    search_fields = ("project__project_name", "report_number")
+    readonly_fields = ("report_number", "submitted_at", "reviewed_at")
+
+@admin.register(WeeklyReportAttachment)
+class WeeklyReportAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("weekly_report", "filename", "file_size", "uploaded_at")
+    list_filter = ("uploaded_at", "weekly_report__project")
+    search_fields = ("filename", "weekly_report__project__project_name")

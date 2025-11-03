@@ -11,7 +11,7 @@ urlpatterns = [
     path('', include('authentication.urls')),
     path('accounts/', include('allauth.urls')),
     path('projects/', include('project_profiling.urls')),
-    path("scheduling/", include("scheduling.urls")),
+    path('scheduling/', include('scheduling.urls')),
     path('progress-monitoring/', include("progress_monitoring.urls")),
     path("notifications/", include("notifications.urls")),
     path('manage-client/', include("manage_client.urls", namespace='manage_client')),
