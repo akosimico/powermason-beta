@@ -280,20 +280,48 @@
         </svg>
     </button>
 
-    <div id="projectActionsMenu" 
+    <div id="projectActionsMenu"
         class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 hidden z-50">
         <div class="py-2">
 
             <!-- Schedule -->
-            <a href="{% url 'task_list' project.id %}?return_url={{ request.get_full_path|urlencode }}"
-               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
-                <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                Schedule
-            </a>
-
+            {% if approved_schedule %}
+                <a href="{% url 'schedule_detail' approved_schedule.id %}"
+                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Schedule
+                </a>
+            {% elif pending_schedule %}
+                <a href="{% url 'schedule_detail' pending_schedule.id %}"
+                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Schedule
+                </a>
+            {% elif draft_schedule %}
+                <a href="{% url 'schedule_detail' draft_schedule.id %}"
+                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Schedule
+                </a>
+            {% else %}
+                <a href="{% url 'task_list' project.id %}?return_url={{ request.get_full_path|urlencode }}"
+                   class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Schedule
+                </a>
+            {% endif %}
 
             <!-- Gantt Chart -->
             <a href="{% url 'task_gantt_view'  project.id %}"
@@ -315,15 +343,15 @@
                 3-Week Lookahead
             </a>
 
-            <!-- Scope Budget -->
+            <!-- Cost Tracking -->
             {% if project.approved_budget %}
-            <a href="{% url 'scope_budget_allocation' project.id  %}"
-               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
-                <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{% url 'project_detail_cost_dashboard' project.id %}"
+               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition">
+                <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Scope Budget
+                Cost Tracking
             </a>
             {% endif %}
         </div>
@@ -399,10 +427,12 @@ window.addEventListener('click', function(e) {
                                     {% endif %}
                                 </dd>
                             </div>
+                            {% comment %}
                             <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Site Engineer</dt>
                                 <dd class="text-sm font-medium text-gray-900">{{ project.site_engineer|default:"Not assigned" }}</dd>
                             </div>
+                            {% endcomment %}
                             <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</dt>
                                 <dd class="text-sm font-medium text-gray-900">{{ project.location|default:"Not specified" }}</dd>
@@ -411,6 +441,7 @@ window.addEventListener('click', function(e) {
                     </div>
                 </div>
 
+                {% comment %}
                 <!-- Employee Assignments Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -500,6 +531,7 @@ window.addEventListener('click', function(e) {
                         </div>
                     </div>
                 </div>
+                {% endcomment %}
 
                 <!-- Schedule Management Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -545,7 +577,7 @@ window.addEventListener('click', function(e) {
                                             <a href="{% url 'task_list' project.id %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                                                 View Tasks
                                             </a>
-                                            {% if role == 'PM' %}
+                                            {% if role == 'PM' or role == 'EG' or role == 'OM' %}
                                                 <a href="{% url 'schedule_detail' approved_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50">
                                                     View Schedule
                                                 </a>
@@ -569,7 +601,7 @@ window.addEventListener('click', function(e) {
                                             <p class="text-xs mt-1">Submitted on {{pending_schedule.submitted_at|date:"M d, Y h:i A"}}</p>
                                         </div>
                                         <div class="mt-4 flex gap-3">
-                                            {% if role == 'PM' %}
+                                            {% if role == 'PM' or role == 'EG' or role == 'OM' %}
                                                 <a href="{% url 'schedule_detail' pending_schedule.id %}" class="inline-flex items-center px-4 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50">
                                                     View Schedule
                                                 </a>
@@ -672,6 +704,75 @@ window.addEventListener('click', function(e) {
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Weekly Progress Tracking Card -->
+                {% if role == "PM" or role == "OM" or role == "EG" %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Weekly Progress Tracking</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Submit Progress (PM Only) -->
+                            {% if role == "PM" %}
+                                <a href="{% url 'submit_weekly_progress' project.id %}"
+                                   class="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors group">
+                                    <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-700 transition-colors">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-emerald-900">Submit Progress</p>
+                                        <p class="text-xs text-emerald-700">Upload weekly report</p>
+                                    </div>
+                                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+
+                                
+                            {% endif %}
+
+                            <!-- View Reports (All Roles) -->
+                            <a href="{% url 'list_weekly_reports' project.id %}"
+                               class="flex items-center gap-3 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors group">
+                                <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-purple-700 transition-colors">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold text-purple-900">View Reports</p>
+                                    <p class="text-xs text-purple-700">All progress reports</p>
+                                </div>
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+
+                            <!-- Review Reports (OM/EG Only) -->
+                            {% if role == "OM" or role == "EG" %}
+                                <a href="{% url 'review_weekly_reports' %}"
+                                   class="flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors group">
+                                    <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-orange-700 transition-colors">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-orange-900">Review Reports</p>
+                                        <p class="text-xs text-orange-700">Approve pending reports</p>
+                                    </div>
+                                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Subcontractors Card -->
                 {% if role == "OM" or role == "EG" %}
@@ -996,14 +1097,10 @@ window.addEventListener('click', function(e) {
                         </div>
                         <div class="p-6 space-y-4">
                             <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium text-gray-500">Estimated Cost</span>
-                                <span class="text-sm font-semibold text-gray-900">₱{{ project.estimated_cost|floatformat:2|intcomma  }}</span>
+                                <span class="text-sm font-medium text-gray-500">Approved Budget</span>
+                                    <span class="text-sm font-semibold text-green-600">₱{{ project.approved_budget|floatformat:2|intcomma  }}</span>
                             </div>
                             {% if project.approved_budget %}
-                                <div class="flex justify-between items-center border-t pt-4">
-                                    <span class="text-sm font-medium text-gray-500">Approved Budget</span>
-                                    <span class="text-sm font-semibold text-green-600">₱{{ project.approved_budget|floatformat:2|intcomma  }}</span>
-                                </div>
                                 {% if project.allocated_funds %}
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm font-medium text-gray-500">Allocated Funds</span>

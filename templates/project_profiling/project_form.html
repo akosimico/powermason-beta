@@ -106,8 +106,8 @@
                                         <li><strong>Start Date:</strong> {{ error }}</li>
                                     {% elif field == 'target_completion_date' %}
                                         <li><strong>Target Completion Date:</strong> {{ error }}</li>
-                                    {% elif field == 'estimated_cost' %}
-                                        <li><strong>Estimated Cost:</strong> {{ error }}</li>
+                                    {% elif field == 'approved_budget' %}
+                                        <li><strong>Approved Budget:</strong> {{ error }}</li>
                                     {% elif field == 'project_manager' %}
                                         <li><strong>Project Manager:</strong> {{ error }}</li>
                                     {% elif field == 'location' %}
@@ -681,7 +681,6 @@
                             <div class="form-group">
                                 <label for="id_lot_size" class="block text-sm font-medium text-gray-700 mb-2">
                                     Lot Size
-                                    <span class="text-gray-500 text-xs">(Optional)</span>
                                 </label>
                                 <div class="relative">
                                     {{ form.lot_size|add_class:"block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
@@ -704,7 +703,7 @@
                             <div class="form-group">
                                 <label for="id_total_area" class="block text-sm font-medium text-gray-700 mb-2">
                                     Total Area (Floor Area)
-                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                    
                                 </label>
                                 <div class="relative">
                                     {{ form.total_area|add_class:"block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
@@ -776,7 +775,7 @@
                         <div class="form-group">
                             <label for="id_gps_coordinates" class="block text-sm font-medium text-gray-700 mb-2">
                                 GPS Coordinates
-                                <span class="text-gray-500 text-xs">(Optional)</span>
+                        
                             </label>
                             {{ form.gps_coordinates|add_class:"block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" }}
                             <p class="mt-1 text-sm text-gray-500">Format: latitude, longitude (e.g., 40.7128, -74.0060)</p>
@@ -1076,31 +1075,30 @@
                         </h3>
 
                         <div class="grid grid-cols-2 gap-6">
-                            <!-- Estimated Cost -->
+                            <!-- Approved Budget -->
                             <div class="form-group">
-                                <label for="id_estimated_cost" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Estimated Cost 
-                                    <span class="text-gray-500 text-xs">(Optional)</span>
+                                <label for="id_approved_budget" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Approved Budget
                                 </label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span class="text-gray-500 text-sm">₱</span>
                                     </div>
-                                    <input type="number" 
-                                           id="id_estimated_cost" 
-                                           name="estimated_cost" 
-                                           step="0.01" 
-                                           min="0" 
-                                           value="{% if form.estimated_cost.value %}{{ form.estimated_cost.value|floatformat:2 }}{% endif %}"
-                                           class="block w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                    <input type="number"
+                                           id="id_approved_budget"
+                                           name="approved_budget"
+                                           step="0.01"
+                                           min="0"
+                                           value="{% if form.approved_budget.value %}{{ form.approved_budget.value|floatformat:2 }}{% endif %}"
+                                           class="block w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                            placeholder="0.00">
                                 </div>
-                                {% if form.estimated_cost.errors %}
+                                {% if form.approved_budget.errors %}
                                     <p class="mt-1 text-sm text-red-600 flex items-center">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                                         </svg>
-                                        {{ form.estimated_cost.errors.0 }}
+                                        {{ form.approved_budget.errors.0 }}
                                     </p>
                                 {% endif %}
                             </div>
@@ -4119,10 +4117,10 @@ function displayCostEstimation(estimation) {
     // Show results
     resultsDiv.classList.remove('hidden');
     
-    // Auto-fill estimated cost field with proper formatting
-    const estimatedCostField = document.getElementById('id_estimated_cost');
-    if (estimatedCostField) {
-        estimatedCostField.value = totalCost.toFixed(2);
+    // Auto-fill approved budget field with proper formatting
+    const approvedBudgetField = document.getElementById('id_approved_budget');
+    if (approvedBudgetField) {
+        approvedBudgetField.value = totalCost.toFixed(2);
     }
     
     // Prevent any external scripts from modifying the display
@@ -4322,7 +4320,7 @@ async function processBOQFile(file) {
             updateBOQFileStatus(file.name, 'success', 'Processed');
             showBOQPreview(result.data);
             
-            // Update estimated cost from BOQ data
+            // Update approved budget from BOQ data
             updateEstimatedCostFromBOQ(result.data);
             
             // Update form fields from BOQ data
@@ -4609,15 +4607,15 @@ function saveBOQData() {
         // Autofill project data
         autofillProjectDataFromBOQ(currentBOQData);
         
-        // Auto-fill estimate cost with BOQ total amount
+        // Auto-fill approved budget with BOQ total amount
         if (currentBOQData.total_amount) {
-            const estimatedCostField = document.getElementById('id_estimated_cost');
-            if (estimatedCostField) {
+            const approvedBudgetField = document.getElementById('id_approved_budget');
+            if (approvedBudgetField) {
                 const totalAmount = parseFloat(currentBOQData.total_amount);
-                estimatedCostField.value = totalAmount.toFixed(2);
-                
-                // Show notification about auto-filled cost
-                showEnhancedToast(`💰 Estimate cost auto-filled: ₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 'info');
+                approvedBudgetField.value = totalAmount.toFixed(2);
+
+                // Show notification about auto-filled budget
+                showEnhancedToast(`💰 Approved budget auto-filled: ₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 'info');
             }
         }
         
@@ -5477,16 +5475,16 @@ window.saveProjectAsDraft = function() {
 function checkAutoEstimationConditions(formData) {
     const projectType = formData.project_type;
     const lotSize = formData.lot_size;
-    const estimatedCost = formData.estimated_cost;
-    
+    const approvedBudget = formData.approved_budget;
+
     // Only estimate if:
     // 1. Project type is selected
     // 2. Lot size is provided
-    // 3. No manual estimate has been entered (or it's empty)
+    // 3. No manual budget has been entered (or it's empty)
     // 4. No BOQ data has been processed yet
     const hasBOQData = document.getElementById('boq_items_data') && document.getElementById('boq_items_data').value;
-    
-    return projectType && lotSize && !estimatedCost && !hasBOQData;
+
+    return projectType && lotSize && !approvedBudget && !hasBOQData;
 }
 
 // Trigger automatic cost estimation
@@ -5514,11 +5512,11 @@ async function triggerAutoEstimation(formData) {
         const result = await response.json();
         
         if (result.success) {
-            // Update the estimated cost field
-            const estimatedCostField = document.getElementById('id_estimated_cost');
-            if (estimatedCostField) {
-                estimatedCostField.value = parseFloat(result.estimation.total_estimated_cost).toFixed(2);
-                
+            // Update the approved budget field
+            const approvedBudgetField = document.getElementById('id_approved_budget');
+            if (approvedBudgetField) {
+                approvedBudgetField.value = parseFloat(result.estimation.total_estimated_cost).toFixed(2);
+
                 // Show a subtle notification
                 showAutoEstimateNotification(result.estimation.total_estimated_cost);
             }
@@ -5555,7 +5553,7 @@ function showAutoEstimateNotification(totalCost) {
                 </svg>
             </div>
             <div class="ml-3 flex-1">
-                <p class="text-sm font-bold text-white">🎯 Auto-Estimated Cost</p>
+                <p class="text-sm font-bold text-white">🎯 Auto-Estimated Budget</p>
                 <p class="text-lg font-extrabold text-white">₱${parseFloat(totalCost).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 <p class="text-xs text-green-100">Based on project type & lot size</p>
             </div>
@@ -5822,14 +5820,14 @@ function hideSavingDraftOverlay() {
     }
 }
 
-// Auto-calculate estimated cost from BOQ data
+// Auto-calculate approved budget from BOQ data
 function calculateEstimatedCost() {
     const lotSizeInput = document.getElementById('id_lot_size');
     const totalAreaInput = document.getElementById('id_total_area');
     const projectTypeSelect = document.getElementById('id_project_type');
-    const estimatedCostInput = document.getElementById('id_estimated_cost');
-    
-    if (!estimatedCostInput) return;
+    const approvedBudgetInput = document.getElementById('id_approved_budget');
+
+    if (!approvedBudgetInput) return;
     
     // Get values
     const lotSize = parseFloat(lotSizeInput?.value) || 0;
@@ -5850,19 +5848,19 @@ function calculateEstimatedCost() {
         };
         
         const baseCost = costPerSqm[projectTypeId] || 15000;
-        const estimatedCost = area * baseCost;
-        
-        // Update the estimated cost field
-        estimatedCostInput.value = estimatedCost.toFixed(2);
-        
+        const approvedBudget = area * baseCost;
+
+        // Update the approved budget field
+        approvedBudgetInput.value = approvedBudget.toFixed(2);
+
         // Add visual feedback
-        estimatedCostInput.style.backgroundColor = '#f0f9ff';
-        estimatedCostInput.style.borderColor = '#3b82f6';
-        
+        approvedBudgetInput.style.backgroundColor = '#f0f9ff';
+        approvedBudgetInput.style.borderColor = '#3b82f6';
+
         // Remove visual feedback after 2 seconds
         setTimeout(() => {
-            estimatedCostInput.style.backgroundColor = '';
-            estimatedCostInput.style.borderColor = '';
+            approvedBudgetInput.style.backgroundColor = '';
+            approvedBudgetInput.style.borderColor = '';
         }, 2000);
     }
 }
@@ -5967,10 +5965,10 @@ function updateFormFieldsFromBOQ(boqData) {
     }
 }
 
-// Function to update estimated cost from BOQ data
+// Function to update approved budget from BOQ data
 function updateEstimatedCostFromBOQ(boqData) {
-    const estimatedCostInput = document.getElementById('id_estimated_cost');
-    if (!estimatedCostInput || !boqData) return;
+    const approvedBudgetInput = document.getElementById('id_approved_budget');
+    if (!approvedBudgetInput || !boqData) return;
     
     console.log('BOQ Data received:', boqData);
     
@@ -5991,35 +5989,35 @@ function updateEstimatedCostFromBOQ(boqData) {
     }
     
     console.log('Final total cost:', totalCost);
-    
+
     if (totalCost > 0) {
-        estimatedCostInput.value = totalCost.toFixed(2);
-        
+        approvedBudgetInput.value = totalCost.toFixed(2);
+
         // Add visual feedback with persistent highlighting
-        estimatedCostInput.style.backgroundColor = '#f0fdf4';
-        estimatedCostInput.style.borderColor = '#22c55e';
-        estimatedCostInput.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
-        estimatedCostInput.classList.add('boq-populated');
-        
+        approvedBudgetInput.style.backgroundColor = '#f0fdf4';
+        approvedBudgetInput.style.borderColor = '#22c55e';
+        approvedBudgetInput.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
+        approvedBudgetInput.classList.add('boq-populated');
+
         // Show success message
-        showToast(`Estimated cost updated to ₱${totalCost.toLocaleString('en-PH', {minimumFractionDigits: 2})} from BOQ data`, 'success');
-        
+        showToast(`Approved budget updated to ₱${totalCost.toLocaleString('en-PH', {minimumFractionDigits: 2})} from BOQ data`, 'success');
+
         // Add event listeners to remove highlight when user edits
         const removeHighlight = () => {
-            estimatedCostInput.style.backgroundColor = '';
-            estimatedCostInput.style.borderColor = '';
-            estimatedCostInput.style.boxShadow = '';
-            estimatedCostInput.classList.remove('boq-populated');
+            approvedBudgetInput.style.backgroundColor = '';
+            approvedBudgetInput.style.borderColor = '';
+            approvedBudgetInput.style.boxShadow = '';
+            approvedBudgetInput.classList.remove('boq-populated');
             // Remove event listeners after highlighting is removed
-            estimatedCostInput.removeEventListener('input', removeHighlight);
-            estimatedCostInput.removeEventListener('change', removeHighlight);
-            estimatedCostInput.removeEventListener('focus', removeHighlight);
+            approvedBudgetInput.removeEventListener('input', removeHighlight);
+            approvedBudgetInput.removeEventListener('change', removeHighlight);
+            approvedBudgetInput.removeEventListener('focus', removeHighlight);
         };
-        
+
         // Remove highlight when user starts editing
-        estimatedCostInput.addEventListener('input', removeHighlight);
-        estimatedCostInput.addEventListener('change', removeHighlight);
-        estimatedCostInput.addEventListener('focus', removeHighlight);
+        approvedBudgetInput.addEventListener('input', removeHighlight);
+        approvedBudgetInput.addEventListener('change', removeHighlight);
+        approvedBudgetInput.addEventListener('focus', removeHighlight);
     } else {
         console.log('No valid total cost found in BOQ data');
     }

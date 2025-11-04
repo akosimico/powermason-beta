@@ -512,7 +512,11 @@ class ProjectProfile(models.Model):
         max_digits=5, decimal_places=2, default=0,
         help_text="Overall project progress (%)"
     )
-    
+    cumulative_amount = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0,
+        help_text="Total amount completed to date (₱)"
+    )
+
     is_draft = models.BooleanField(default=False, help_text="True if this is a draft")
     submitted_for_approval = models.BooleanField(default=False, help_text="True if submitted for approval")
     approved_by = models.ForeignKey(

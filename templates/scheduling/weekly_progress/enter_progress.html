@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Navigation -->
+        <nav class="mb-6">
+            <div class="flex items-center text-sm text-gray-600">
+                <button type="button"
+                    onclick="window.location.href = '{% url 'submit_weekly_progress' project.id %}'"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors mr-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </button>
+                <div class="flex items-center">
+                    <span class="text-gray-500">Projects</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="text-gray-700">{{ project.project_name }}</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="font-semibold text-gray-900">Enter BOQ Progress</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Enter Weekly Progress</h1>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Week: {{ template_data.week_start_date|date:"M d" }} - {{ template_data.week_end_date|date:"M d, Y" }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Fill progress for BOQ items you worked on this week. Leave others at 0%.
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-600">Project</p>
+                    <p class="font-semibold text-gray-900">{{ template_data.project_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- BOQ Items by Division -->
+            {% for division in template_data.divisions %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <!-- Division Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                        <h2 class="text-lg font-bold text-white">{{ division.name }}</h2>
+                        <p class="text-sm text-blue-100 mt-1">{{ division.boq_items|length }} BOQ item(s)</p>
+                    </div>
+
+                    <!-- BOQ Items Table -->
+                    {% if division.boq_items %}
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-24">Code</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider w-32">Approved Amt</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider w-28">Previous %</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider w-32">Cumulative %</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-48">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for item in division.boq_items %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ item.code }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-700">
+                                                {{ item.description }}
+                                                {% if item.quantity %}
+                                                    <span class="text-xs text-gray-500 block mt-1">
+                                                        Qty: {{ item.quantity }} {{ item.uom }}
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-right text-gray-900">
+                                                ₱{{ item.approved_amount|floatformat:2 }}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-right">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    {{ item.previous_cumulative_percent|floatformat:1 }}%
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input type="number"
+                                                       name="cumulative_percent_{{ item.code }}"
+                                                       min="0"
+                                                       max="100"
+                                                       step="0.01"
+                                                       value="{{ item.previous_cumulative_percent|floatformat:2 }}"
+                                                       placeholder="0.00"
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-right"
+                                                       onchange="calculateAmount('{{ item.code }}', {{ item.approved_amount }}, {{ item.previous_cumulative_percent }})">
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input type="text"
+                                                       name="remarks_{{ item.code }}"
+                                                       placeholder="Optional notes..."
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                            </td>
+                                        </tr>
+                                        <!-- Hidden field for amount (auto-calculated) -->
+                                        <input type="hidden" name="cumulative_amount_{{ item.code }}" id="amount_{{ item.code }}">
+                                        <!-- Decrease reason field (shown if progress decreased) -->
+                                        <tr class="hidden decrease-reason-row-{{ item.code }} bg-yellow-50">
+                                            <td colspan="6" class="px-4 py-3">
+                                                <div class="flex items-start gap-3">
+                                                    <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                                                    </svg>
+                                                    <div class="flex-1">
+                                                        <label class="text-sm font-medium text-yellow-800 mb-1 block">
+                                                            Progress Decreased - Reason Required:
+                                                        </label>
+                                                        <textarea name="decrease_reason_{{ item.code }}"
+                                                                  rows="2"
+                                                                  placeholder="Explain why progress decreased (e.g., work rejected by inspector, rework required)..."
+                                                                  class="w-full px-3 py-2 border border-yellow-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent"></textarea>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="px-6 py-8 text-center">
+                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="text-sm text-gray-500">No BOQ items in this division</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <!-- No BOQ data -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No BOQ Items Found</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        This project doesn't have any BOQ items uploaded yet.
+                    </p>
+                    <a href="{% url 'submit_weekly_progress' project.id %}"
+                       class="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Go Back
+                    </a>
+                </div>
+            {% endfor %}
+
+            <!-- Actions -->
+            {% if template_data.divisions %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            <p class="font-medium text-gray-900 mb-1">Ready to submit?</p>
+                            <p>Review your entries and click Submit to send for approval</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <a href="{% url 'submit_weekly_progress' project.id %}"
+                               class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors shadow-sm hover:shadow-md">
+                                Submit Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+function calculateAmount(itemCode, approvedAmount, previousPercent) {
+    const percentInput = document.querySelector(`input[name="cumulative_percent_${itemCode}"]`);
+    const amountInput = document.getElementById(`amount_${itemCode}`);
+    const decreaseReasonRow = document.querySelector(`.decrease-reason-row-${itemCode}`);
+
+    const newPercent = parseFloat(percentInput.value) || 0;
+
+    // Calculate amount
+    const newAmount = (newPercent / 100) * approvedAmount;
+    amountInput.value = newAmount.toFixed(2);
+
+    // Show/hide decrease reason field
+    if (newPercent < previousPercent) {
+        decreaseReasonRow.classList.remove('hidden');
+    } else {
+        decreaseReasonRow.classList.add('hidden');
+    }
+
+    // Update row styling
+    const row = percentInput.closest('tr');
+    if (newPercent > previousPercent) {
+        row.classList.add('bg-green-50');
+        row.classList.remove('bg-yellow-50', 'bg-red-50');
+    } else if (newPercent < previousPercent) {
+        row.classList.add('bg-yellow-50');
+        row.classList.remove('bg-green-50', 'bg-red-50');
+    } else {
+        row.classList.remove('bg-green-50', 'bg-yellow-50', 'bg-red-50');
+    }
+}
+
+// Initialize all amounts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[name^="cumulative_percent_"]').forEach(input => {
+        const itemCode = input.name.replace('cumulative_percent_', '');
+        const row = input.closest('tr');
+        const approvedAmountCell = row.querySelector('td:nth-child(3)');
+        const approvedAmount = parseFloat(approvedAmountCell.textContent.replace('₱', '').replace(',', ''));
+        const previousPercentCell = row.querySelector('td:nth-child(4) span');
+        const previousPercent = parseFloat(previousPercentCell.textContent.replace('%', ''));
+
+        // Trigger calculation
+        input.addEventListener('input', () => calculateAmount(itemCode, approvedAmount, previousPercent));
+
+        // Initial calculation
+        calculateAmount(itemCode, approvedAmount, previousPercent);
+    });
+});
+</script>
+{% endblock %}

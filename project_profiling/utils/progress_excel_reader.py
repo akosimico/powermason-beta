@@ -230,7 +230,7 @@ class ProgressExcelReader:
 
                 self.summary['total_items'] += 1
                 self.summary['items_with_progress'] += 1
-                self.summary['total_period_percent'] += period_percent_value
+                # Don't sum percentages here - use row 3 value in _calculate_summary instead
                 self.summary['total_period_amount'] += period_amount_value
 
             except (ValueError, InvalidOperation) as e:
@@ -241,6 +241,26 @@ class ProgressExcelReader:
         """Calculate summary statistics"""
         if not self.boq_items:
             self.warnings.append("No BOQ items with progress found in the Excel file")
+            return
+
+        # Calculate total approved budget from all BOQ items
+        total_approved = Decimal('0')
+        for item in self.boq_items:
+            total_approved += item.get('approved_amount', Decimal('0'))
+
+        self.summary['total_approved_amount'] = total_approved
+
+        # Use the weekly progress from row 3 instead of summing BOQ item percentages
+        # Row 3 contains the correct calculated percentage (PROGRESS THIS WEEK)
+        if 'weekly_progress_percent' in self.summary:
+            self.summary['total_period_percent'] = self.summary['weekly_progress_percent']
+            logger.info(f"Using row 3 weekly progress: {self.summary['weekly_progress_percent']}%")
+        else:
+            # Fallback: calculate from total_period_amount / total_approved_amount
+            if total_approved > 0 and self.summary['total_period_amount'] > 0:
+                calculated_percent = (self.summary['total_period_amount'] / total_approved) * 100
+                self.summary['total_period_percent'] = Decimal(str(calculated_percent))
+                logger.warning(f"Row 3 weekly progress not found, calculated: {calculated_percent}%")
 
     def _validate_data(self):
         """Validate extracted data"""

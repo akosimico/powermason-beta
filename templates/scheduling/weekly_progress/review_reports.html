@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Review Progress Reports</h1>
+                    <p class="text-sm text-gray-600 mt-1">{{ pending_reports|length }} pending report(s) awaiting approval</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Reports -->
+        {% if pending_reports %}
+            <div class="space-y-4">
+                {% for report in pending_reports %}
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                        <div class="p-6">
+                            <!-- Report Header -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ report.project.project_name }}</h3>
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                                            Pending Approval
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                                        <span>Report #{{ report.report_number }}</span>
+                                        <span>•</span>
+                                        <span>Week: {{ report.week_start_date|date:"M d" }} - {{ report.week_end_date|date:"M d, Y" }}</span>
+                                        <span>•</span>
+                                        <span>Submitted by: <strong class="text-gray-900">{% if report.submitted_by %}{{ report.submitted_by.user.get_full_name|default:report.submitted_by.user.username }}{% else %}N/A{% endif %}</strong></span>
+                                        <span>•</span>
+                                        <span>{{ report.submitted_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Stats Grid -->
+                            <div class="grid grid-cols-4 gap-4 mb-4">
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <p class="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Period Progress</p>
+                                    <p class="text-2xl font-bold text-blue-900">{{ report.total_period_percent|floatformat:2 }}%</p>
+                                    <p class="text-xs text-blue-700 mt-1">This week</p>
+                                </div>
+                                <div class="bg-emerald-50 rounded-lg p-4">
+                                    <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Period Amount</p>
+                                    <p class="text-2xl font-bold text-emerald-900">₱{{ report.total_period_amount|floatformat:2 }}</p>
+                                    <p class="text-xs text-emerald-700 mt-1">Completed</p>
+                                </div>
+                                <div class="bg-purple-50 rounded-lg p-4">
+                                    <p class="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Cumulative Progress</p>
+                                    <p class="text-2xl font-bold text-purple-900">{{ report.cumulative_project_percent|floatformat:1 }}%</p>
+                                    <p class="text-xs text-purple-700 mt-1">Overall</p>
+                                </div>
+                                <div class="bg-orange-50 rounded-lg p-4">
+                                    <p class="text-xs font-medium text-orange-600 uppercase tracking-wider mb-1">Cumulative Amount</p>
+                                    <p class="text-2xl font-bold text-orange-900">₱{{ report.cumulative_project_amount|floatformat:2 }}</p>
+                                    <p class="text-xs text-orange-700 mt-1">Total to date</p>
+                                </div>
+                            </div>
+
+                            <!-- Remarks -->
+                            {% if report.remarks %}
+                                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                                    <p class="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1">General Remarks</p>
+                                    <p class="text-sm text-gray-700">{{ report.remarks }}</p>
+                                </div>
+                            {% endif %}
+
+                            <!-- Schedule Warnings -->
+                            {% if report.schedule_warnings %}
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                    <div class="flex items-start gap-3">
+                                        <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                                        </svg>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-yellow-800 mb-2">Schedule Validation Warnings ({{ report.schedule_warnings|length }})</p>
+                                            <ul class="space-y-1 text-sm text-yellow-700">
+                                                {% for warning in report.schedule_warnings|slice:":3" %}
+                                                    <li>• {{ warning }}</li>
+                                                {% endfor %}
+                                                {% if report.schedule_warnings|length > 3 %}
+                                                    <li class="text-xs text-yellow-600 mt-1">+ {{ report.schedule_warnings|length|add:"-3" }} more warning(s)</li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Action Buttons -->
+                            <div class="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+                                <a href="{% url 'view_weekly_report' report.id %}"
+                                   class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    Review Details
+                                </a>
+                                <form id="approvalForm{{ report.id }}" method="post" action="{% url 'approve_weekly_report' report.id %}" class="flex-1">
+                                    {% csrf_token %}
+                                    <button type="button"
+                                            onclick="showApproveModal({{ report.id }})"
+                                            class="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm hover:shadow-md">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Approve Report
+                                    </button>
+                                </form>
+                                <a href="{% url 'reject_weekly_report' report.id %}"
+                                   class="px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm hover:shadow-md">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    Reject
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Pending Reports</h3>
+                <p class="text-sm text-gray-600">All progress reports have been reviewed. Check back later for new submissions.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Approve Confirmation Modal -->
+<div id="approveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform" id="approveModalContent">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex items-start gap-4 mb-4">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Approve Progress Report?</h3>
+                    <p class="text-sm text-gray-600">This will update the project progress and all related items.</p>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="bg-green-50 rounded-lg p-4 mb-6">
+                <p class="text-sm font-medium text-green-900 mb-2">What happens next:</p>
+                <ul class="space-y-2 text-sm text-green-800">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>All BOQ items updated to "Approved" status</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>Task progress recalculated based on BOQ items</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>Overall project progress updated</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>PM receives approval notification</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+                <button type="button"
+                        onclick="hideApproveModal()"
+                        class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="confirmApprove()"
+                        class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm">
+                    Confirm Approval
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentApprovalFormId = null;
+
+function showApproveModal(reportId) {
+    currentApprovalFormId = reportId;
+    const modal = document.getElementById('approveModal');
+    const modalContent = document.getElementById('approveModalContent');
+
+    // Show modal
+    modal.classList.remove('hidden');
+
+    // Add fade-in class to backdrop
+    modal.style.animation = 'fadeIn 0.2s ease-out';
+
+    // Trigger bounce animation for content
+    setTimeout(() => {
+        modalContent.style.animation = 'bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+    }, 10);
+}
+
+function hideApproveModal() {
+    const modal = document.getElementById('approveModal');
+    const modalContent = document.getElementById('approveModalContent');
+
+    // Animate out
+    modalContent.style.animation = 'bounceOut 0.3s ease-in';
+    modal.style.animation = 'fadeOut 0.2s ease-in';
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modalContent.style.animation = '';
+        modal.style.animation = '';
+        currentApprovalFormId = null;
+    }, 300);
+}
+
+function confirmApprove() {
+    if (currentApprovalFormId) {
+        document.getElementById('approvalForm' + currentApprovalFormId).submit();
+    }
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideApproveModal();
+    }
+});
+
+// Close modal on background click
+document.getElementById('approveModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideApproveModal();
+    }
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceOut {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+}
+</style>
+
+{% endblock %}

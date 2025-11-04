@@ -277,6 +277,8 @@
                     {% endif %}
                 </div>
 
+                {% comment %}
+                <!-- Task progress display removed - system now uses BOQ-based progress tracking -->
                 <div class="space-y-4 tasks-container" data-max-height="200">
                     {% for task_name, progress, weight, task_id in task_progress %}
                     <div class="task-item {% if forloop.counter > 4 %}hidden{% endif %}">
@@ -296,6 +298,7 @@
                         </div>
                     </div>
                     {% endfor %}
+                {% endcomment %}
 
                     {% if not task_progress %}
                     <div class="text-center py-8">

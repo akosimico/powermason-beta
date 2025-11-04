@@ -42,7 +42,7 @@ class ProjectProfileForm(forms.ModelForm):
             "start_date",
             "target_completion_date",
             "actual_completion_date",
-            "estimated_cost",
+            "approved_budget",
             "expense",
             "payment_terms",
             "site_engineer",

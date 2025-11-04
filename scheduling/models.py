@@ -845,28 +845,48 @@ class WeeklyProgressReport(models.Model):
 
     def calculate_totals(self):
         """
-        Calculate total period and cumulative amounts from all BOQ items.
-        Should be called after all BOQ items are added to the report.
+        Calculate cumulative amounts based on period progress from Excel upload.
+        Period totals (total_period_amount, total_period_percent) are already set
+        from the Excel file during report creation.
+
+        This method only recalculates cumulative values by summing previous reports.
         """
         from django.db.models import Sum
-        from project_profiling.models import BOQItemProgress
 
-        totals = BOQItemProgress.objects.filter(
-            weekly_report=self
+        # Period totals are already set from Excel upload - don't recalculate them
+        # Just ensure they're not None
+        if self.total_period_amount is None:
+            self.total_period_amount = 0
+        if self.total_period_percent is None:
+            self.total_period_percent = 0
+
+        # Calculate cumulative by summing period progress from previous APPROVED or PENDING reports
+        # plus THIS report's period progress (to show what cumulative WILL BE if approved)
+        # We include PENDING reports so users can see the overall cumulative progress
+        previous_reports_totals = WeeklyProgressReport.objects.filter(
+            project=self.project,
+            status__in=['A', 'P'],  # Include both Approved and Pending
+            report_number__lt=self.report_number  # Less than, not less than or equal
         ).aggregate(
-            period_amount=Sum('period_progress_amount'),
-            period_percent=Sum('period_progress_percent'),
-            cumulative_amount=Sum('cumulative_amount'),
-            cumulative_percent=Sum('cumulative_percent')
+            total_period_amount=Sum('total_period_amount'),
+            total_period_percent=Sum('total_period_percent')
         )
 
-        self.total_period_amount = totals['period_amount'] or 0
-        self.total_period_percent = totals['period_percent'] or 0
-        self.cumulative_project_amount = totals['cumulative_amount'] or 0
-        # Note: cumulative_project_percent needs weighted calculation
+        # Cumulative amount = Previous reports + THIS report's period progress
+        previous_amount = previous_reports_totals['total_period_amount'] or 0
+        self.cumulative_project_amount = previous_amount + self.total_period_amount
+
+        # Cumulative percent = (cumulative amount / total project budget) * 100
+        # Use project's approved budget, NOT sum of period percentages
+        total_project_budget = self.project.approved_budget or 0
+        if total_project_budget > 0:
+            self.cumulative_project_percent = (self.cumulative_project_amount / total_project_budget) * 100
+        else:
+            # Fallback: sum the period percentages if budget not available
+            previous_percent = previous_reports_totals['total_period_percent'] or 0
+            self.cumulative_project_percent = previous_percent + self.total_period_percent
+
         self.save(update_fields=[
-            'total_period_amount',
-            'total_period_percent',
             'cumulative_project_amount',
             'cumulative_project_percent'
         ])
@@ -907,11 +927,10 @@ class WeeklyProgressReport(models.Model):
 
     def approve(self, reviewer):
         """
-        Approve this weekly report and update all related BOQ item progress.
-        This also recalculates task and project progress.
+        Approve this weekly report and update project progress.
+        This also recalculates cumulative totals for subsequent pending reports.
         """
         from django.utils import timezone
-        from project_profiling.models import BOQItemProgress
 
         # Update report status
         self.status = 'A'
@@ -919,26 +938,29 @@ class WeeklyProgressReport(models.Model):
         self.reviewed_at = timezone.now()
         self.save()
 
-        # Approve all BOQ items in this report
-        BOQItemProgress.objects.filter(
-            weekly_report=self,
-            status='P'
-        ).update(
-            status='A',
-            reviewed_by=reviewer,
-            reviewed_at=timezone.now()
-        )
+        # Recalculate cumulative totals for this report (now that it's approved)
+        self.calculate_totals()
 
-        # Update task progress (aggregate from BOQ items)
-        self._update_task_progress()
+        # Recalculate cumulative totals for any subsequent pending reports
+        # so they reflect the newly approved report in their cumulative calculations
+        subsequent_reports = WeeklyProgressReport.objects.filter(
+            project=self.project,
+            status='P',
+            report_number__gt=self.report_number
+        ).order_by('report_number')
 
-        # Update project progress (weighted calculation)
+        for report in subsequent_reports:
+            report.calculate_totals()
+
+        # Update project progress based on this approved report
         self._update_project_progress()
 
     def reject(self, reviewer, reason):
-        """Reject this weekly report with a reason"""
+        """
+        Reject this weekly report with a reason.
+        This also recalculates cumulative totals for subsequent pending reports.
+        """
         from django.utils import timezone
-        from project_profiling.models import BOQItemProgress
 
         if not reason:
             raise ValueError("Rejection reason is required")
@@ -949,14 +971,16 @@ class WeeklyProgressReport(models.Model):
         self.rejection_reason = reason
         self.save()
 
-        # Reject all BOQ items in this report
-        BOQItemProgress.objects.filter(
-            weekly_report=self
-        ).update(
-            status='R',
-            reviewed_by=reviewer,
-            reviewed_at=timezone.now()
-        )
+        # Recalculate cumulative totals for any subsequent pending reports
+        # since this report is now rejected and shouldn't be included
+        subsequent_reports = WeeklyProgressReport.objects.filter(
+            project=self.project,
+            status='P',
+            report_number__gt=self.report_number
+        ).order_by('report_number')
+
+        for report in subsequent_reports:
+            report.calculate_totals()
 
     def _update_task_progress(self):
         """
@@ -993,18 +1017,12 @@ class WeeklyProgressReport(models.Model):
 
     def _update_project_progress(self):
         """
-        Update overall project progress using weighted calculation from tasks.
+        Update overall project progress directly from this report's cumulative values.
+        No longer uses task-based tracking - directly saves BOQ-based cumulative progress.
         """
-        from scheduling.models import ProjectTask
-
-        total_progress = 0
-        for scope in self.project.scopes.all():
-            for task in scope.tasks.all():
-                task_contrib = (task.progress or 0)/100 * (float(task.weight)/100) * float(scope.weight)
-                total_progress += task_contrib
-
-        self.project.progress = min(total_progress, 100)
-        self.project.save(update_fields=['progress'])
+        self.project.progress = min(self.cumulative_project_percent, 100)
+        self.project.cumulative_amount = self.cumulative_project_amount
+        self.project.save(update_fields=['progress', 'cumulative_amount'])
 
     @property
     def item_count(self):

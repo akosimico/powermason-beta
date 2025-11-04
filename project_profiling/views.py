@@ -831,9 +831,9 @@ def review_pending_project(request, project_id):
                 # --- Get approved budget from form or project data ---
                 approved_budget = request.POST.get("approved_budget") or request.POST.get("approved_budget_hidden")
                 
-                # If still no budget from form, get from project data or use estimated cost
+                # If still no budget from form, get from project data
                 if not approved_budget:
-                    approved_budget = project.project_data.get('approved_budget') or project.project_data.get('estimated_cost', 0)
+                    approved_budget = project.project_data.get('approved_budget', 0)
                     print(f"DEBUG: Using budget from project data: {approved_budget}")
                 else:
                     print(f"DEBUG: Using budget from form: {approved_budget}")
@@ -842,9 +842,9 @@ def review_pending_project(request, project_id):
                     approved_budget = float(approved_budget)
                     print(f"DEBUG: Final approved budget: {approved_budget}")
                 except (ValueError, TypeError):
-                    # Fallback to estimated cost if budget is invalid
-                    approved_budget = float(project.project_data.get('estimated_cost', 0))
-                    print(f"DEBUG: Using estimated cost as fallback budget: {approved_budget}")
+                    # Fallback to approved budget from project data
+                    approved_budget = float(project.project_data.get('approved_budget', 0))
+                    print(f"DEBUG: Using approved budget from project data as fallback: {approved_budget}")
 
                 # --- Get contract file from form ---
                 contract_file = request.FILES.get("contract_file")
@@ -865,39 +865,6 @@ def review_pending_project(request, project_id):
 
                 # --- Get approval notes ---
                 approval_notes = request.POST.get("approval_notes", "")
-
-                # --- Budget validation ---
-                estimated_cost = project.project_data.get("budget", 0) or project.project_data.get("estimated_cost", 0)
-                if estimated_cost and estimated_cost > 0:
-                    estimated_cost = float(estimated_cost)
-                    
-                    # Calculate minimum allowed budget (40% of estimated cost)
-                    min_budget = estimated_cost * 0.4
-                    
-                    # Calculate maximum allowed budget (150% of estimated cost)
-                    max_budget = estimated_cost * 1.5
-                    
-                    print(f"DEBUG: Budget validation - Estimated: {estimated_cost}, Min: {min_budget}, Max: {max_budget}, Approved: {approved_budget}")
-                    
-                    if approved_budget < min_budget:
-                        set_toast_message(
-                            request, 
-                            f"❌ Approved budget (₱{approved_budget:,.2f}) is too low. "
-                            f"Minimum allowed is ₱{min_budget:,.2f} (40% of estimated cost ₱{estimated_cost:,.2f}). "
-                            f"Please increase the budget amount.",
-                            "error"
-                        )
-                        return render(request, "project_profiling/review_pending_project.html", context)
-                    
-                    if approved_budget > max_budget:
-                        set_toast_message(
-                            request, 
-                            f"⚠️ Approved budget (₱{approved_budget:,.2f}) is significantly higher than estimated cost. "
-                            f"Maximum recommended is ₱{max_budget:,.2f} (150% of estimated cost ₱{estimated_cost:,.2f}). "
-                            f"Please confirm this is correct before proceeding.",
-                            "warning"
-                        )
-                        # Don't return here - allow override with warning
 
                 # --- Get employee assignments, client, and project type ---
                 from employees.models import Employee
@@ -1866,11 +1833,11 @@ def project_create(request, project_type, client_id):
                             print(f"DEBUG: BOQ Categorization - Requirements: {len(requirements)}, Materials: {len(materials)}")
                             print(f"DEBUG: Cost Breakdown - Requirements: ₱{requirements_cost:,.2f}, Materials: ₱{materials_cost:,.2f}")
                             
-                            # Update the project's estimated cost with BOQ total
-                            if 'estimated_cost' in cleaned_data:
-                                cleaned_data['estimated_cost'] = total_cost
+                            # Update the project's approved budget with BOQ total
+                            if 'approved_budget' in cleaned_data:
+                                cleaned_data['approved_budget'] = total_cost
                             else:
-                                cleaned_data['estimated_cost'] = total_cost
+                                cleaned_data['approved_budget'] = total_cost
                             
                             # Debug: Print BOQ data being saved
                             print(f"DEBUG: Saving BOQ data - {len(boq_items)} items, Total cost: {total_cost}")

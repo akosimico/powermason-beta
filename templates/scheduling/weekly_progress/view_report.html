@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Navigation -->
+        <nav class="mb-6">
+            <div class="flex items-center text-sm text-gray-600">
+                <button type="button"
+                    onclick="window.location.href = '{% url 'list_weekly_reports' project.id %}'"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors mr-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Reports
+                </button>
+                <div class="flex items-center">
+                    <span class="text-gray-500">Projects</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="text-gray-700">{{ project.project_name }}</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="font-semibold text-gray-900">Report #{{ report.report_number }}</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Report Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <h1 class="text-2xl font-bold text-gray-900">Weekly Progress Report #{{ report.report_number }}</h1>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                            {% if report.status == 'A' %}bg-green-100 text-green-700
+                            {% elif report.status == 'R' %}bg-red-100 text-red-700
+                            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {{ report.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Week: {{ report.week_start_date|date:"F d" }} - {{ report.week_end_date|date:"F d, Y" }}
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    {% if can_approve %}
+                        <form id="approvalForm{{ report.id }}" method="post" action="{% url 'approve_weekly_report' report.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="button"
+                                    onclick="showApproveModal({{ report.id }})"
+                                    class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm hover:shadow-md">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Approve
+                            </button>
+                        </form>
+                        <a href="{% url 'reject_weekly_report' report.id %}"
+                           class="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm hover:shadow-md">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Reject
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Period Progress</p>
+                    <p class="text-2xl font-bold text-blue-900">{{ report.total_period_percent|floatformat:2 }}%</p>
+                    <p class="text-xs text-blue-700 mt-1">This week</p>
+                </div>
+                <div class="bg-emerald-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Period Amount</p>
+                    <p class="text-2xl font-bold text-emerald-900">₱{{ report.total_period_amount|floatformat:2 }}</p>
+                    <p class="text-xs text-emerald-700 mt-1">Completed</p>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Cumulative Progress</p>
+                    <p class="text-2xl font-bold text-purple-900">{{ report.cumulative_project_percent|floatformat:1 }}%</p>
+                    <p class="text-xs text-purple-700 mt-1">Overall</p>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-orange-600 uppercase tracking-wider mb-1">Cumulative Amount</p>
+                    <p class="text-2xl font-bold text-orange-900">₱{{ report.cumulative_project_amount|floatformat:2 }}</p>
+                    <p class="text-xs text-orange-700 mt-1">Total to date</p>
+                </div>
+            </div>
+
+            <!-- Remarks -->
+            {% if report.remarks %}
+                <div class="mt-4 bg-gray-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-gray-600 uppercase tracking-wider mb-2">General Remarks</p>
+                    <p class="text-sm text-gray-700">{{ report.remarks }}</p>
+                </div>
+            {% endif %}
+
+            <!-- Rejection Reason -->
+            {% if report.status == 'R' and report.rejection_reason %}
+                <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-red-800 mb-1">Rejection Reason</p>
+                            <p class="text-sm text-red-700">{{ report.rejection_reason }}</p>
+                            <p class="text-xs text-red-600 mt-2">Rejected by: {{ report.reviewed_by.get_full_name }} on {{ report.reviewed_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Schedule Warnings -->
+            {% if report.schedule_warnings %}
+                <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-yellow-800 mb-2">Schedule Validation Warnings</p>
+                            <ul class="space-y-1 text-sm text-yellow-700">
+                                {% for warning in report.schedule_warnings %}
+                                    <li>• {{ warning }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Submission Info -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <span>Submitted by: <strong class="text-gray-900">{% if report.submitted_by %}{{ report.submitted_by.user.get_full_name|default:report.submitted_by.user.username }}{% else %}N/A{% endif %}</strong></span>
+                    <span>Submitted on: <strong class="text-gray-900">{{ report.submitted_at|date:"M d, Y g:i A" }}</strong></span>
+                    {% if report.status == 'A' %}
+                        <span>Approved by: <strong class="text-gray-900">{% if report.reviewed_by %}{{ report.reviewed_by.user.get_full_name|default:report.reviewed_by.user.username }}{% else %}N/A{% endif %}</strong> on {{ report.reviewed_at|date:"M d, Y g:i A" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- No Excel File Notice -->
+        {% if not report.excel_file or not report.excel_file.name %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <h3 class="text-sm font-medium text-yellow-800 mb-1">No Excel File Attached</h3>
+                        <p class="text-sm text-yellow-700">This progress report was submitted without an Excel file. The data shown above was entered manually.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Excel File Viewer Section -->
+        {% if report.excel_file and report.excel_file.name %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Excel Progress Report</h2>
+                            <p class="text-sm text-emerald-100 mt-1">{{ report.excel_file.name|default:"Progress Report.xlsx" }}</p>
+                        </div>
+                        <a href="{{ report.excel_file.url }}" download
+                           class="flex items-center gap-2 bg-white text-emerald-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Download Excel
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="excel-loading" class="px-6 py-12 text-center hidden">
+                    <svg class="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-600">Loading Excel file...</p>
+                </div>
+
+                <!-- Excel Content Container -->
+                <div id="excel-viewer-container" class="overflow-x-auto p-4" style="display: none;">
+                    <!-- Excel content will be rendered here -->
+                </div>
+
+                <!-- Initial State -->
+                <div id="excel-initial" class="px-6 py-12 text-center">
+                    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-gray-700 font-medium mb-2">View Complete Excel Spreadsheet</p>
+                    <p class="text-sm text-gray-500 mb-4">Click the button below to load the full Excel file with all columns including daily progress breakdowns</p>
+                    <button onclick="loadFullExcelViewer()"
+                            class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm hover:shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Load Excel Viewer
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- SheetJS Library -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<script>
+let excelLoaded = false;
+
+async function loadFullExcelViewer() {
+    if (excelLoaded) {
+        return; // Already loaded
+    }
+
+    const container = document.getElementById('excel-viewer-container');
+    const loading = document.getElementById('excel-loading');
+    const initial = document.getElementById('excel-initial');
+
+    // Show loading state
+    initial.style.display = 'none';
+    loading.classList.remove('hidden');
+
+    try {
+        // Fetch the Excel file
+        const response = await fetch('{{ report.excel_file.url }}');
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Parse the Excel file
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+        // Get the first sheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // Convert to HTML table
+        const htmlTable = XLSX.utils.sheet_to_html(worksheet, {
+            header: '',
+            footer: ''
+        });
+
+        // Style the table
+        const styledTable = htmlTable
+            .replace('<table>', '<table class="w-full border-collapse text-sm">')
+            .replace(/<td/g, '<td class="border border-gray-300 px-3 py-2"')
+            .replace(/<th/g, '<th class="border border-gray-300 px-3 py-2 bg-gray-100 font-semibold"');
+
+        // Display the table
+        container.innerHTML = styledTable;
+        container.style.display = 'block';
+        loading.classList.add('hidden');
+
+        excelLoaded = true;
+
+        // Add some styling to highlight progress columns
+        setTimeout(() => {
+            const table = container.querySelector('table');
+            if (table) {
+                // Add hover effect to rows
+                const rows = table.querySelectorAll('tr');
+                rows.forEach(row => {
+                    row.classList.add('hover:bg-gray-50', 'transition-colors');
+                });
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('Error loading Excel file:', error);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-600">
+                <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="font-medium mb-2">Failed to load Excel file</p>
+                <p class="text-sm text-gray-600">Please try downloading the file instead</p>
+            </div>
+        `;
+        container.style.display = 'block';
+        loading.classList.add('hidden');
+    }
+}
+</script>
+
+<style>
+/* Custom styles for Excel viewer */
+#excel-viewer-container table {
+    font-size: 0.875rem;
+    min-width: 100%;
+}
+
+#excel-viewer-container td,
+#excel-viewer-container th {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+#excel-viewer-container tr:nth-child(1) {
+    background-color: #f3f4f6;
+    font-weight: 600;
+}
+
+#excel-viewer-container tr:nth-child(2) {
+    background-color: #e5e7eb;
+    font-weight: 500;
+}
+
+#excel-viewer-container tr:nth-child(3) {
+    background-color: #fef3c7;
+    font-weight: 500;
+}
+
+/* Highlight percentage cells */
+#excel-viewer-container td:last-child {
+    font-weight: 600;
+    color: #059669;
+}
+
+/* Print styles */
+@media print {
+    #excel-viewer-container {
+        overflow: visible !important;
+    }
+
+    #excel-viewer-container table {
+        page-break-inside: auto;
+    }
+
+    #excel-viewer-container tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+</style>
+
+<!-- Approval Confirmation Modal -->
+<div id="approveModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center mb-2">
+                Approve Progress Report?
+            </h3>
+            <p class="text-sm text-gray-500 text-center mb-6">
+                This will update the project progress and notify the PM. This action cannot be undone.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeApproveModal()"
+                        class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button onclick="confirmApprove()"
+                        class="flex-1 px-4 py-2 bg-green-600 text-white text-base font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span id="approveButtonText">Approve</span>
+                    <span id="approveButtonLoading" class="hidden">
+                        <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentReportId = null;
+
+function showApproveModal(reportId) {
+    currentReportId = reportId;
+    document.getElementById('approveModal').classList.remove('hidden');
+}
+
+function closeApproveModal() {
+    document.getElementById('approveModal').classList.add('hidden');
+    currentReportId = null;
+}
+
+function confirmApprove() {
+    if (!currentReportId) return;
+
+    // Show loading state
+    document.getElementById('approveButtonText').classList.add('hidden');
+    document.getElementById('approveButtonLoading').classList.remove('hidden');
+
+    // Submit the form
+    document.getElementById('approvalForm' + currentReportId).submit();
+}
+
+// Close modal on background click
+document.getElementById('approveModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeApproveModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !document.getElementById('approveModal').classList.contains('hidden')) {
+        closeApproveModal();
+    }
+});
+</script>
+
+{% endblock %}

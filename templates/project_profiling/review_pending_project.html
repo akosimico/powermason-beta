@@ -120,102 +120,8 @@
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Site Engineer</dt>
-                                <dd class="text-sm font-medium text-gray-900">{{ project.project_data.site_engineer|default:"Not assigned" }}</dd>
-                            </div>
-                            <div>
                                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</dt>
                                 <dd class="text-sm font-medium text-gray-900">{{ project.project_data.location|default:"Not specified" }}</dd>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Employee Assignments Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">Employee Assignments</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Project In Charge -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Project In Charge</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {% if employee_assignments.project_in_charge %}
-                                            {{ employee_assignments.project_in_charge.full_name }}
-                                        {% else %}
-                                            <span class="text-gray-400">Not assigned</span>
-                                        {% endif %}
-                                    </dd>
-                                </div>
-                            </div>
-
-                            <!-- Safety Officer -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Safety Officer</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {% if employee_assignments.safety_officer %}
-                                            {{ employee_assignments.safety_officer.full_name }}
-                                        {% else %}
-                                            <span class="text-gray-400">Not assigned</span>
-                                        {% endif %}
-                                    </dd>
-                                </div>
-                            </div>
-
-                            <!-- Quality Assurance Officer -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Quality Assurance</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {% if employee_assignments.quality_assurance_officer %}
-                                            {{ employee_assignments.quality_assurance_officer.full_name }}
-                                        {% else %}
-                                            <span class="text-gray-400">Not assigned</span>
-                                        {% endif %}
-                                    </dd>
-                                </div>
-                            </div>
-
-                            <!-- Quality Officer -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Quality Officer</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {% if employee_assignments.quality_officer %}
-                                            {{ employee_assignments.quality_officer.full_name }}
-                                        {% else %}
-                                            <span class="text-gray-400">Not assigned</span>
-                                        {% endif %}
-                                    </dd>
-                                </div>
-                            </div>
-
-                            <!-- Foreman -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Foreman</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {% if employee_assignments.foreman %}
-                                            {{ employee_assignments.foreman.full_name }}
-                                        {% else %}
-                                            <span class="text-gray-400">Not assigned</span>
-                                        {% endif %}
-                                    </dd>
-                                </div>
-                            </div>
-
-                            <!-- Number of Laborers -->
-                            <div class="flex items-center space-x-3">
-                                <div>
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Laborers</dt>
-                                    <dd class="text-sm font-medium text-gray-900">
-                                        {{ number_of_laborers|default:0 }} workers
-                                    </dd>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -465,10 +371,6 @@
                     </div>
                     <div class="p-6 space-y-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-sm font-medium text-gray-500">Estimated Cost</span>
-                            <span class="text-sm font-semibold text-gray-900">₱{{ project.project_data.estimated_cost|default:0|floatformat:2|intcomma }}</span>
-                        </div>
-                        <div class="flex justify-between items-center border-t pt-4">
                             <span class="text-sm font-medium text-gray-500">Payment Terms</span>
                             <span class="text-sm text-gray-900">{{ project.project_data.payment_terms|default:"Not specified" }}</span>
                         </div>
@@ -499,7 +401,7 @@
                                            id="approved_budget"
                                            step="0.01"
                                            min="0"
-                                           value="{% if has_approved_quotation and approved_quotation_amount %}{{ approved_quotation_amount }}{% elif project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}"
+                                           value="{% if project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}"
                                            class="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-gray-100 cursor-not-allowed"
                                            placeholder="0.00"
                                            disabled
@@ -508,14 +410,7 @@
                                     <input type="hidden" 
                                            name="approved_budget_hidden" 
                                            id="approved_budget_hidden"
-                                           value="{% if has_approved_quotation and approved_quotation_amount %}{{ approved_quotation_amount }}{% elif project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}">
-                                </div>
-                                <div class="mt-1 text-xs text-gray-500 space-y-1">
-                                    <p>Estimated Cost: ₱{{ project.project_data.estimated_cost|default:0|floatformat:2|intcomma }}</p>
-                                    <p class="text-blue-600">
-                                        💡 Budget Range: ₱<span id="minBudget">0.00</span> - ₱<span id="maxBudget">0.00</span>
-                                        <br><span class="text-gray-400">(40% - 150% of estimated cost)</span>
-                                    </p>
+                                           value="{% if project.project_data.approved_budget %}{{ project.project_data.approved_budget }}{% elif project.approved_budget %}{{ project.approved_budget }}{% else %}0{% endif %}">
                                 </div>
                                 <div id="budget-validation-message" class="mt-2 text-xs hidden"></div>
                             </div>
@@ -575,8 +470,7 @@
 
                             <button type="submit"
                                     id="approve-budget-btn"
-                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    {% if not has_approved_quotation %}disabled{% endif %}>
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 <span id="approve-btn-text" class="flex items-center">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -591,19 +485,8 @@
                                     Approving Project...
                                 </span>
                             </button>
-                            
-                            {% if not has_approved_quotation %}
-                            <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                    </svg>
-                                    <p class="text-sm text-yellow-800">
-                                        <strong>Action Required:</strong> Please upload and approve at least one supplier quotation before approving the project.
-                                    </p>
-                                </div>
-                            </div>
-                            {% endif %}
+
+                            <!-- REMOVED: Warning message about needing approved quotation - no longer required -->
                         </form>
 
                         <form method="post" class="w-full" id="rejectForm">
@@ -662,6 +545,7 @@
                     </div>
 
         <!-- Quotation Management Section - Full Width at Bottom -->
+        <!-- COMMENTED OUT: Quotation section no longer required for project approval
         <div class="mt-8" id="quotation-management-section">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -691,8 +575,8 @@
                                                 </div>
                                             </div>
                     <div class="p-6">
-                    <!-- RFS Information -->
-                    {% if rfs_info %}
+                   RFS Information -->
+                    <!-- {% if rfs_info %}
                     <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
@@ -715,8 +599,8 @@
                                                 </div>
                     {% endif %}
                     
-                    <!-- Quotation Comparison Table - Always present for JavaScript updates -->
-                    <div class="w-full">
+                     Quotation Comparison Table - Always present for JavaScript updates -->
+                    <!-- <div class="w-full">
                         <table class="w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -809,8 +693,8 @@
                                     </tr>
                                         {% endfor %}
                                 {% else %}
-                                    <!-- Empty state row - will be replaced by JavaScript -->
-                                    <tr id="empty-state-row">
+                                    Empty state row - will be replaced by JavaScript -->
+                                    <!-- <tr id="empty-state-row">
                                         <td colspan="5" class="px-4 py-8 text-center">
                                             <div class="text-center py-8">
                                                 <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -823,18 +707,20 @@
                                     </tr>
                                 {% endif %}
                             </tbody>
-                        </table>
+                        </table> -->
                     </div>
                     </div>
                 </div>
                     </div>
     </div>
 </div>
+      
 
 <!-- Upload Quotation Modal -->
+<!-- COMMENTED OUT: Quotation upload modal no longer needed
 <div id="uploadQuotationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-0 border w-full max-w-2xl shadow-xl rounded-lg bg-white">
-        <!-- Modal Header -->
+        Modal Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div class="flex items-center">
                             <div class="flex-shrink-0">
@@ -981,8 +867,10 @@
                                                     </div>
                                                 </div>
                         </div>
+        END COMMENTED OUT UPLOAD QUOTATION MODAL -->
 
 <!-- Quotation File Preview Modal -->
+<!-- COMMENTED OUT: Quotation preview modal no longer needed
 <div id="quotationPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-10 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white" style="max-height: 90vh;">
         <!-- Modal Header -->
@@ -1167,8 +1055,10 @@
                                 </div>
                             </div>
                             </div>
+        END COMMENTED OUT QUOTATION PREVIEW MODAL -->
 
 <!-- Quotation Charts Modal -->
+<!-- COMMENTED OUT: Quotation charts modal no longer needed
 <div id="chartsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
         <!-- Modal Header -->
@@ -1227,6 +1117,7 @@
         </div>
     </div>
 </div>
+        END COMMENTED OUT QUOTATION CHARTS MODAL -->
 
 <script>
 // Project Rejection Modal Functions
@@ -1543,50 +1434,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Calculate and display budget range
-    const estimatedCost = parseFloat('{{ project.project_data.estimated_cost|default:0|floatformat:0 }}');
-    if (estimatedCost > 0) {
-        const minBudget = estimatedCost * 0.4;
-        const maxBudget = estimatedCost * 1.5;
-        
-        const minBudgetElement = document.getElementById('minBudget');
-        const maxBudgetElement = document.getElementById('maxBudget');
-        
-        if (minBudgetElement) {
-            minBudgetElement.textContent = formatNumber(minBudget);
-        }
-        
-        if (maxBudgetElement) {
-            maxBudgetElement.textContent = formatNumber(maxBudget);
-        }
-    }
-
     // Budget validation - Skip validation since field is disabled
     const budgetInput = document.getElementById('approved_budget');
     const validationMessage = document.getElementById('budget-validation-message');
-    
+
     // Since the budget field is disabled, we don't need validation
-    // Just show a message that the budget is auto-calculated
     if (budgetInput && validationMessage) {
         // Hide validation message since field is disabled
         validationMessage.classList.add('hidden');
-        
-        // Update the budget info text to reflect that it's auto-calculated
-        const budgetInfo = document.querySelector('.mt-1.text-xs.text-gray-500.space-y-1');
-        if (budgetInfo) {
-            const estimatedCostText = budgetInfo.querySelector('p');
-            if (estimatedCostText) {
-                estimatedCostText.innerHTML = `Estimated Cost: ₱${estimatedCost.toLocaleString('en-PH', {minimumFractionDigits: 2})} <span class="text-green-600">(Budget will be auto-calculated from approved quotation)</span>`;
-            }
-        }
     }
 
 
     // Initialize contract file upload
     initializeContractUpload();
-    
-    // Update approved budget field when quotations change
-    updateApprovedBudgetField();
+
+    // REMOVED: updateApprovedBudgetField() - no longer needed as quotations are not required
 });
 
 // Contract file upload functionality
@@ -2307,6 +2169,7 @@ function uploadPermitDocument(permitName) {
     alert(`Upload document for: ${permitName}\n\nThis will open the document library where you can upload the required permit.`);
 }
 
+/* COMMENTED OUT: Quotation chart initialization no longer needed
 // Chart instances for cleanup
 let barChartInstance = null;
 let pieChartInstance = null;
@@ -2530,19 +2393,20 @@ document.addEventListener('keydown', function(event) {
 window.initializeQuotationCharts = initializeQuotationCharts;
 window.openChartsModal = openChartsModal;
 window.closeChartsModal = closeChartsModal;
+END COMMENTED OUT CHART CODE */
 </script>
 
-<!-- Chart.js -->
+<!-- COMMENTED OUT: Chart.js and quotation scripts no longer needed
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- SheetJS for Excel file preview -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
-<!-- Quotation Management JavaScript -->
 <script src="{% static 'js/quotation_management.js' %}?v=1.4"></script>
+END COMMENTED OUT SCRIPTS -->
 
 <!-- Fallback JavaScript functions -->
 <script>
+/* COMMENTED OUT: Quotation-related fallback functions no longer needed
 // Wait for the main JavaScript to load, then define fallbacks if needed
 document.addEventListener('DOMContentLoaded', function() {
     // Check if main functions exist after a short delay
@@ -2903,6 +2767,7 @@ window.updateBudgetField = function(amount) {
 };
 
 // All quotation management functionality is handled by quotation_management.js
+END COMMENTED OUT QUOTATION FALLBACK FUNCTIONS */
 </script>
 
 {% endblock %}

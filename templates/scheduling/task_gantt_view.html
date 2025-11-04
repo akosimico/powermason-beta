@@ -214,6 +214,8 @@
                         <span class="text-gray-400">Unassigned</span>
                     {% endif %}
                 </div>
+                {% comment %}
+                <!-- Task progress display removed - system now uses BOQ-based progress tracking -->
                 <div class="col-span-1 text-center">
                     <div class="text-sm font-semibold">{{ task.progress }}%</div>
                     <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
@@ -221,6 +223,7 @@
                              style="width: {{ task.progress }}%"></div>
                     </div>
                 </div>
+                {% endcomment %}
                 <div class="col-span-2 text-center">
                     <span class="px-3 py-1 rounded-full text-xs font-medium
                         {% if task.status == 'CP' %}bg-green-100 text-green-800

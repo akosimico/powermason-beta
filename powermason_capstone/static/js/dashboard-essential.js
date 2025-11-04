@@ -1287,16 +1287,8 @@ function showTaskModal(event) {
             ${getPriorityBadge(priority)}
         </div>
 
-        <!-- Progress and Dates Row -->
-        <div class="grid grid-cols-3 gap-4">
-            <div class="text-center p-3 bg-gray-50 rounded-lg">
-                <p class="text-xs text-gray-500 mb-1">Progress</p>
-                <p class="text-xl font-bold text-gray-900 mb-2">${progress}%</p>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="${getProgressColor(progress)} h-2 rounded-full transition-all duration-500" 
-                         style="width: ${progress}%"></div>
-                </div>
-            </div>
+        <!-- Dates Row (Progress removed - BOQ-based tracking) -->
+        <div class="grid grid-cols-2 gap-4">
             <div class="p-3 border border-gray-200 rounded-lg">
                 <div class="flex items-center space-x-1 mb-1">
                     <i class="fas fa-play text-green-500 text-xs"></i>
@@ -1313,9 +1305,9 @@ function showTaskModal(event) {
             </div>
         </div>
 
-        <!-- Details Row -->
-        <div class="grid grid-cols-${assignee ? '2' : '1'} gap-4">
-            ${assignee ? `
+        <!-- Details Row (Weight removed - BOQ-based tracking) -->
+        ${assignee ? `
+        <div class="grid grid-cols-2 gap-4">
             <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
@@ -1327,13 +1319,8 @@ function showTaskModal(event) {
                     </div>
                 </div>
             </div>
-            ` : ''}
-            
-            <div class="grid grid-cols-3 gap-2">
-                <div class="text-center p-2 bg-gray-50 rounded">
-                    <p class="text-xs text-gray-500">Weight</p>
-                    <p class="text-sm font-semibold text-gray-900">${weight}%</p>
-                </div>
+
+            <div class="grid grid-cols-2 gap-2">
                 <div class="text-center p-2 bg-gray-50 rounded">
                     <p class="text-xs text-gray-500">Hours</p>
                     <p class="text-sm font-semibold text-gray-900">${manhours}h</p>
@@ -1344,6 +1331,18 @@ function showTaskModal(event) {
                 </div>
             </div>
         </div>
+        ` : `
+        <div class="grid grid-cols-2 gap-2">
+            <div class="text-center p-2 bg-gray-50 rounded">
+                <p class="text-xs text-gray-500">Hours</p>
+                <p class="text-sm font-semibold text-gray-900">${manhours}h</p>
+            </div>
+            <div class="text-center p-2 bg-gray-50 rounded">
+                <p class="text-xs text-gray-500">Duration</p>
+                <p class="text-sm font-semibold text-gray-900">${getDuration()}</p>
+            </div>
+        </div>
+        `}
 
         ${scope ? `
         <div class="p-2 bg-purple-50 border border-purple-200 rounded-lg">
@@ -1351,13 +1350,8 @@ function showTaskModal(event) {
             <span class="text-sm font-semibold text-purple-900">${scope.name}</span>
         </div>
         ` : ''}
-        
-        ${description && description !== "No description available" ? `
-        <div class="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500">
-            <p class="text-xs font-medium text-gray-600 mb-1">Description</p>
-            <p class="text-sm text-gray-700 leading-relaxed">${description}</p>
-        </div>
-        ` : ''}
+
+        <!-- Description removed - simplified modal for BOQ-based tracking -->
 
         <!-- Footer Row -->
         <div class="flex items-center justify-between pt-3 border-t">

@@ -208,78 +208,11 @@ def approve_quotation(request, project_id, quotation_id):
                 'error': 'Only pending quotations can be approved.'
             }, status=400)
         
-        # Validate quotation total amount against estimated cost
+        # Validate quotation total amount
         if not quotation.total_amount or quotation.total_amount <= 0:
             return JsonResponse({
                 'success': False,
                 'error': 'Cannot approve quotation with invalid or zero total amount.'
-            }, status=400)
-        
-        # Get estimated cost from project
-        estimated_cost = 0
-        if hasattr(project, 'project_data') and project.project_data:
-            if isinstance(project.project_data, dict):
-                # Try multiple field names for estimated cost
-                estimated_cost = (
-                    project.project_data.get('estimated_cost', 0) or
-                    project.project_data.get('total_cost', 0) or
-                    project.project_data.get('cost', 0)
-                )
-            else:
-                # Try multiple field names for estimated cost
-                estimated_cost = (
-                    getattr(project.project_data, 'estimated_cost', 0) or
-                    getattr(project.project_data, 'total_cost', 0) or
-                    getattr(project.project_data, 'cost', 0)
-                )
-        
-        # Debug logging
-        print(f"DEBUG: Project data type: {type(project.project_data)}")
-        print(f"DEBUG: Project data content: {project.project_data}")
-        print(f"DEBUG: Extracted estimated cost: {estimated_cost}")
-        
-        # If project_data is a dict, show all keys
-        if isinstance(project.project_data, dict):
-            print(f"DEBUG: Available keys in project_data: {list(project.project_data.keys())}")
-            for key, value in project.project_data.items():
-                if 'cost' in key.lower() or 'estimate' in key.lower():
-                    print(f"DEBUG: Found cost-related field '{key}': {value}")
-        
-        # If still no estimated cost found, try other project fields
-        if estimated_cost <= 0:
-            # Try to get from project's approved_budget or other fields
-            if hasattr(project, 'approved_budget') and project.approved_budget:
-                estimated_cost = float(project.approved_budget)
-                print(f"DEBUG: Using approved_budget as estimated cost: {estimated_cost}")
-            elif hasattr(project, 'estimated_cost') and project.estimated_cost:
-                estimated_cost = float(project.estimated_cost)
-                print(f"DEBUG: Using project.estimated_cost: {estimated_cost}")
-            else:
-                print(f"DEBUG: No estimated cost found in any field")
-                # Temporary fallback for testing - use 702250.00 as mentioned by user
-                estimated_cost = 702250.00
-                print(f"DEBUG: Using hardcoded fallback estimated cost: {estimated_cost}")
-                # return JsonResponse({
-                #     'success': False,
-                #     'error': 'Cannot validate quotation: Project estimated cost is not available.'
-                # }, status=400)
-        
-        # Calculate budget range (40% - 150% of estimated cost)
-        min_budget = estimated_cost * 0.4
-        max_budget = estimated_cost * 1.5
-        quotation_amount = float(quotation.total_amount)
-        
-        # Validate quotation amount is within acceptable range
-        if quotation_amount < min_budget:
-            return JsonResponse({
-                'success': False,
-                'error': f'Quotation amount (₱{quotation_amount:,.2f}) is too low. Minimum acceptable: ₱{min_budget:,.2f} (40% of estimated cost ₱{estimated_cost:,.2f})'
-            }, status=400)
-        
-        if quotation_amount > max_budget:
-            return JsonResponse({
-                'success': False,
-                'error': f'Quotation amount (₱{quotation_amount:,.2f}) is too high. Maximum acceptable: ₱{max_budget:,.2f} (150% of estimated cost ₱{estimated_cost:,.2f})'
             }, status=400)
         
         # Approve the quotation

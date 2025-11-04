@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Navigation -->
+        <nav class="mb-6">
+            <div class="flex items-center text-sm text-gray-600">
+                <button type="button"
+                    onclick="window.location.href = '{% url 'view_weekly_report' report.id %}'"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors mr-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Report
+                </button>
+                <div class="flex items-center">
+                    <span class="text-gray-500">Progress Reports</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="text-gray-700">Report #{{ report.report_number }}</span>
+                    <svg class="w-3 h-3 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span class="font-semibold text-gray-900">Reject Report</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Reject Progress Report</h1>
+                    <p class="text-sm text-gray-600 mt-1">Report #{{ report.report_number }} - {{ report.project.project_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Report Summary</h2>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <p class="text-xs text-gray-500 mb-1">Reporting Week</p>
+                    <p class="text-sm font-medium text-gray-900">{{ report.week_start_date|date:"M d" }} - {{ report.week_end_date|date:"M d, Y" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 mb-1">Submitted By</p>
+                    <p class="text-sm font-medium text-gray-900">{% if report.submitted_by %}{{ report.submitted_by.user.get_full_name|default:report.submitted_by.user.username }}{% else %}N/A{% endif %}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 mb-1">Period Progress</p>
+                    <p class="text-sm font-medium text-gray-900">{{ report.total_period_percent|floatformat:1 }}%</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 mb-1">Period Amount</p>
+                    <p class="text-sm font-medium text-gray-900">₱{{ report.total_period_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+
+            {% if report.remarks %}
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1">PM Remarks</p>
+                    <p class="text-sm text-gray-700">{{ report.remarks }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Rejection Form -->
+        <div class="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <h3 class="text-sm font-semibold text-red-800 mb-1">Important</h3>
+                        <p class="text-sm text-red-700">Please provide a clear and detailed reason for rejecting this report. The PM will be notified and may need to resubmit.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Rejection Reason -->
+                <div>
+                    <label for="id_rejection_reason" class="block text-sm font-medium text-gray-700 mb-2">
+                        Rejection Reason <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="rejection_reason"
+                              id="id_rejection_reason"
+                              rows="6"
+                              required
+                              placeholder="Example: The reported progress for BOQ item 7.1.3 appears inconsistent with site observations. Progress decreased without sufficient explanation. Please verify actual completion and resubmit."
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm">{{ form.rejection_reason.value|default:'' }}</textarea>
+                    {% if form.rejection_reason.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.rejection_reason.errors.0 }}</p>
+                    {% else %}
+                        <p class="mt-1 text-xs text-gray-500">Minimum 10 characters required. Be specific about what needs to be corrected.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Common Rejection Reasons (Quick Select) -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-xs font-medium text-gray-700 uppercase tracking-wider mb-3">Common Reasons (Click to use)</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button"
+                                onclick="setReason('Progress appears inconsistent with site observations. Please verify actual completion and provide supporting photos.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Inconsistent with site observations
+                        </button>
+                        <button type="button"
+                                onclick="setReason('Progress decrease detected without sufficient explanation. Please provide detailed reason for regression.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Missing decrease explanation
+                        </button>
+                        <button type="button"
+                                onclick="setReason('Reported progress exceeds scheduled completion. Please verify against approved schedule dates.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Exceeds schedule
+                        </button>
+                        <button type="button"
+                                onclick="setReason('Insufficient supporting documentation. Please attach photos or evidence of completed work.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Missing documentation
+                        </button>
+                        <button type="button"
+                                onclick="setReason('Progress amounts do not match approved contract amounts. Please verify calculations.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Amount mismatch
+                        </button>
+                        <button type="button"
+                                onclick="setReason('Multiple BOQ items missing progress updates. Please complete all applicable items for the reporting period.')"
+                                class="text-left px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                            Incomplete reporting
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Warning -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/>
+                        </svg>
+                        <div class="flex-1 text-sm text-yellow-700">
+                            <p class="font-medium mb-1">What happens when you reject?</p>
+                            <ul class="list-disc list-inside space-y-1 text-xs">
+                                <li>Report status changes to "Rejected"</li>
+                                <li>PM receives notification with your rejection reason</li>
+                                <li>No progress updates are applied to tasks or project</li>
+                                <li>PM must address issues and resubmit</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-3 pt-4 border-t border-gray-200">
+                    <a href="{% url 'view_weekly_report' report.id %}"
+                       class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-center">
+                        Cancel
+                    </a>
+                    <button type="button"
+                            onclick="showRejectModal()"
+                            class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors shadow-sm hover:shadow-md">
+                        Reject Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Confirmation Modal -->
+<div id="rejectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex items-start gap-4 mb-4">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Reject Progress Report?</h3>
+                    <p class="text-sm text-gray-600">This action will notify the PM and require resubmission.</p>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <p class="text-sm font-medium text-gray-900 mb-2">What happens next:</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>Report status changes to "Rejected"</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>PM receives notification with your reason</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>No progress updates applied to project</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span>PM must address issues and resubmit</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+                <button type="button"
+                        onclick="hideRejectModal()"
+                        class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="confirmReject()"
+                        class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-sm">
+                    Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setReason(text) {
+    const textarea = document.getElementById('id_rejection_reason');
+    const currentValue = textarea.value.trim();
+
+    if (currentValue === '') {
+        textarea.value = text;
+    } else {
+        textarea.value = currentValue + '\n\n' + text;
+    }
+
+    // Focus the textarea
+    textarea.focus();
+
+    // Scroll to show the new text
+    textarea.scrollTop = textarea.scrollHeight;
+}
+
+function showRejectModal() {
+    // Validate rejection reason first
+    const textarea = document.getElementById('id_rejection_reason');
+    const reason = textarea.value.trim();
+
+    if (reason.length < 10) {
+        textarea.focus();
+        textarea.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+        setTimeout(() => {
+            textarea.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+        }, 2000);
+        return;
+    }
+
+    document.getElementById('rejectModal').classList.remove('hidden');
+}
+
+function hideRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+}
+
+function confirmReject() {
+    // Submit the form
+    document.querySelector('form').submit();
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideRejectModal();
+    }
+});
+
+// Close modal on background click
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideRejectModal();
+    }
+});
+</script>
+{% endblock %}

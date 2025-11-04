@@ -14,6 +14,7 @@ from decimal import Decimal
 from io import BytesIO
 
 from authentication.utils.decorators import role_required
+from authentication.utils.toast_helpers import set_toast_message
 from project_profiling.models import ProjectProfile, BOQItemProgress
 from project_profiling.utils.progress_template_generator import generate_progress_template
 from project_profiling.utils.progress_excel_exporter import (
@@ -327,6 +328,13 @@ def approve_weekly_report(request, report_id):
             # Approve the report
             report.approve(reviewer=request.user.userprofile)
 
+            # Toast message for approval success
+            set_toast_message(
+                request,
+                f"Progress report #{report.report_number} approved successfully! Project progress updated.",
+                "success"
+            )
+
             messages.success(
                 request,
                 f"Progress report for week {report.week_start_date} to {report.week_end_date} approved successfully! "
@@ -346,7 +354,17 @@ def approve_weekly_report(request, report_id):
                 is_read=False
             )
 
-            return redirect('review_weekly_reports')
+            # Redirect to schedule detail page
+            from .models import ProjectSchedule
+            approved_schedule = ProjectSchedule.objects.filter(
+                project=report.project,
+                status='APPROVED'
+            ).first()
+
+            if approved_schedule:
+                return redirect('schedule_detail', schedule_id=approved_schedule.id)
+            else:
+                return redirect('review_weekly_reports')
 
         except Exception as e:
             logger.error(f"Error approving report: {str(e)}")
@@ -374,6 +392,13 @@ def reject_weekly_report(request, report_id):
 
                 # Reject the report
                 report.reject(reviewer=request.user.userprofile, reason=reason)
+
+                # Toast message for rejection success
+                set_toast_message(
+                    request,
+                    f"Progress report #{report.report_number} rejected successfully. PM has been notified.",
+                    "success"
+                )
 
                 messages.success(
                     request,
@@ -678,10 +703,36 @@ def upload_progress_excel(request, project_id):
             weekly_progress_percent = result['summary']['total_period_percent']
             weekly_progress_amount = result['summary']['total_period_amount']
 
+            # Calculate cumulative progress by adding all approved AND pending reports
+            # (Include pending so users can see what cumulative will be)
+            previous_reports = WeeklyProgressReport.objects.filter(
+                project=project,
+                status__in=['A', 'P'],  # Include both Approved and Pending
+                week_end_date__lt=week_start_date
+            ).order_by('-week_end_date')
+
+            cumulative_amount = weekly_progress_amount
+            if previous_reports.exists():
+                total_previous_amount = sum(r.total_period_amount for r in previous_reports)
+                cumulative_amount = total_previous_amount + weekly_progress_amount
+
+            # Calculate cumulative percentage based on total project budget
+            # Use the project's approved budget from database, NOT from Excel
+            # (Excel only contains items with progress, not all BOQ items)
+            total_approved_budget = project.approved_budget or 0
+            if total_approved_budget > 0:
+                cumulative_percent = Decimal(str((cumulative_amount / total_approved_budget) * 100))
+            else:
+                # Fallback: just add the period percentages
+                cumulative_percent = weekly_progress_percent
+                if previous_reports.exists():
+                    total_previous_percent = sum(r.total_period_percent for r in previous_reports)
+                    cumulative_percent = total_previous_percent + weekly_progress_percent
+
             report.total_period_amount = weekly_progress_amount
             report.total_period_percent = weekly_progress_percent
-            report.cumulative_project_amount = weekly_progress_amount  # For V2, cumulative = period
-            report.cumulative_project_percent = weekly_progress_percent  # For V2, cumulative = period
+            report.cumulative_project_amount = cumulative_amount
+            report.cumulative_project_percent = cumulative_percent
             report.save(update_fields=[
                 'total_period_amount',
                 'total_period_percent',
