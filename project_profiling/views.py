@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from scheduling.models import ProjectSchedule
 from decimal import Decimal, InvalidOperation
 from django.db import models
 from django.db.models import Sum, Max
@@ -40,7 +41,7 @@ from .models import ProjectProfile, ProjectFile, ProjectBudget, FundAllocation, 
 from manage_client.models import Client
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from powermason_capstone.utils.calculate_progress import calculate_progress
+from powermason_capstone.utils.calculate_progress import calculate_progress, calculate_schedule_performance
 
 # Import cost tracking views
 from .cost_tracking_views import (
@@ -244,7 +245,15 @@ def general_projects_list(request):
         archived=show_archived,
         project_source="GC"
     )
-    
+     # Attach approved schedule to each project
+    for project in projects:
+        approved_schedule = ProjectSchedule.objects.filter(
+            project=project,
+            status="APPROVED",
+            is_active=True
+        ).first()
+        project.approved_schedule = approved_schedule  # dynamically attach it
+        
     # Get pending projects for General Contractor
     pending_projects = ProjectStaging.objects.filter(
         status="PL", 
@@ -344,7 +353,14 @@ def direct_projects_list(request):
         archived=show_archived,
         project_source="DC"
     )
-    
+     # Attach approved schedule to each project
+    for project in projects:
+        approved_schedule = ProjectSchedule.objects.filter(
+            project=project,
+            status="APPROVED",
+            is_active=True
+        ).first()
+        project.approved_schedule = approved_schedule  
     # Get pending projects for Direct Client
     pending_projects = ProjectStaging.objects.filter(
         status="PL", 
@@ -427,7 +443,31 @@ def project_view(request, project_source, pk):
     else:
         project = get_object_or_404(ProjectProfile, pk=pk)
 
-    project.timeline_progress = calculate_progress(project.start_date, project.target_completion_date)
+    # Calculate overall progress from approved weekly reports
+    from scheduling.models import WeeklyProgressReport
+    latest_approved_report = WeeklyProgressReport.objects.filter(
+        project=project,
+        status='A'  # Approved
+    ).order_by('-week_end_date').first()
+
+    if latest_approved_report and latest_approved_report.cumulative_project_percent:
+        # Use cumulative progress from the latest approved weekly report
+        actual_progress = float(latest_approved_report.cumulative_project_percent)
+    else:
+        # Fallback to date-based calculation if no approved reports exist
+        actual_progress = calculate_progress(project.start_date, project.target_completion_date)
+
+    # Calculate schedule performance (compares actual vs expected progress)
+    schedule_performance = calculate_schedule_performance(
+        actual_progress=actual_progress,
+        start_date=project.start_date,
+        target_date=project.target_completion_date
+    )
+
+    # Pass both actual progress and schedule performance to template
+    project.timeline_progress = actual_progress
+    project.schedule_performance = schedule_performance
+
     request.session['project_return_url'] = request.get_full_path()
     request.session['task_list_return_url'] = request.get_full_path()
 
@@ -447,6 +487,7 @@ def project_view(request, project_source, pk):
         'pending_schedule': pending_schedule,
         'draft_schedule': draft_schedule,
         'rejected_schedule': rejected_schedule,
+        'schedule_performance': schedule_performance,
     })
 
 
@@ -4108,3 +4149,83 @@ def update_downpayment(request, project_id):
     except Exception as e:
         messages.error(request, f'Error updating downpayment: {str(e)}')
         return redirect('project_view', project_source=project.project_source, pk=project.id)
+
+
+@login_required
+@verified_email_required
+@require_POST
+def update_target_date(request, project_id):
+    """
+    Update target completion date for a project (AJAX endpoint)
+    """
+    try:
+        import json
+        from datetime import datetime
+
+        # Parse JSON body
+        data = json.loads(request.body)
+        target_date_str = data.get('target_completion_date')
+
+        if not target_date_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'Target completion date is required'
+            }, status=400)
+
+        # Get project
+        project = get_object_or_404(ProjectProfile, id=project_id)
+
+        # Check permissions (only superuser, OM, and EG can update)
+        user_profile = request.user.userprofile
+        if not (request.user.is_superuser or user_profile.role in ['OM', 'EG']):
+            return JsonResponse({
+                'success': False,
+                'error': 'You do not have permission to update target completion date'
+            }, status=403)
+
+        # Check if target date is already set (locked)
+        if project.target_completion_date:
+            return JsonResponse({
+                'success': False,
+                'error': 'Target completion date is already set and locked'
+            }, status=400)
+
+        # Parse the date
+        try:
+            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid date format. Expected YYYY-MM-DD'
+            }, status=400)
+
+        # Validate: target date must be after start date
+        if project.start_date and target_date <= project.start_date:
+            return JsonResponse({
+                'success': False,
+                'error': 'Target completion date must be after the start date'
+            }, status=400)
+
+        # Update the project
+        project.target_completion_date = target_date
+        project.save()
+
+        # Format date for display
+        formatted_date = target_date.strftime('%b %d, %Y')
+
+        return JsonResponse({
+            'success': True,
+            'formatted_date': formatted_date,
+            'message': 'Target completion date set successfully'
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

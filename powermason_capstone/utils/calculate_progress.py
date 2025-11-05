@@ -23,3 +23,85 @@ def calculate_progress(start_date, end_date, today=None):
 
     # Clamp between 0 and 100
     return round(max(0, min(progress, 100)), 2)
+
+
+def calculate_schedule_performance(actual_progress, start_date, target_date, today=None):
+    """
+    Calculate Schedule Performance Index (SPI) to determine if project is on track, delayed, or ahead.
+
+    Args:
+        actual_progress: Float - Actual work completion percentage (0-100)
+        start_date: Date - Project start date
+        target_date: Date - Project target completion date
+        today: Date (optional) - Current date for testing
+
+    Returns:
+        dict with:
+            - spi: Schedule Performance Index (actual / expected)
+            - status: 'on_track', 'at_risk', 'delayed', or 'ahead'
+            - expected_progress: What percentage should be completed by now
+            - variance: Difference between actual and expected (positive = ahead, negative = behind)
+            - display_progress: The progress value to show in UI
+    """
+    if today is None:
+        today = datetime.now().date()
+
+    # If no target date is set, use actual progress only
+    if not target_date or not start_date:
+        return {
+            'spi': 1.0,
+            'status': 'unknown',
+            'expected_progress': actual_progress,
+            'variance': 0.0,
+            'display_progress': actual_progress,
+            'use_schedule_tracking': False
+        }
+
+    # Calculate expected progress based on timeline
+    expected_progress = calculate_progress(start_date, target_date, today)
+
+    # Handle edge cases
+    if expected_progress == 0:
+        # Project hasn't started yet according to timeline
+        return {
+            'spi': 1.0,
+            'status': 'not_started',
+            'expected_progress': 0.0,
+            'variance': actual_progress,
+            'display_progress': actual_progress,
+            'use_schedule_tracking': True
+        }
+
+    if actual_progress == 0:
+        # No work completed but time is passing
+        return {
+            'spi': 0.0,
+            'status': 'delayed',
+            'expected_progress': expected_progress,
+            'variance': -expected_progress,
+            'display_progress': 0.0,
+            'use_schedule_tracking': True
+        }
+
+    # Calculate Schedule Performance Index
+    spi = actual_progress / expected_progress
+    variance = actual_progress - expected_progress
+
+    # Determine status based on SPI
+    if spi >= 1.05:
+        status = 'ahead'
+    elif spi >= 0.95:
+        status = 'on_track'
+    elif spi >= 0.80:
+        status = 'at_risk'
+    else:
+        status = 'delayed'
+
+    return {
+        'spi': round(spi, 2),
+        'status': status,
+        'expected_progress': round(expected_progress, 2),
+        'variance': round(variance, 2),
+        'display_progress': round(actual_progress, 2),
+        'use_schedule_tracking': True
+    }

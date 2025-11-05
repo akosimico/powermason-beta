@@ -1,7 +1,7 @@
-<!-- {# components/progress_bar.html #}
+{# components/progress_bar.html #}
 <div class="flex items-center space-x-2 w-full">
   <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-    <div 
+    <div
       class="h-3 rounded-full transition-all duration-500
         {% if value == 0 %}
           bg-gray-400
@@ -13,7 +13,7 @@
           bg-yellow-500
         {% else %}
           bg-red-500
-        {% endif %}" 
+        {% endif %}"
       style="width: {{ value }}%;">
     </div>
   </div>
@@ -30,12 +30,4 @@
       {{ value }}% <span class="text-red-600">(At Risk)</span>
     {% endif %}
   </span>
-</div> -->
-
-
-{# components/progress_bar.html #}
-<div class="flex items-center space-x-2 w-full">
-  <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-    <div class="h-3 rounded-full bg-gray-400" style="width: 100%;"></div>
-  </div>
 </div>

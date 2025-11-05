@@ -40,6 +40,9 @@ urlpatterns = [
     # Update downpayment
     path('projects/<int:project_id>/update-downpayment/', views.update_downpayment, name='update_downpayment'),
 
+    # Update target completion date
+    path('projects/<int:project_id>/update-target-date/', views.update_target_date, name='update_target_date'),
+
     # Archive/Unarchive project - Session-based
     path('delete/<str:project_type>/<int:pk>/', views.project_archive_signed_with_role, name='project_archive'),
     path('unarchive/<str:project_type>/<int:pk>/', views.project_unarchive_signed_with_role, name='project_unarchive'),

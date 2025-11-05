@@ -880,11 +880,17 @@ class WeeklyProgressReport(models.Model):
         # Use project's approved budget, NOT sum of period percentages
         total_project_budget = self.project.approved_budget or 0
         if total_project_budget > 0:
+            # Calculate cumulative percent based on cumulative amount
+            # This ensures consistency: cumulative % = cumulative amount / budget
             self.cumulative_project_percent = (self.cumulative_project_amount / total_project_budget) * 100
         else:
             # Fallback: sum the period percentages if budget not available
+            # However, this should not be used as it causes inconsistency
             previous_percent = previous_reports_totals['total_period_percent'] or 0
             self.cumulative_project_percent = previous_percent + self.total_period_percent
+
+        # Round to 2 decimal places to avoid floating point precision issues
+        self.cumulative_project_percent = round(float(self.cumulative_project_percent), 2)
 
         self.save(update_fields=[
             'cumulative_project_amount',

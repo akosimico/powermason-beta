@@ -517,17 +517,29 @@
                             <!-- Actions -->
                             <td class="px-2 py-3">
                                 <div class="flex items-center justify-center gap-1">
-                                    
-                                    <!-- View Tasks Button -->
-                                    <a href="{% url 'task_list' project.id %}?return_url={{ request.get_full_path|urlencode }}"
-                                       class="inline-flex items-center gap-1 px-2 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded shadow-sm transition-all duration-200 stop-row-click" 
-                                       title="View Tasks"
-                                       onclick="event.stopPropagation()">
-                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                        </svg>
-                                        <span class="hidden sm:inline">Tasks</span>
-                                    </a>
+                                                                  
+{% if project.approved_schedule %}
+    <a href="{% url 'schedule_detail' project.approved_schedule.id %}"
+       class="inline-flex items-center gap-1 px-2 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded shadow-sm transition-all duration-200 stop-row-click"
+       title="View Schedule"
+       onclick="event.stopPropagation()">
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <span class="hidden sm:inline">View Schedule</span>
+    </a>
+{% else %}
+    <button disabled
+        class="inline-flex items-center gap-1 px-2 py-1.5 bg-gray-300 text-gray-600 text-xs font-medium rounded shadow-sm cursor-not-allowed stop-row-click"
+        title="No Approved Schedule">
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        </svg>
+        <span class="hidden sm:inline">No Schedule</span>
+    </button>
+{% endif %}
 
                                     <!-- Archive/Unarchive Button -->
                                     {% if project.archived %}

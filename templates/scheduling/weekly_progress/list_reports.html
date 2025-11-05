@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load role_tags %}
+{% load humanize %}
+
 
 {% block content %}
 <div class="min-h-screen bg-gray-50">
@@ -125,7 +127,7 @@
                                         </div>
                                         <div>
                                             <p class="text-xs text-gray-500">Period Amount</p>
-                                            <p class="text-lg font-bold text-emerald-600">₱{{ report.total_period_amount|floatformat:2 }}</p>
+                                            <p class="text-lg font-bold text-emerald-600">₱{{ report.total_period_amount|floatformat:2|intcomma }}</p>
                                         </div>
                                         <div>
                                             <p class="text-xs text-gray-500">Cumulative Progress</p>
@@ -133,7 +135,7 @@
                                         </div>
                                         <div>
                                             <p class="text-xs text-gray-500">Cumulative Amount</p>
-                                            <p class="text-lg font-bold text-orange-600">₱{{ report.cumulative_project_amount|floatformat:2 }}</p>
+                                            <p class="text-lg font-bold text-orange-600">₱{{ report.cumulative_project_amount|floatformat:2|intcomma }}</p>
                                         </div>
                                     </div>
 

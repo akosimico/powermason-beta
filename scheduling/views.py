@@ -1098,7 +1098,7 @@ def approve_schedule(request, schedule_id):
                     f"Schedule approved! {result['created_count']} tasks created successfully.",
                     "success"
                 )
-                return redirect('task_list', project_id=schedule.project.id)
+                return redirect('schedule_detail', schedule_id=schedule.id)
             else:
                 set_toast_message(
                     request,

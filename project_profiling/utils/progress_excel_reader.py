@@ -158,10 +158,20 @@ class ProgressExcelReader:
                 current_division = str(description).strip() if description else None
                 continue
 
-            # Skip subtotal/total rows
-            if description and ('SUB-TOTAL' in str(description).upper() or 'TOTAL' in str(description).upper()):
+            # Check for TOTAL row - capture its amount and skip processing as BOQ item
+            if str(boq_code).upper() == 'TOTAL' or (description and 'TOTAL' in str(description).upper() and 'SUB-TOTAL' not in str(description).upper()):
+                # This is the main TOTAL row - extract the total amount
+                try:
+                    total_row_amount = self._get_cell_value_by_col(total_amount_col, row_idx)
+                    if total_row_amount and total_row_amount != '' and total_row_amount != 0:
+                        self.summary['total_period_amount_from_excel'] = self._parse_decimal(total_row_amount, row_idx, 'Total Amount')
+                        logger.info(f"Found TOTAL row at row {row_idx} with amount: ₱{self.summary['total_period_amount_from_excel']:,.2f}")
+                except Exception as e:
+                    logger.warning(f"Could not extract total from TOTAL row: {str(e)}")
                 continue
-            if str(boq_code).upper() == 'TOTAL':
+
+            # Skip subtotal rows
+            if description and 'SUB-TOTAL' in str(description).upper():
                 continue
 
             # Get period amount and percent from the TOTAL columns
@@ -249,6 +259,14 @@ class ProgressExcelReader:
             total_approved += item.get('approved_amount', Decimal('0'))
 
         self.summary['total_approved_amount'] = total_approved
+
+        # Use the TOTAL row amount from Excel if available (more accurate than summing individual items)
+        if 'total_period_amount_from_excel' in self.summary and self.summary['total_period_amount_from_excel'] > 0:
+            self.summary['total_period_amount'] = self.summary['total_period_amount_from_excel']
+            logger.info(f"Using TOTAL row amount from Excel: ₱{self.summary['total_period_amount']:,.2f}")
+        else:
+            # Fallback: use the summed amount from individual BOQ items
+            logger.warning(f"TOTAL row not found, using summed amount: ₱{self.summary['total_period_amount']:,.2f}")
 
         # Use the weekly progress from row 3 instead of summing BOQ item percentages
         # Row 3 contains the correct calculated percentage (PROGRESS THIS WEEK)

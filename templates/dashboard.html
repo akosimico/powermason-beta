@@ -395,6 +395,17 @@
         ring-color: rgb(147 197 253);
     }
 </style>
+<!-- Floating Review Reports Button -->
+<div class="fixed bottom-6 right-6 z-50">
+    <a href="{% url 'review_weekly_reports' %}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full shadow-xl hover:from-orange-600 hover:to-orange-700 transform hover:scale-110 transition-all duration-300 hover:shadow-2xl">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="hidden sm:inline">Review Reports</span>
+    </a>
+</div>
 
 <!-- Simple Dashboard Container -->
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load role_tags %}
+{% load humanize %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50">
@@ -81,7 +82,7 @@
                 </div>
                 <div class="bg-emerald-50 rounded-lg p-4">
                     <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Period Amount</p>
-                    <p class="text-2xl font-bold text-emerald-900">₱{{ report.total_period_amount|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-emerald-900">₱{{ report.total_period_amount|floatformat:2|intcomma }}</p>
                     <p class="text-xs text-emerald-700 mt-1">Completed</p>
                 </div>
                 <div class="bg-purple-50 rounded-lg p-4">
@@ -91,7 +92,7 @@
                 </div>
                 <div class="bg-orange-50 rounded-lg p-4">
                     <p class="text-xs font-medium text-orange-600 uppercase tracking-wider mb-1">Cumulative Amount</p>
-                    <p class="text-2xl font-bold text-orange-900">₱{{ report.cumulative_project_amount|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-orange-900">₱{{ report.cumulative_project_amount|floatformat:2|intcomma }}</p>
                     <p class="text-xs text-orange-700 mt-1">Total to date</p>
                 </div>
             </div>

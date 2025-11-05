@@ -325,6 +325,31 @@ def approve_weekly_report(request, report_id):
 
     if request.method == 'POST':
         try:
+            # Check if there are any pending reports with earlier report numbers
+            earlier_pending_reports = WeeklyProgressReport.objects.filter(
+                project=report.project,
+                status='P',  # Pending
+                report_number__lt=report.report_number  # Earlier report numbers
+            ).order_by('report_number')
+
+            if earlier_pending_reports.exists():
+                # Get the first pending report that needs to be approved
+                first_pending = earlier_pending_reports.first()
+
+                set_toast_message(
+                    request,
+                    f"Cannot approve Report #{report.report_number}. Please approve Report #{first_pending.report_number} "
+                    f"(Week: {first_pending.week_start_date.strftime('%b %d')} - {first_pending.week_end_date.strftime('%b %d, %Y')}) first.",
+                    "error"
+                )
+
+                messages.error(
+                    request,
+                    f"⚠️ Sequential approval required: Report #{first_pending.report_number} must be approved before Report #{report.report_number}."
+                )
+
+                return redirect('view_weekly_report', report_id=report.id)
+
             # Approve the report
             report.approve(reviewer=request.user.userprofile)
 
@@ -354,17 +379,8 @@ def approve_weekly_report(request, report_id):
                 is_read=False
             )
 
-            # Redirect to schedule detail page
-            from .models import ProjectSchedule
-            approved_schedule = ProjectSchedule.objects.filter(
-                project=report.project,
-                status='APPROVED'
-            ).first()
-
-            if approved_schedule:
-                return redirect('schedule_detail', schedule_id=approved_schedule.id)
-            else:
-                return redirect('review_weekly_reports')
+            # Redirect back to the review weekly reports page
+            return redirect('review_weekly_reports')
 
         except Exception as e:
             logger.error(f"Error approving report: {str(e)}")
@@ -721,7 +737,8 @@ def upload_progress_excel(request, project_id):
             # (Excel only contains items with progress, not all BOQ items)
             total_approved_budget = project.approved_budget or 0
             if total_approved_budget > 0:
-                cumulative_percent = Decimal(str((cumulative_amount / total_approved_budget) * 100))
+                # Calculate cumulative percent based on cumulative amount to ensure consistency
+                cumulative_percent = Decimal(str(round((float(cumulative_amount) / float(total_approved_budget)) * 100, 2)))
             else:
                 # Fallback: just add the period percentages
                 cumulative_percent = weekly_progress_percent
