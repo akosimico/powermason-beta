@@ -189,7 +189,7 @@
                 
             </div>
             
-
+            {% comment %}
             <!-- Progress Monitoring -->
             <div class="sidebar-menu-item">
                 <a href="{% smart_reverse 'progress_monitoring' %}" class="group flex items-center p-3 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 ">
@@ -201,6 +201,7 @@
                     <span class="font-medium">Progress Monitoring</span>
                 </a>
             </div>
+            {% endcomment %}
 
             {% if user.is_superuser or user|has_role:"EG,OM" %}
             <!-- Materials & Equipment -->
