@@ -395,6 +395,7 @@
         ring-color: rgb(147 197 253);
     }
 </style>
+{% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
 <!-- Floating Review Reports Button -->
 <div class="fixed bottom-6 right-6 z-50">
     <a href="{% url 'review_weekly_reports' %}" 
@@ -406,6 +407,7 @@
         <span class="hidden sm:inline">Review Reports</span>
     </a>
 </div>
+{% endif %}
 
 <!-- Simple Dashboard Container -->
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
