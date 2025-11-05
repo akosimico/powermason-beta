@@ -1,83 +1,98 @@
-{# components/schedule_progress_bar.html - Shows schedule-based progress with delay detection #}
+{# components/schedule_progress_bar.html - Fixed version #}
 {% if schedule_performance.use_schedule_tracking %}
-    {# Schedule tracking is active - show status based on SPI #}
-    <div class="flex items-center space-x-2 w-full">
-        <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div
-                class="h-3 rounded-full transition-all duration-500
-                    {% if schedule_performance.status == 'ahead' %}
-                        bg-blue-500
-                    {% elif schedule_performance.status == 'on_track' %}
-                        bg-green-500
-                    {% elif schedule_performance.status == 'at_risk' %}
-                        bg-yellow-500
-                    {% elif schedule_performance.status == 'delayed' %}
-                        bg-red-500
-                    {% else %}
-                        bg-gray-400
-                    {% endif %}"
-                style="width: {{ schedule_performance.display_progress }}%;">
-            </div>
-        </div>
-        <span class="text-xs font-medium text-gray-700 whitespace-nowrap">
-            {% if schedule_performance.status == 'ahead' %}
-                {{ schedule_performance.display_progress }}% <span class="text-blue-600">(Ahead of Schedule)</span>
-            {% elif schedule_performance.status == 'on_track' %}
-                {{ schedule_performance.display_progress }}% <span class="text-green-600">(On Track)</span>
-            {% elif schedule_performance.status == 'at_risk' %}
-                {{ schedule_performance.display_progress }}% <span class="text-yellow-600">(At Risk)</span>
-            {% elif schedule_performance.status == 'delayed' %}
-                {{ schedule_performance.display_progress }}% <span class="text-red-600">(Delayed)</span>
-            {% elif schedule_performance.status == 'not_started' %}
-                {{ schedule_performance.display_progress }}% <span class="text-gray-600">(Not Started)</span>
-            {% else %}
-                {{ schedule_performance.display_progress }}%
-            {% endif %}
-        </span>
+  <div class="w-full">
+    <!-- Progress Bar Header -->
+    <div class="flex justify-between text-xs text-gray-600 mb-1">
+      <span class="font-semibold text-gray-700">{{ schedule_performance.start_date }}</span>
+      <span class="font-semibold text-gray-700">{{ schedule_performance.target_completion }}</span>
     </div>
 
-    {# Show detailed schedule info on hover #}
-    <div class="mt-1 text-xs text-gray-500">
-        Expected: {{ schedule_performance.expected_progress }}%
-        {% if schedule_performance.variance > 0 %}
-            <span class="text-blue-600">(+{{ schedule_performance.variance }}% ahead)</span>
-        {% elif schedule_performance.variance < 0 %}
-            <span class="text-red-600">({{ schedule_performance.variance }}% behind)</span>
-        {% else %}
-            <span class="text-green-600">(on schedule)</span>
-        {% endif %}
+    <!-- Progress Bar -->
+    <div class="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+      <div
+        class="absolute left-0 top-0 h-3 rounded-full transition-all duration-500
+          {% if not schedule_performance.has_progress or schedule_performance.display_progress == 0 %}
+            bg-gray-400
+          {% elif schedule_performance.status == 'ahead' %}
+            bg-blue-500
+          {% elif schedule_performance.status == 'on_track' %}
+            bg-green-500
+          {% elif schedule_performance.status == 'at_risk' %}
+            bg-yellow-500
+          {% elif schedule_performance.status == 'delayed' %}
+            bg-red-500
+          {% else %}
+            bg-gray-400
+          {% endif %}"
+        style="width: {{ schedule_performance.display_progress }}%;">
+      </div>
     </div>
+
+    <!-- Progress Info -->
+    <div class="flex justify-between items-center text-xs mt-1">
+      <div class="font-medium text-gray-700">
+        {% if not schedule_performance.has_progress %}
+          ⚠️ Not Started Yet
+        {% else %}
+          {{ schedule_performance.display_progress }}%
+          {% if schedule_performance.status == 'ahead' %}
+            <span class="text-blue-600">(Ahead)</span>
+          {% elif schedule_performance.status == 'on_track' %}
+            <span class="text-green-600">(On Track)</span>
+          {% elif schedule_performance.status == 'at_risk' %}
+            <span class="text-yellow-600">(At Risk)</span>
+          {% elif schedule_performance.status == 'delayed' %}
+            <span class="text-red-600">(Delayed)</span>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="text-gray-500">
+        Expected: {{ schedule_performance.expected_progress }}%
+        {% if not schedule_performance.has_progress or schedule_performance.display_progress == 0 %}
+          <!-- no variance when not started -->
+        {% elif schedule_performance.variance > 0 %}
+          <span class="text-blue-600">(+{{ schedule_performance.variance|floatformat:2 }}%)</span>
+        {% elif schedule_performance.variance < 0 %}
+          <span class="text-red-600">({{ schedule_performance.variance|floatformat:2 }}%)</span>
+        {% else %}
+          <span class="text-green-600">(On Time)</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% else %}
-    {# No schedule tracking - show basic progress only #}
-    <div class="flex items-center space-x-2 w-full">
-        <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div
-                class="h-3 rounded-full transition-all duration-500
-                    {% if schedule_performance.display_progress == 0 %}
-                        bg-gray-400
-                    {% elif schedule_performance.display_progress >= 100 %}
-                        bg-green-600
-                    {% elif schedule_performance.display_progress >= 70 %}
-                        bg-green-500
-                    {% elif schedule_performance.display_progress >= 30 %}
-                        bg-yellow-500
-                    {% else %}
-                        bg-red-500
-                    {% endif %}"
-                style="width: {{ schedule_performance.display_progress }}%;">
-            </div>
-        </div>
-        <span class="text-xs font-medium text-gray-700 whitespace-nowrap">
+  <!-- Fallback when schedule tracking is OFF -->
+  <div class="w-full">
+    <div class="flex items-center gap-3">
+      <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          class="h-3 rounded-full transition-all duration-500
             {% if schedule_performance.display_progress == 0 %}
-                Not Started
+              bg-gray-400
             {% elif schedule_performance.display_progress >= 100 %}
-                100% <span class="text-green-600">(Completed)</span>
+              bg-green-600
+            {% elif schedule_performance.display_progress >= 70 %}
+              bg-green-500
+            {% elif schedule_performance.display_progress >= 30 %}
+              bg-yellow-500
             {% else %}
-                {{ schedule_performance.display_progress }}%
-            {% endif %}
-        </span>
+              bg-red-500
+            {% endif %}"
+          style="width: {{ schedule_performance.display_progress }}%;"></div>
+      </div>
+      <span class="text-sm font-medium text-gray-800 whitespace-nowrap">
+        {% if schedule_performance.display_progress == 0 %}
+          Not Started
+        {% elif schedule_performance.display_progress >= 100 %}
+          100% <span class="text-green-600">(Done)</span>
+        {% else %}
+          {{ schedule_performance.display_progress }}%
+        {% endif %}
+      </span>
     </div>
     <div class="mt-1 text-xs text-yellow-600">
-        ⚠️ Set Target Completion Date for schedule tracking
+      ⚠️ Set Target Completion Date for tracking
     </div>
+  </div>
 {% endif %}

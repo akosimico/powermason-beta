@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from datetime import timedelta
 from django.views.decorators.http import require_http_methods
+from project_profiling.utils.status_updater import update_project_status
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -396,91 +397,99 @@ def direct_projects_list(request):
         "total_budget": total_budget
     })
 
-def update_project_status(request, project_id):
-    if request.method == "POST":
-        # Get user profile from session
-        verified_profile = get_user_profile(request)
-        if isinstance(verified_profile, HttpResponseRedirect):
-            return verified_profile
-        if verified_profile is None or getattr(verified_profile, 'role', None) is None:
-            return redirect('unauthorized')  # safe fallback
+# def update_project_status(request, project_id):
+#     if request.method == "POST":
+#         # Get user profile from session
+#         verified_profile = get_user_profile(request)
+#         if isinstance(verified_profile, HttpResponseRedirect):
+#             return verified_profile
+#         if verified_profile is None or getattr(verified_profile, 'role', None) is None:
+#             return redirect('unauthorized')  # safe fallback
 
-        # Fetch the project
-        project = get_object_or_404(ProjectProfile, id=project_id)
+#         # Fetch the project
+#         project = get_object_or_404(ProjectProfile, id=project_id)
 
-        # Update status if valid
-        new_status = request.POST.get("status")
-        if new_status in dict(ProjectProfile.STATUS_CHOICES):
-            project.status = new_status
-            project.save()
-            messages.success(request, f"Status updated to {project.get_status_display()}.")
-        else:
-            messages.error(request, "Invalid status selected.")
+#         # Update status if valid
+#         new_status = request.POST.get("status")
+#         if new_status in dict(ProjectProfile.STATUS_CHOICES):
+#             project.status = new_status
+#             project.save()
+#             messages.success(request, f"Status updated to {project.get_status_display()}.")
+#         else:
+#             messages.error(request, "Invalid status selected.")
 
-    # Redirect back to the referring page
-    return redirect(request.META.get('HTTP_REFERER', 'project_list'))
-
+#     # Redirect back to the referring page
+#     return redirect(request.META.get('HTTP_REFERER', 'project_list'))
 
 @login_required
 @verified_email_required
 def project_view(request, project_source, pk):
-    # Verify the user
+    # Verify user
     verified_profile = get_user_profile(request)
-    
     if not verified_profile:
         return redirect("unauthorized")
 
-    if verified_profile is None:
-        return redirect('unauthorized') 
-
     user_role = getattr(verified_profile, 'role', None)
     if user_role is None:
-        return redirect('unauthorized')  
+        return redirect('unauthorized')
 
-    # Use user_role instead of role
+    # Filter project by role
     if user_role == "PM":
         project = get_object_or_404(ProjectProfile, pk=pk, project_manager=verified_profile)
     else:
         project = get_object_or_404(ProjectProfile, pk=pk)
 
-    # Calculate overall progress from approved weekly reports
-    from scheduling.models import WeeklyProgressReport
+    from scheduling.models import WeeklyProgressReport, ProjectSchedule
+
+    # --- ACTUAL PROGRESS (from approved reports if any) ---
     latest_approved_report = WeeklyProgressReport.objects.filter(
         project=project,
-        status='A'  # Approved
+        status='A'
     ).order_by('-week_end_date').first()
 
-    if latest_approved_report and latest_approved_report.cumulative_project_percent:
-        # Use cumulative progress from the latest approved weekly report
+    if latest_approved_report and latest_approved_report.cumulative_project_percent is not None:
         actual_progress = float(latest_approved_report.cumulative_project_percent)
+        has_real_progress = True
     else:
-        # Fallback to date-based calculation if no approved reports exist
+        # No approved progress yet → timeline-based estimate only
         actual_progress = calculate_progress(project.start_date, project.target_completion_date)
+        has_real_progress = False
 
-    # Calculate schedule performance (compares actual vs expected progress)
+    # --- EXPECTED PROGRESS (based on timeline) ---
+    expected_progress = calculate_progress(project.start_date, project.target_completion_date)
+
+    # ✅ Update project status automatically (only if there’s real approved progress)
+    update_project_status(project, actual_progress, has_real_progress)
+
+    # ✅ Determine whether to show “Not Started Yet”
+    has_progress = has_real_progress and actual_progress > 0.01
+
+    # --- CALCULATE PERFORMANCE ---
     schedule_performance = calculate_schedule_performance(
         actual_progress=actual_progress,
         start_date=project.start_date,
         target_date=project.target_completion_date
     )
 
-    # Pass both actual progress and schedule performance to template
+    # Add “has_real_progress” info so the template can react (e.g., show “No approved reports yet”)
+    schedule_performance["has_real_progress"] = has_real_progress
+    schedule_performance["has_progress"] = has_progress
+    schedule_performance["expected_progress"] = expected_progress
+
+    # Add attributes for rendering
     project.timeline_progress = actual_progress
     project.schedule_performance = schedule_performance
 
-    request.session['project_return_url'] = request.get_full_path()
-    request.session['task_list_return_url'] = request.get_full_path()
-
-    # Get schedule status for the schedule management section
-    from scheduling.models import ProjectSchedule
+    # --- Schedules ---
     approved_schedule = ProjectSchedule.objects.filter(project=project, status='APPROVED').first()
     pending_schedule = ProjectSchedule.objects.filter(project=project, status='PENDING').first()
     draft_schedule = ProjectSchedule.objects.filter(project=project, status='DRAFT').first()
     rejected_schedule = ProjectSchedule.objects.filter(project=project, status='REJECTED').order_by('-reviewed_at').first()
 
+    # --- Render ---
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
-        'role': user_role,  # always valid
+        'role': user_role,
         'project_source': project_source,
         'current_project_id': pk,
         'approved_schedule': approved_schedule,
@@ -489,6 +498,8 @@ def project_view(request, project_source, pk):
         'rejected_schedule': rejected_schedule,
         'schedule_performance': schedule_performance,
     })
+
+
 
 
 @login_required

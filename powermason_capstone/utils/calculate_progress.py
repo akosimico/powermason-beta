@@ -105,3 +105,77 @@ def calculate_schedule_performance(actual_progress, start_date, target_date, tod
         'display_progress': round(actual_progress, 2),
         'use_schedule_tracking': True
     }
+def calculate_schedule_performance(actual_progress, start_date, target_date, today=None, has_approved_report=True):
+    """
+    Calculate Schedule Performance Index (SPI) with timeline tracking and
+    fallback for missing approved progress reports.
+    """
+    if today is None:
+        today = datetime.now().date()
+
+    # --- If no dates, disable schedule tracking ---
+    if not target_date or not start_date:
+        return {
+            'spi': 1.0,
+            'status': 'unknown',
+            'expected_progress': actual_progress,
+            'variance': 0.0,
+            'display_progress': actual_progress,
+            'use_schedule_tracking': False
+        }
+
+    # --- Compute expected progress (timeline progress) ---
+    expected_progress = calculate_progress(start_date, target_date, today)
+
+    # --- Case 1: No approved reports ---
+    if not has_approved_report:
+        return {
+            'spi': 0.0,
+            'status': 'delayed' if expected_progress > 0 else 'not_started',
+            'expected_progress': round(expected_progress, 2),
+            'variance': round(0 - expected_progress, 2),  # -expected_progress
+            'display_progress': 0.0,
+            'use_schedule_tracking': True
+        }
+
+    # --- Case 2: Approved reports exist (normal flow) ---
+    if expected_progress == 0:
+        return {
+            'spi': 1.0,
+            'status': 'not_started',
+            'expected_progress': 0.0,
+            'variance': actual_progress,
+            'display_progress': actual_progress,
+            'use_schedule_tracking': True
+        }
+
+    if actual_progress == 0:
+        return {
+            'spi': 0.0,
+            'status': 'delayed',
+            'expected_progress': expected_progress,
+            'variance': -expected_progress,
+            'display_progress': 0.0,
+            'use_schedule_tracking': True
+        }
+
+    spi = actual_progress / expected_progress
+    variance = actual_progress - expected_progress
+
+    if spi >= 1.05:
+        status = 'ahead'
+    elif spi >= 0.95:
+        status = 'on_track'
+    elif spi >= 0.80:
+        status = 'at_risk'
+    else:
+        status = 'delayed'
+
+    return {
+        'spi': round(spi, 2),
+        'status': status,
+        'expected_progress': round(expected_progress, 2),
+        'variance': round(variance, 2),
+        'display_progress': round(actual_progress, 2),
+        'use_schedule_tracking': True
+    }
