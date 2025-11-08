@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Weekly Cost Report - {{ project.project_name }}</title>
+    <title>Budget Monitoring Report - {{ project.project_name }}</title>
     <style>
         @page {
             size: A4;
@@ -182,7 +182,7 @@
 <body>
     {% if include_project_header %}
     <div class="header">
-        <h1>Weekly Cost Report</h1>
+        <h1>Budget Monitoring Report</h1>
         <p class="project-name">{{ project.project_name }}</p>
         <p><strong>Project Code:</strong> {{ project.project_id }}</p>
         <p><strong>Report Period:</strong> {{ start_date }} to {{ end_date }}</p>
