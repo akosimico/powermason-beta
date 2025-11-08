@@ -548,6 +548,11 @@ def dashboard_signed_with_role(request, token=None, role=None):
         estimated_cost = float(project.estimated_cost or 0)
         spent = float(getattr(project, "expense", 0) or 0)
 
+        # --- Actual disbursement from weekly cost reports ---
+        actual_disbursement = project.weekly_cost_reports.aggregate(
+            total=models.Sum("total_amount")
+        )["total"] or 0
+
         # --- Planned progress calculation ---
         planned_progress = 0
         if project.start_date and project.target_completion_date:
@@ -573,6 +578,7 @@ def dashboard_signed_with_role(request, token=None, role=None):
             "planned_progress": round(planned_progress, 1),
             "actual_progress": float(getattr(project, "progress", 0) or 0),
             "estimated_cost": estimated_cost,
+            "actual_disbursement": float(actual_disbursement),
             "budget_total": {
                 "estimated": estimated_cost,
                 "approved": approved_budget,
@@ -1244,6 +1250,11 @@ def dashboard_api(request):
         estimated_cost = float(project.estimated_cost or 0)
         spent = float(getattr(project, "expense", 0) or 0)
 
+        # --- Actual disbursement from weekly cost reports ---
+        actual_disbursement = project.weekly_cost_reports.aggregate(
+            total=models.Sum("total_amount")
+        )["total"] or 0
+
         # --- Planned progress calculation ---
         planned_progress = 0
         if project.start_date and project.target_completion_date:
@@ -1269,6 +1280,7 @@ def dashboard_api(request):
             "planned_progress": round(planned_progress, 1),
             "actual_progress": float(getattr(project, "progress", 0) or 0),
             "estimated_cost": estimated_cost,
+            "actual_disbursement": float(actual_disbursement),
             "budget_total": {
                 "estimated": estimated_cost,
                 "approved": approved_budget,

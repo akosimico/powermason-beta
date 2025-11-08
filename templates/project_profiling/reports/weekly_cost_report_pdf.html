@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weekly Cost Report - {{ project.project_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 20pt;
+            color: #1e40af;
+        }
+
+        .header p {
+            margin: 3px 0;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .header .project-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1e40af;
+            margin: 8px 0;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 6px;
+            color: #1f2937;
+            page-break-after: avoid;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 9pt;
+            page-break-inside: auto;
+        }
+
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 8px 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            color: #374151;
+            text-align: center;
+        }
+
+        td.number {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        tfoot td {
+            background-color: #fef9c3;
+            font-weight: bold;
+            color: #854d0e;
+            border-top: 2px solid #ca8a04;
+        }
+
+        .chart-container {
+            page-break-inside: avoid;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+
+        .chart-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #9ca3af;
+            padding: 10px 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4b5563;
+        }
+
+        .info-value {
+            color: #1f2937;
+        }
+
+        .summary-box {
+            background-color: #eff6ff;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .summary-box h3 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+            font-size: 11pt;
+        }
+
+        .category-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dotted #cbd5e1;
+        }
+
+        .category-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    {% if include_project_header %}
+    <div class="header">
+        <h1>Weekly Cost Report</h1>
+        <p class="project-name">{{ project.project_name }}</p>
+        <p><strong>Project Code:</strong> {{ project.project_id }}</p>
+        <p><strong>Report Period:</strong> {{ start_date }} to {{ end_date }}</p>
+        <p><strong>Generated:</strong> {{ generated_date }}</p>
+    </div>
+    {% endif %}
+
+    {% if include_totals %}
+    <div class="summary-box">
+        <h3>Total Disbursement Summary</h3>
+        <div class="category-row">
+            <span>GENREQ:</span>
+            <span>₱{{ totals.genreq|floatformat:2 }}</span>
+        </div>
+        <div class="category-row">
+            <span>MATERIALS:</span>
+            <span>₱{{ totals.materials|floatformat:2 }}</span>
+        </div>
+        <div class="category-row">
+            <span>LABOR:</span>
+            <span>₱{{ totals.labor|floatformat:2 }}</span>
+        </div>
+        <div class="category-row">
+            <span>EQUIPMENT:</span>
+            <span>₱{{ totals.equipment|floatformat:2 }}</span>
+        </div>
+        <div class="category-row">
+            <span>TOTAL:</span>
+            <span>₱{{ totals.total|floatformat:2 }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if include_weekly_table and weekly_reports %}
+    <div class="section-title">Week-to-Week Summary</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 12%;">DATE</th>
+                <th style="width: 18%;">PERIOD</th>
+                <th style="width: 14%;">GENREQ</th>
+                <th style="width: 14%;">MATERIALS</th>
+                <th style="width: 14%;">LABOR</th>
+                <th style="width: 14%;">EQUIPMENT</th>
+                <th style="width: 14%;">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in weekly_reports %}
+            <tr>
+                <td>{{ report.report_date|date:"Y-m-d" }}</td>
+                <td style="font-size: 8pt;">{{ report.period_start|date:"M d" }} - {{ report.period_end|date:"M d, Y" }}</td>
+                <td class="number">{{ report.genreq_amount|floatformat:2 }}</td>
+                <td class="number">{{ report.materials_amount|floatformat:2 }}</td>
+                <td class="number">{{ report.labor_amount|floatformat:2 }}</td>
+                <td class="number">{{ report.equipment_amount|floatformat:2 }}</td>
+                <td class="number">{{ report.total_amount|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if include_totals %}
+        <tfoot>
+            <tr>
+                <td colspan="2" style="text-align: center;">TOTAL DISBURSEMENT</td>
+                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
+                <td class="number">{{ totals.materials|floatformat:2 }}</td>
+                <td class="number">{{ totals.labor|floatformat:2 }}</td>
+                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
+                <td class="number">{{ totals.total|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    {% endif %}
+
+    {% if include_weekly_chart and weekly_chart_image %}
+    <div class="page-break"></div>
+    <div class="chart-container">
+        <div class="chart-title">Weekly Actual Disbursement Chart</div>
+        <img src="{{ weekly_chart_image }}" alt="Weekly Disbursement Chart">
+    </div>
+    {% endif %}
+
+    {% if include_monthly_table and monthly_summary %}
+    <div class="section-title">Month-to-Month Summary</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">MONTH</th>
+                <th style="width: 15%;">GENREQ</th>
+                <th style="width: 15%;">MATERIALS</th>
+                <th style="width: 15%;">LABOR</th>
+                <th style="width: 15%;">EQUIPMENT</th>
+                <th style="width: 15%;">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for month in monthly_summary %}
+            <tr>
+                <td>{{ month.month }}</td>
+                <td class="number">{{ month.genreq|floatformat:2 }}</td>
+                <td class="number">{{ month.materials|floatformat:2 }}</td>
+                <td class="number">{{ month.labor|floatformat:2 }}</td>
+                <td class="number">{{ month.equipment|floatformat:2 }}</td>
+                <td class="number">{{ month.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if include_totals %}
+        <tfoot>
+            <tr>
+                <td style="text-align: center;">TOTAL DISBURSEMENT</td>
+                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
+                <td class="number">{{ totals.materials|floatformat:2 }}</td>
+                <td class="number">{{ totals.labor|floatformat:2 }}</td>
+                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
+                <td class="number">{{ totals.total|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    {% endif %}
+
+    {% if include_monthly_chart and monthly_chart_image %}
+    <div class="page-break"></div>
+    <div class="chart-container">
+        <div class="chart-title">Monthly Actual Disbursement Chart</div>
+        <img src="{{ monthly_chart_image }}" alt="Monthly Disbursement Chart">
+    </div>
+    {% endif %}
+
+    {% if include_category_breakdown %}
+    <div class="section-title">Category Breakdown Analysis</div>
+    <table style="width: 60%; margin: 0 auto;">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount (₱)</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>GENREQ</td>
+                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
+                <td class="number">{% widthratio totals.genreq totals.total 100 %}%</td>
+            </tr>
+            <tr>
+                <td>MATERIALS</td>
+                <td class="number">{{ totals.materials|floatformat:2 }}</td>
+                <td class="number">{% widthratio totals.materials totals.total 100 %}%</td>
+            </tr>
+            <tr>
+                <td>LABOR</td>
+                <td class="number">{{ totals.labor|floatformat:2 }}</td>
+                <td class="number">{% widthratio totals.labor totals.total 100 %}%</td>
+            </tr>
+            <tr>
+                <td>EQUIPMENT</td>
+                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
+                <td class="number">{% widthratio totals.equipment totals.total 100 %}%</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated by PowerMason Cost Tracking System | {{ project.project_name }}</p>
+    </div>
+</body>
+</html>

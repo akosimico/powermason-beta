@@ -4,6 +4,14 @@
 
 {% block title %}Cost Dashboard - {{ project.project_name }}{% endblock %}
 
+{% block extra_head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock %}
+
 {% block extra_css %}
 <style>
     .metric-card {
@@ -40,16 +48,110 @@
                 <p class="mt-1 text-sm text-gray-600">
                     {{ project.project_id }} - {{ project.project_name }}
                 </p>
+                <!-- <p class="mt-2 text-sm font-semibold text-blue-700">
+                    <i class="fas fa-coins mr-1"></i>Approved Budget: ₱<span id="approvedBudgetDisplay">{{ project.approved_budget|floatformat:2|intcomma|default:"0.00" }}</span>
+                </p> -->
             </div>
             <div class="flex space-x-3">
                 <a href="{% url 'project_view'  project.project_source|lower project.id %}"
                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                     <i class="fas fa-arrow-left mr-2"></i>Back to Project
                 </a>
-                <button onclick="openExpenseModal()"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    <i class="fas fa-plus mr-2"></i>Add Expense
-                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Status Summary -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <p class="text-sm text-gray-600 mb-1">Approved Budget</p>
+                <p class="text-2xl font-bold text-blue-600">₱<span id="approvedBudgetAmount">{{ project.approved_budget|floatformat:2|intcomma|default:"0.00" }}</span></p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600 mb-1">Total Disbursed</p>
+                <p class="text-2xl font-bold" id="totalDisbursedAmount">₱0.00</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600 mb-1">Budget Status</p>
+                <p class="text-2xl font-bold" id="budgetStatusText">--</p>
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="budgetStatusBar" class="h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-1" id="budgetPercentageText">0% utilized</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- GENREQ Card -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-600 uppercase">GENREQ</h4>
+                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-gray-900" id="categoryGenreqAmount">₱0.00</p>
+            <div class="mt-2 flex items-center text-sm">
+                <span id="categoryGenreqPercent" class="text-gray-600">0% of budget</span>
+            </div>
+            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div id="categoryGenreqBar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- MATERIALS Card -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-600 uppercase">MATERIALS</h4>
+                <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-gray-900" id="categoryMaterialsAmount">₱0.00</p>
+            <div class="mt-2 flex items-center text-sm">
+                <span id="categoryMaterialsPercent" class="text-gray-600">0% of budget</span>
+            </div>
+            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div id="categoryMaterialsBar" class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- LABOR Card -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-gray-500">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-600 uppercase">LABOR</h4>
+                <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-gray-900" id="categoryLaborAmount">₱0.00</p>
+            <div class="mt-2 flex items-center text-sm">
+                <span id="categoryLaborPercent" class="text-gray-600">0% of budget</span>
+            </div>
+            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div id="categoryLaborBar" class="bg-gray-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- EQUIPMENT Card -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-600 uppercase">EQUIPMENT</h4>
+                <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-gray-900" id="categoryEquipmentAmount">₱0.00</p>
+            <div class="mt-2 flex items-center text-sm">
+                <span id="categoryEquipmentPercent" class="text-gray-600">0% of budget</span>
+            </div>
+            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div id="categoryEquipmentBar" class="bg-yellow-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
         </div>
     </div>
@@ -78,411 +180,960 @@
     </div>
     {% endif %}
 
-    <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Allocated -->
-        <div class="metric-card border-blue-500">
-            <div class="metric-label">Total Allocated</div>
-            <div class="metric-value text-blue-600">₱{{ total_allocated|floatformat:2|intcomma }}</div>
-            <p class="text-xs text-gray-500 mt-1">Available budget</p>
-        </div>
-
-        <!-- Total Spent -->
-        <div class="metric-card {% if is_over_budget %}border-red-500{% else %}border-green-500{% endif %}">
-            <div class="metric-label">Total Spent</div>
-            <div class="metric-value {% if is_over_budget %}text-red-600{% else %}text-green-600{% endif %}">
-                ₱{{ total_spent|floatformat:2|intcomma }}
+    <!-- Weekly Cost Tracking Section -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Weekly Cost Reports</h2>
+            <div class="flex gap-3">
+                <button onclick="openWeeklyReportModal()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Add Weekly Report
+                </button>
+                <button onclick="openExportModal()"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-file-export mr-2"></i>Generate Report
+                </button>
             </div>
-            <p class="text-xs text-gray-500 mt-1">{{ budget_utilization|floatformat:1 }}% utilized</p>
         </div>
 
-        <!-- Remaining Budget -->
-        <div class="metric-card {% if remaining_budget < 0 %}border-red-500{% else %}border-gray-400{% endif %}">
-            <div class="metric-label">Remaining</div>
-            <div class="metric-value {% if remaining_budget < 0 %}text-red-600{% else %}text-gray-700{% endif %}">
-                ₱{{ remaining_budget|floatformat:2|intcomma }}
-            </div>
-            <p class="text-xs text-gray-500 mt-1">
-                {% if remaining_budget < 0 %}Over budget!{% else %}Available{% endif %}
-            </p>
-        </div>
-
-        <!-- Cost Performance Index (CPI) -->
-        <div class="metric-card border-{{ cpi_color }}-500">
-            <div class="metric-label">Cost Performance Index</div>
-            <div class="metric-value text-{{ cpi_color }}-600">{{ cpi|floatformat:2 }}</div>
-            <p class="text-xs text-gray-500 mt-1">{{ cpi_status }} - Target: 1.00</p>
-        </div>
-    </div>
-
-    <!-- Budget Utilization Progress Bar -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget Utilization</h3>
-        <div class="relative">
-            <div class="w-full bg-gray-200 rounded-full h-6">
-                <div class="progress-bar {% if budget_utilization >= 90 %}bg-red-600
-                            {% elif budget_utilization >= 75 %}bg-yellow-500
-                            {% else %}bg-green-500{% endif %}"
-                     style="width: {{ budget_utilization|floatformat:1 }}%">
+        <!-- No Reports Notification -->
+        <div id="noReportsNotification" class="hidden bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        No weekly cost reports submitted yet. Click "Add Weekly Report" to get started.
+                    </p>
                 </div>
             </div>
-            <div class="flex justify-between text-sm text-gray-600 mt-2">
-                <span>0%</span>
-                <span class="font-semibold">{{ budget_utilization|floatformat:1 }}%</span>
-                <span>100%</span>
+        </div>
+
+        <!-- Week to Week Summary (Full Width) -->
+        <div class="mb-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold mb-4 text-center border-b pb-2">SUMMARY OF ACTUAL DISBURSEMENT<br><span class="text-sm font-normal">Week to Week</span></h3>
+                <div class="overflow-hidden">
+                    <table id="weekToWeekTable" class="w-full text-xs table-auto">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-2 text-left">DATE</th>
+                                <th class="px-2 py-2 text-left">PERIOD</th>
+                                <th class="px-2 py-2 text-right">GENREQ</th>
+                                <th class="px-2 py-2 text-right">MATERIALS</th>
+                                <th class="px-2 py-2 text-right">LABOR</th>
+                                <th class="px-2 py-2 text-right">EQUIPMENT</th>
+                                <th class="px-2 py-2 text-right">TOTAL</th>
+                                <th class="px-2 py-2 text-left">REPORTED BY</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weeklyTableBody" class="text-xs">
+                            <!-- Skeleton loader -->
+                            <tr class="skeleton-row">
+                                <td class="px-2 py-3" colspan="8">
+                                    <div class="animate-pulse flex space-x-4">
+                                        <div class="flex-1 space-y-2 py-1">
+                                            <div class="h-3 bg-gray-200 rounded"></div>
+                                            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+                                            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-yellow-100 font-bold text-xs">
+                            <tr>
+                                <td colspan="2" class="px-2 py-2">TOTAL DISBURSEMENT</td>
+                                <td id="totalGenreq" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalMaterials" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalLabor" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalEquipment" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalAmount" class="px-2 py-2 text-right">0.00</td>
+                                <td class="px-2 py-2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <!-- Pagination Controls -->
+                <div id="weeklyPaginationControls" class="mt-4 flex justify-center items-center space-x-2">
+                    <!-- Populated by JavaScript -->
+                </div>
             </div>
         </div>
 
-        {% if burn_rate %}
-        <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-3 gap-4 text-sm">
-            <div>
-                <span class="text-gray-600">Daily Burn Rate:</span>
-                <span class="font-semibold ml-2">₱{{ burn_rate|floatformat:2|intcomma }}/day</span>
+        <!-- Month to Month Summary (Full Width) -->
+        <div class="mb-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold mb-4 text-center border-b pb-2">SUMMARY OF ACTUAL DISBURSEMENT<br><span class="text-sm font-normal">Month to Month</span></h3>
+                <div class="overflow-hidden">
+                    <table id="monthToMonthTable" class="w-full text-xs table-auto">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-2 text-left">MONTH</th>
+                                <th class="px-2 py-2 text-right">GENREQ</th>
+                                <th class="px-2 py-2 text-right">MATERIALS</th>
+                                <th class="px-2 py-2 text-right">LABOR</th>
+                                <th class="px-2 py-2 text-right">EQUIPMENT</th>
+                                <th class="px-2 py-2 text-right">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyTableBody" class="text-xs">
+                            <!-- Skeleton loader -->
+                            <tr class="skeleton-row">
+                                <td class="px-2 py-3" colspan="6">
+                                    <div class="animate-pulse flex space-x-4">
+                                        <div class="flex-1 space-y-2 py-1">
+                                            <div class="h-3 bg-gray-200 rounded"></div>
+                                            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+                                            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-yellow-100 font-bold text-xs">
+                            <tr>
+                                <td class="px-2 py-2">TOTAL DISBURSEMENT</td>
+                                <td id="totalMonthGenreq" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalMonthMaterials" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalMonthLabor" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalMonthEquipment" class="px-2 py-2 text-right">0.00</td>
+                                <td id="totalMonthAmount" class="px-2 py-2 text-right">0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
-            <div>
-                <span class="text-gray-600">Days Elapsed:</span>
-                <span class="font-semibold ml-2">{{ days_elapsed }} days</span>
+        </div>
+
+        <!-- Charts Row for Weekly Reports -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Monthly Disbursement Chart -->
+            <div class="bg-white rounded-lg shadow p-6" style="background: #374151;">
+                <h3 class="text-lg font-bold mb-4 text-center text-white">Actual Disbursement<br><span class="text-sm font-normal">(Monthly)</span></h3>
+                <div style="height: 400px;">
+                    <canvas id="monthlyDisbursementChart"></canvas>
+                </div>
             </div>
-            {% if projected_cost %}
-            <div>
-                <span class="text-gray-600">Projected Total Cost:</span>
-                <span class="font-semibold ml-2 {% if projected_cost > total_allocated %}text-red-600{% endif %}">
-                    ₱{{ projected_cost|floatformat:2|intcomma }}
-                </span>
+
+            <!-- Weekly Disbursement Chart -->
+            <div class="bg-white rounded-lg shadow p-6" style="background: #374151;">
+                <h3 class="text-lg font-bold mb-4 text-center text-white">Actual Disbursement<br><span class="text-sm font-normal">(Weekly)</span></h3>
+                <div style="height: 400px;">
+                    <canvas id="weeklyDisbursementChart"></canvas>
+                </div>
             </div>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Budget by Category (Pie Chart) -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget by Category</h3>
-            <canvas id="categoryPieChart" height="250"></canvas>
-        </div>
-
-        <!-- Spending Trend (Line Chart) -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Spending Trend</h3>
-            <canvas id="spendingTrendChart" height="250"></canvas>
-        </div>
-    </div>
-
-    <!-- Category Breakdown Table -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown by Category</h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Allocated</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for cat in categories_data %}
-                    <tr class="{% if cat.is_over %}bg-red-50{% endif %}">
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ cat.scope }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ cat.category }}</td>
-                        <td class="px-4 py-3 text-sm text-right text-gray-900">₱{{ cat.allocated|floatformat:2|intcomma }}</td>
-                        <td class="px-4 py-3 text-sm text-right {% if cat.is_over %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
-                            ₱{{ cat.spent|floatformat:2|intcomma }}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-right {% if cat.remaining < 0 %}text-red-600{% else %}text-gray-900{% endif %}">
-                            ₱{{ cat.remaining|floatformat:2|intcomma }}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if cat.utilization >= 90 %}bg-red-100 text-red-800
-                                {% elif cat.utilization >= 75 %}bg-yellow-100 text-yellow-800
-                                {% else %}bg-green-100 text-green-800{% endif %}">
-                                {{ cat.utilization|floatformat:1 }}%
-                            </span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            No budget categories found. Please set up project budget first.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Recent Expenses -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Expenses</h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for expense in recent_expenses %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ expense.expense_date|date:"M d, Y" }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">
-                            {{ expense.budget_category.scope.name }} - {{ expense.budget_category.get_category_display }}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ expense.get_expense_type_display }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ expense.vendor|default:"—" }}</td>
-                        <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900">₱{{ expense.amount|floatformat:2|intcomma }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ expense.created_by.full_name }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            No expenses recorded yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
-<!-- Add Expense Modal -->
-<div id="expenseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+<!-- Weekly Report Modal -->
+<div id="weeklyReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Add New Expense</h3>
-            <button onclick="closeExpenseModal()" class="text-gray-400 hover:text-gray-600">
+            <h3 class="text-lg font-semibold text-gray-900">Add Weekly Cost Report</h3>
+            <button onclick="closeWeeklyReportModal()" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
 
-        <form id="expenseForm" class="space-y-4">
+        <form id="weeklyReportForm" onsubmit="submitWeeklyReport(event)" class="space-y-4">
             {% csrf_token %}
 
             <div class="grid grid-cols-2 gap-4">
-                <!-- Budget Category -->
+                <!-- Report Date (Locked to Today) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Budget Category *</label>
-                    <select name="budget_category_id" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select category...</option>
-                        {% for budget in budget_categories %}
-                        <option value="{{ budget.id }}">
-                            {{ budget.scope.name }} - {{ budget.get_category_display }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Report Date *</label>
+                    <input type="text" id="reportDateDisplay" readonly
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                           value="">
+                    <input type="hidden" name="report_date" id="reportDateHidden" value="{{ 'now'|date:'Y-m-d' }}">
+                    <p class="text-xs text-gray-500 mt-1">Automatically set to today</p>
                 </div>
 
-                <!-- Expense Type -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Expense Type *</label>
-                    <select name="expense_type" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select type...</option>
-                        {% for code, label in expense_types %}
-                        <option value="{{ code }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                <!-- Period -->
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Period *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <input type="date" id="period_start" name="period_start" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Start Date" onchange="validatePeriodDates()">
+                            <p id="period_start_error" class="text-xs text-red-600 mt-1 hidden"></p>
+                        </div>
+                        <div>
+                            <input type="date" id="period_end" name="period_end" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="End Date" onchange="validatePeriodDates()">
+                            <p id="period_end_error" class="text-xs text-red-600 mt-1 hidden"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <!-- Amount -->
+                <!-- GENREQ -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₱) *</label>
-                    <input type="number" name="amount" step="0.01" min="0.01" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">GENREQ</label>
+                    <input type="number" name="genreq_amount" step="0.01" min="0" max="100000000" value="0"
+                           oninput="validateAmount(this); calculateTotal()"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                            placeholder="0.00">
+                    <p class="text-xs text-gray-500 mt-1">Maximum: ₱100,000,000.00</p>
                 </div>
 
-                <!-- Date -->
+                <!-- MATERIALS -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Expense Date *</label>
-                    <input type="date" name="expense_date" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           value="{{ 'now'|date:'Y-m-d' }}">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">MATERIALS</label>
+                    <input type="number" name="materials_amount" step="0.01" min="0" max="100000000" value="0"
+                           oninput="validateAmount(this); calculateTotal()"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <p class="text-xs text-gray-500 mt-1">Maximum: ₱100,000,000.00</p>
+                </div>
+
+                <!-- LABOR -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">LABOR</label>
+                    <input type="number" name="labor_amount" step="0.01" min="0" max="100000000" value="0"
+                           oninput="validateAmount(this); calculateTotal()"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <p class="text-xs text-gray-500 mt-1">Maximum: ₱100,000,000.00</p>
+                </div>
+
+                <!-- EQUIPMENT -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">EQUIPMENT</label>
+                    <input type="number" name="equipment_amount" step="0.01" min="0" max="100000000" value="0"
+                           oninput="validateAmount(this); calculateTotal()"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <p class="text-xs text-gray-500 mt-1">Maximum: ₱100,000,000.00</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <!-- Vendor -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                    <input type="text" name="vendor"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="Vendor name">
-                </div>
-
-                <!-- Receipt Number -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Receipt/Invoice #</label>
-                    <input type="text" name="receipt_number"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="Receipt number">
-                </div>
-            </div>
-
-            <!-- Description -->
+            <!-- TOTAL (Auto-calculated) -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea name="description" rows="3"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <label class="block text-sm font-medium text-gray-700 mb-1">TOTAL</label>
+                <input type="text" name="total_amount" readonly
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 font-bold text-lg">
+                <input type="hidden" name="total_amount_raw" id="total_amount_raw">
+            </div>
+
+            <!-- Remarks -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+                <textarea name="remarks" rows="2"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Additional notes..."></textarea>
             </div>
 
             <!-- Submit Button -->
             <div class="flex justify-end space-x-3 pt-4 border-t">
-                <button type="button" onclick="closeExpenseModal()"
+                <button type="button" onclick="closeWeeklyReportModal()"
                         class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
                     Cancel
                 </button>
                 <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                    <i class="fas fa-save mr-2"></i>Save Expense
+                    <i class="fas fa-save mr-2"></i>Submit Report
                 </button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Export Options Modal -->
+<div id="exportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Generate Cost Report</h3>
+            <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="exportForm" onsubmit="generateReport(event)" class="space-y-6">
+            <!-- Date Range Selection -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Select Report Period: <span class="text-red-500">*</span></label>
+                <select id="periodSelect" name="period" onchange="toggleCustomDateRange()" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Period --</option>
+                    <option value="this_week">This Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="this_quarter">This Quarter</option>
+                    <option value="this_year">This Year</option>
+                    <option value="last_30_days">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+
+                <!-- Custom Date Range (Initially Hidden) -->
+                <div id="customDateRange" class="mt-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom Date Range:</label>
+                    <div class="flex gap-2 items-center">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-600 mb-1">Start Date *</label>
+                            <input type="date" id="custom_start" name="custom_start"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <span class="text-gray-500 mt-5">to</span>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-600 mb-1">End Date *</label>
+                            <input type="date" id="custom_end" name="custom_end"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Include Options -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Include in Report:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_weekly_table" checked class="mr-2">
+                        <span>Week-to-Week Summary Table</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_monthly_table" checked class="mr-2">
+                        <span>Month-to-Month Summary Table</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_weekly_chart" checked class="mr-2">
+                        <span>Weekly Disbursement Chart</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_monthly_chart" checked class="mr-2">
+                        <span>Monthly Disbursement Chart</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_category_breakdown" checked class="mr-2">
+                        <span>Category Breakdown</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_project_header" checked class="mr-2">
+                        <span>Project Details Header</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_totals" checked class="mr-2">
+                        <span>Totals & Calculations</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Export Format -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Export Format:</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
+                        <input type="radio" name="format" value="pdf" class="mr-2">
+                        <i class="fas fa-file-pdf text-red-500 mr-2"></i>
+                        <span>PDF</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
+                        <input type="radio" name="format" value="excel" class="mr-2">
+                        <i class="fas fa-file-excel text-green-500 mr-2"></i>
+                        <span>Excel</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
+                        <input type="radio" name="format" value="print" class="mr-2">
+                        <i class="fas fa-print text-blue-500 mr-2"></i>
+                        <span>Print Preview</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onclick="closeExportModal()"
+                        class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-download mr-2"></i>Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Downpayment Warning Modal -->
+<div id="downpaymentWarningModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 border border-yellow-400 shadow-sm animate-pulse">
+    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl"></i>
+</div>
+
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Downpayment Not Received</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    The downpayment for this project has not been received yet.
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Proceeding with cost disbursements without downpayment may affect cash flow and project finances.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="downpaymentProceedBtn"
+                        class="px-4 py-2 bg-yellow-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    Proceed Anyway
+                </button>
+                <button id="downpaymentCancelBtn"
+                        class="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Exceeded Warning Modal -->
+<div id="budgetExceededModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+           <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 border border-red-400 shadow-sm animate-bounce">
+    <i class="fas fa-exclamation-circle text-red-600 text-2xl"></i>
+</div>
+
+            <h3 class="text-lg leading-6 font-bold text-gray-900 mt-4 text-center">Budget Exceeded Warning</h3>
+            <div class="mt-4 px-4">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <table class="w-full text-sm">
+                        <tr class="border-b border-red-200">
+                            <td class="py-2 font-medium text-gray-700">Approved Budget:</td>
+                            <td class="py-2 text-right font-bold text-gray-900" id="modalApprovedBudget">₱0.00</td>
+                        </tr>
+                        <tr class="border-b border-red-200">
+                            <td class="py-2 font-medium text-gray-700">Current Total Disbursement:</td>
+                            <td class="py-2 text-right font-semibold text-gray-900" id="modalCurrentTotal">₱0.00</td>
+                        </tr>
+                        <tr class="border-b border-red-200">
+                            <td class="py-2 font-medium text-gray-700">This Report:</td>
+                            <td class="py-2 text-right font-semibold text-blue-600" id="modalThisReport">₱0.00</td>
+                        </tr>
+                        <tr class="border-b border-red-200">
+                            <td class="py-2 font-medium text-gray-700">New Total:</td>
+                            <td class="py-2 text-right font-bold text-orange-600" id="modalNewTotal">₱0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 font-medium text-red-700">Excess Amount:</td>
+                            <td class="py-2 text-right font-bold text-red-600 text-lg" id="modalExcess">₱0.00</td>
+                        </tr>
+                    </table>
+                </div>
+                <p class="text-sm text-gray-600 mt-4 text-center">
+                    This disbursement will exceed the approved project budget. Do you want to proceed anyway?
+                </p>
+            </div>
+            <div class="items-center px-4 py-3 mt-4">
+                <button id="budgetExceededProceedBtn"
+                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <i class="fas fa-check mr-2"></i>Proceed Anyway
+                </button>
+                <button id="budgetExceededCancelBtn"
+                        class="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+@media print {
+    /* Hide interactive elements */
+    nav, button, .no-print, #expenseModal, #weeklyReportModal, #exportModal,
+    #downpaymentWarningModal, #budgetExceededModal, #weeklyPaginationControls, .alert-critical,
+    .alert-warning, .alert-info {
+        display: none !important;
+    }
+
+    /* Page setup */
+    @page {
+        size: A4 landscape;
+        margin: 1.5cm 1cm;
+    }
+
+    /* Body and container adjustments */
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 10pt;
+        color: #000 !important;
+        background: white !important;
+    }
+
+    .max-w-7xl {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Header styling */
+    h1 {
+        font-size: 18pt !important;
+        margin-bottom: 4px !important;
+        color: #000 !important;
+    }
+
+    h2 {
+        font-size: 14pt !important;
+        margin-top: 16px !important;
+        margin-bottom: 8px !important;
+        color: #000 !important;
+        border-bottom: 2px solid #333 !important;
+        padding-bottom: 4px !important;
+    }
+
+    h3 {
+        font-size: 12pt !important;
+        margin-bottom: 8px !important;
+        color: #000 !important;
+    }
+
+    /* Budget display */
+    #approvedBudgetDisplay {
+        font-weight: bold !important;
+        color: #000 !important;
+    }
+
+    /* Table container adjustments */
+    .overflow-hidden {
+        overflow: visible !important;
+    }
+
+    .grid {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+
+    .grid > div {
+        width: 100% !important;
+        margin-bottom: 20px !important;
+        page-break-inside: avoid;
+    }
+
+    /* Table styling */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: avoid;
+        margin-bottom: 12px !important;
+        font-size: 9pt !important;
+    }
+
+    thead {
+        display: table-header-group;
+        background-color: #f3f4f6 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    th {
+        background-color: #e5e7eb !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        padding: 6px 4px !important;
+        border: 1px solid #999 !important;
+        text-align: left !important;
+        font-size: 9pt !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    td {
+        padding: 4px 4px !important;
+        border: 1px solid #ccc !important;
+        color: #000 !important;
+        font-size: 9pt !important;
+    }
+
+    tfoot td {
+        background-color: #f9fafb !important;
+        font-weight: bold !important;
+        border-top: 2px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Right-align currency columns */
+    .text-right {
+        text-align: right !important;
+    }
+
+    /* Chart adjustments */
+    canvas {
+        max-width: 100% !important;
+        height: auto !important;
+        page-break-inside: avoid;
+        margin: 12px 0 !important;
+    }
+
+    .chart-container {
+        page-break-inside: avoid;
+        margin-bottom: 20px !important;
+    }
+
+    /* Card styling */
+    .bg-white {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+
+    /* Remove shadows */
+    .shadow, .shadow-md, .shadow-lg {
+        box-shadow: none !important;
+    }
+
+    /* Page breaks */
+    .page-break {
+        page-break-after: always;
+    }
+
+    /* Financial overview section */
+    .metric-card {
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+        margin-bottom: 8px !important;
+    }
+
+    /* Print header */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 16px !important;
+        border-bottom: 2px solid #000;
+        padding-bottom: 8px;
+    }
+
+    /* Footer for page numbers */
+    @page {
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+        }
+    }
+}
+
+/* Print header (visible only when printing) */
+.print-header {
+    display: none;
+}
+
+@media print {
+    .print-header {
+        display: block !important;
+    }
+}
+</style>
+
+<script>
+// Modal functions - defined immediately for onclick handlers
+function openWeeklyReportModal() {
+    document.getElementById('weeklyReportModal').classList.remove('hidden');
+    const form = document.getElementById('weeklyReportForm');
+    if (form) {
+        form.reset();
+
+        // Set today's date in hidden field and format display
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        // Hidden field gets YYYY-MM-DD for backend
+        document.getElementById('reportDateHidden').value = `${yyyy}-${mm}-${dd}`;
+
+        // Display field shows DD/MM/YYYY for user
+        document.getElementById('reportDateDisplay').value = `${dd}/${mm}/${yyyy}`;
+
+        calculateTotal();
+    }
+}
+
+function closeWeeklyReportModal() {
+    document.getElementById('weeklyReportModal').classList.add('hidden');
+}
+
+function openExportModal() {
+    document.getElementById('exportModal').classList.remove('hidden');
+}
+
+function closeExportModal() {
+    document.getElementById('exportModal').classList.add('hidden');
+}
+
+function calculateTotal() {
+    const form = document.getElementById('weeklyReportForm');
+    if (!form) return;
+    const genreq = parseFloat(form.genreq_amount.value) || 0;
+    const materials = parseFloat(form.materials_amount.value) || 0;
+    const labor = parseFloat(form.labor_amount.value) || 0;
+    const equipment = parseFloat(form.equipment_amount.value) || 0;
+    const total = genreq + materials + labor + equipment;
+
+    // Store raw value for submission
+    const rawField = document.getElementById('total_amount_raw');
+    if (rawField) {
+        rawField.value = total.toFixed(2);
+    }
+
+    // Format with commas for display
+    const formattedTotal = '₱' + total.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    form.total_amount.value = formattedTotal;
+}
+
+// Validate amount input (max 100M)
+function validateAmount(input) {
+    const value = parseFloat(input.value) || 0;
+    const max = 100000000; // 100 million
+
+    if (value > max) {
+        input.value = max;
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Amount cannot exceed ₱100,000,000.00', 'warning');
+        } else {
+            alert('Amount cannot exceed ₱100,000,000.00');
+        }
+    }
+
+    if (value < 0) {
+        input.value = 0;
+    }
+}
+
+// Update budget status display
+function updateBudgetStatus(totalDisbursed, approvedBudget) {
+    const statusText = document.getElementById('budgetStatusText');
+    const statusBar = document.getElementById('budgetStatusBar');
+    const percentageText = document.getElementById('budgetPercentageText');
+    const totalDisbursedDisplay = document.getElementById('totalDisbursedAmount');
+
+    if (!statusText || !statusBar || !percentageText || !totalDisbursedDisplay) return;
+
+    // Update total disbursed
+    totalDisbursedDisplay.textContent = '₱' + formatCurrency(totalDisbursed);
+
+    // Calculate percentage
+    const percentage = approvedBudget > 0 ? (totalDisbursed / approvedBudget) * 100 : 0;
+    const remaining = approvedBudget - totalDisbursed;
+
+    // Update percentage text
+    percentageText.textContent = percentage.toFixed(1) + '% utilized';
+
+    // Update status bar
+    statusBar.style.width = Math.min(percentage, 100) + '%';
+
+    // Determine status and color
+    if (percentage >= 100) {
+        statusText.textContent = 'BUDGET OVERRUN';
+        statusText.className = 'text-2xl font-bold text-red-600';
+        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-red-500';
+    } else if (percentage >= 90) {
+        statusText.textContent = 'CLOSE TO LIMIT';
+        statusText.className = 'text-2xl font-bold text-orange-500';
+        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-orange-500';
+    } else if (percentage >= 75) {
+        statusText.textContent = 'CAUTION';
+        statusText.className = 'text-2xl font-bold text-yellow-500';
+        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-yellow-500';
+    } else {
+        statusText.textContent = 'GOOD';
+        statusText.className = 'text-2xl font-bold text-green-600';
+        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-green-500';
+    }
+}
+
+// Update category breakdown cards
+function updateCategoryBreakdown(totals) {
+    const approvedBudget = parseFloat('{{ project.approved_budget|default:"0" }}');
+
+    // Update GENREQ
+    document.getElementById('categoryGenreqAmount').textContent = '₱' + formatCurrency(totals.genreq);
+    const genreqPercent = approvedBudget > 0 ? ((totals.genreq / approvedBudget) * 100).toFixed(1) : 0;
+    document.getElementById('categoryGenreqPercent').textContent = `${genreqPercent}% of budget`;
+    document.getElementById('categoryGenreqBar').style.width = `${Math.min(genreqPercent, 100)}%`;
+
+    // Update MATERIALS
+    document.getElementById('categoryMaterialsAmount').textContent = '₱' + formatCurrency(totals.materials);
+    const materialsPercent = approvedBudget > 0 ? ((totals.materials / approvedBudget) * 100).toFixed(1) : 0;
+    document.getElementById('categoryMaterialsPercent').textContent = `${materialsPercent}% of budget`;
+    document.getElementById('categoryMaterialsBar').style.width = `${Math.min(materialsPercent, 100)}%`;
+
+    // Update LABOR
+    document.getElementById('categoryLaborAmount').textContent = '₱' + formatCurrency(totals.labor);
+    const laborPercent = approvedBudget > 0 ? ((totals.labor / approvedBudget) * 100).toFixed(1) : 0;
+    document.getElementById('categoryLaborPercent').textContent = `${laborPercent}% of budget`;
+    document.getElementById('categoryLaborBar').style.width = `${Math.min(laborPercent, 100)}%`;
+
+    // Update EQUIPMENT
+    document.getElementById('categoryEquipmentAmount').textContent = '₱' + formatCurrency(totals.equipment);
+    const equipmentPercent = approvedBudget > 0 ? ((totals.equipment / approvedBudget) * 100).toFixed(1) : 0;
+    document.getElementById('categoryEquipmentPercent').textContent = `${equipmentPercent}% of budget`;
+    document.getElementById('categoryEquipmentBar').style.width = `${Math.min(equipmentPercent, 100)}%`;
+}
+
+function toggleCustomDateRange() {
+    const periodSelect = document.getElementById('periodSelect');
+    const customRange = document.getElementById('customDateRange');
+    const startDate = document.getElementById('custom_start');
+    const endDate = document.getElementById('custom_end');
+
+    if (!periodSelect || !customRange) return;
+
+    if (periodSelect.value === 'custom') {
+        customRange.classList.remove('hidden');
+        // Make date fields required when custom is selected
+        if (startDate) startDate.required = true;
+        if (endDate) endDate.required = true;
+    } else {
+        customRange.classList.add('hidden');
+        // Remove required when hidden
+        if (startDate) {
+            startDate.required = false;
+            startDate.value = '';
+        }
+        if (endDate) {
+            endDate.required = false;
+            endDate.value = '';
+        }
+    }
+}
+
+function validatePeriodDates() {
+    const startInput = document.getElementById('period_start');
+    const endInput = document.getElementById('period_end');
+    const startError = document.getElementById('period_start_error');
+    const endError = document.getElementById('period_end_error');
+
+    if (!startInput || !endInput) return true;
+
+    const startDate = new Date(startInput.value);
+    const endDate = new Date(endInput.value);
+
+    // Clear previous errors
+    startError.classList.add('hidden');
+    endError.classList.add('hidden');
+    startInput.classList.remove('border-red-500');
+    endInput.classList.remove('border-red-500');
+
+    if (startInput.value && endInput.value) {
+        if (endDate < startDate) {
+            endError.textContent = 'End date cannot be before start date';
+            endError.classList.remove('hidden');
+            endInput.classList.add('border-red-500');
+            return false;
+        }
+
+        // Check if period is more than 7 days (for weekly reports)
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 7) {
+            endError.textContent = 'Period should not exceed 7 days for weekly reports';
+            endError.classList.remove('hidden');
+            endInput.classList.add('border-red-500');
+            return false;
+        }
+    }
+
+    return true;
+}
+</script>
+
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <script>
 // ========================================
-// CHARTS
+// WEEKLY COST REPORT FUNCTIONALITY v2.1
+// Cache-Bust: 2025-11-08-002
 // ========================================
 
-// Category Pie Chart
-const ctxPie = document.getElementById('categoryPieChart').getContext('2d');
-const categoryPieChart = new Chart(ctxPie, {
-    type: 'doughnut',
-    data: {
-        labels: [
-            {% for cat in categories_data %}
-            '{{ cat.scope }} - {{ cat.category }}'{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        datasets: [{
-            label: 'Spending',
-            data: [
-                {% for cat in categories_data %}
-                {{ cat.spent }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
-            backgroundColor: [
-                '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-                '#EC4899', '#14B8A6', '#F97316'
-            ],
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.label + ': ₱' + context.parsed.toLocaleString('en-PH', {minimumFractionDigits: 2});
-                    }
-                }
-            }
+console.log('📊 Weekly Cost Dashboard Script v2.1 loaded - 2025-11-08-002');
+
+let weeklyDisbursementChart = null;
+let monthlyDisbursementChart = null;
+
+// Submit Weekly Report - defined in extra_js block
+async function submitWeeklyReport(event) {
+    event.preventDefault();
+    console.log('=== submitWeeklyReport CALLED ===');
+    console.log('Form ID:', event.target.id);
+    console.log('Event target:', event.target);
+
+    // Validate period dates first
+    if (!validatePeriodDates()) {
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Please fix the date errors before submitting', 'error');
+        }
+        return;
+    }
+
+    // Check if downpayment is paid FIRST (before showing loading)
+    const downpaymentPaid = '{{ project.downpayment_status }}' === 'True' || '{{ project.downpayment_status }}' === 'paid';
+    if (!downpaymentPaid) {
+        try {
+            // Show downpayment warning modal and wait for user response
+            await showDownpaymentWarningModal();
+            // If we get here, user clicked proceed
+        } catch (error) {
+            // User clicked cancel
+            console.log('Submission cancelled:', error.message);
+            return;
         }
     }
-});
 
-// Spending Trend Line Chart
-const ctxLine = document.getElementById('spendingTrendChart').getContext('2d');
-const spendingTrendChart = new Chart(ctxLine, {
-    type: 'line',
-    data: {
-        labels: [
-            {% for month in monthly_spending %}
-            '{{ month.month }}'{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        datasets: [{
-            label: 'Monthly Spending',
-            data: [
-                {% for month in monthly_spending %}
-                {{ month.amount }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
-            borderColor: '#3B82F6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4,
-            fill: true,
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false,
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return 'Spent: ₱' + context.parsed.y.toLocaleString('en-PH', {minimumFractionDigits: 2});
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return '₱' + value.toLocaleString('en-PH');
-                    }
-                }
-            }
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+
+    // Show loading animation
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg class="animate-spin h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Submitting...
+    `;
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    console.log('Form data:', data);
+
+    // Check if total disbursement exceeds approved budget
+    const approvedBudget = parseFloat('{{ project.approved_budget|default:"0" }}');
+    // Get raw value (without formatting)
+    const totalDisbursement = parseFloat(data.total_amount_raw || data.total_amount) || 0;
+
+    // Get cumulative disbursement from API
+    const cumulativeCheck = await checkBudgetExceeded(totalDisbursement, approvedBudget);
+    if (cumulativeCheck.exceeded) {
+        try {
+            // Show budget exceeded modal and wait for user response
+            await showBudgetExceededModal(approvedBudget, cumulativeCheck);
+            // If we get here, user clicked proceed
+        } catch (error) {
+            // User clicked cancel
+            console.log('Submission cancelled:', error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            return;
         }
     }
-});
-
-// ========================================
-// EXPENSE MODAL
-// ========================================
-
-function openExpenseModal() {
-    document.getElementById('expenseModal').classList.remove('hidden');
-}
-
-function closeExpenseModal() {
-    document.getElementById('expenseModal').classList.add('hidden');
-    document.getElementById('expenseForm').reset();
-}
-
-// Handle expense form submission
-document.getElementById('expenseForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
 
     try {
-        const response = await fetch('{% url "api_add_quick_expense" project.id %}', {
+        const response = await fetch('{% url "api_create_weekly_cost_report" project.id %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -493,23 +1144,879 @@ document.getElementById('expenseForm').addEventListener('submit', async function
 
         const result = await response.json();
 
-        if (result.success) {
-            alert(result.message + (result.warning ? '\n\nWarning: ' + result.warning : ''));
-            closeExpenseModal();
-            location.reload(); // Reload to show updated data
+        if (response.ok && result.success) {
+            // Use centralized toast if available, fallback to local
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Weekly report submitted successfully!', 'success');
+            } else {
+                showToast('Weekly report submitted successfully!', 'success');
+            }
+            closeWeeklyReportModal();
+            await fetchWeeklyCostData();
         } else {
-            alert('Error: ' + result.error);
+            if (typeof showProjectToast === 'function') {
+                showProjectToast(result.error || 'Failed to submit report', 'error');
+            } else {
+                showToast(result.error || 'Failed to submit report', 'error');
+            }
         }
     } catch (error) {
-        alert('Error adding expense: ' + error);
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Network error. Please try again.', 'error');
+        } else {
+            showToast('Network error. Please try again.', 'error');
+        }
+        console.error('Error:', error);
+    } finally {
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     }
-});
+}
 
-// Close modal on outside click
-document.getElementById('expenseModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeExpenseModal();
+// Export Modal Functions
+function openExportModal() {
+    document.getElementById('exportModal').classList.remove('hidden');
+    loadExportPreferences();
+}
+
+function closeExportModal() {
+    document.getElementById('exportModal').classList.add('hidden');
+}
+
+function loadExportPreferences() {
+    const saved = localStorage.getItem('exportPreferences');
+    if (saved) {
+        try {
+            const prefs = JSON.parse(saved);
+            // Apply saved preferences if needed
+        } catch (e) {
+            console.error('Error loading preferences:', e);
+        }
     }
+}
+
+function saveExportPreferences(formData) {
+    localStorage.setItem('exportPreferences', JSON.stringify(formData));
+}
+
+async function generateReport(event) {
+    event.preventDefault();
+    console.log('=== generateReport CALLED ===');
+    console.log('Form ID:', event.target.id);
+    console.log('Event target:', event.target);
+
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+
+    // Show loading animation
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg class="animate-spin h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Generating...
+    `;
+
+    const formData = new FormData(form);
+
+    const period = formData.get('period');
+    const format = formData.get('format');
+    console.log('Export format:', format, 'Period:', period);
+
+    // Validate period selection
+    if (!period) {
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Please select a report period', 'error');
+        } else {
+            alert('Please select a report period');
+        }
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+        return;
+    }
+
+    // Validate format selection
+    if (!format) {
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Please select an export format', 'error');
+        } else {
+            alert('Please select an export format');
+        }
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+        return;
+    }
+
+    // Validate custom date range if selected
+    if (period === 'custom') {
+        const customStart = formData.get('custom_start');
+        const customEnd = formData.get('custom_end');
+
+        if (!customStart || !customEnd) {
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Please select both start and end dates for custom range', 'error');
+            } else {
+                alert('Please select both start and end dates for custom range');
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            return;
+        }
+
+        if (new Date(customStart) > new Date(customEnd)) {
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Start date cannot be after end date', 'error');
+            } else {
+                alert('Start date cannot be after end date');
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            return;
+        }
+    }
+
+    const includeOptions = {
+        weekly_table: formData.get('include_weekly_table') === 'on',
+        monthly_table: formData.get('include_monthly_table') === 'on',
+        weekly_chart: formData.get('include_weekly_chart') === 'on',
+        monthly_chart: formData.get('include_monthly_chart') === 'on',
+        category_breakdown: formData.get('include_category_breakdown') === 'on',
+        project_header: formData.get('include_project_header') === 'on',
+        totals: formData.get('include_totals') === 'on'
+    };
+
+    saveExportPreferences({ period, format, includeOptions });
+
+    const dateRange = calculateDateRange(period, formData.get('custom_start'), formData.get('custom_end'));
+
+    try {
+        if (format === 'print') {
+            window.print();
+        } else if (format === 'pdf') {
+            await exportToPDF(dateRange, includeOptions);
+        } else if (format === 'excel') {
+            await exportToExcel(dateRange, includeOptions);
+        }
+        closeExportModal();
+    } catch (error) {
+        console.error('Export error:', error);
+    } finally {
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+}
+
+function calculateDateRange(period, customStart, customEnd) {
+    const today = new Date();
+    let startDate, endDate;
+
+    switch(period) {
+        case 'this_week':
+            const firstDay = today.getDate() - today.getDay();
+            startDate = new Date(today.setDate(firstDay));
+            endDate = new Date(today.setDate(firstDay + 6));
+            break;
+        case 'this_month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        case 'this_quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            startDate = new Date(today.getFullYear(), quarter * 3, 1);
+            endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+            break;
+        case 'this_year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            endDate = new Date(today.getFullYear(), 11, 31);
+            break;
+        case 'last_30_days':
+            endDate = new Date();
+            startDate = new Date(today.setDate(today.getDate() - 30));
+            break;
+        case 'custom':
+            startDate = new Date(customStart);
+            endDate = new Date(customEnd);
+            break;
+        default:
+            startDate = null;
+            endDate = null;
+    }
+
+    return {
+        start: startDate ? startDate.toISOString().split('T')[0] : null,
+        end: endDate ? endDate.toISOString().split('T')[0] : null
+    };
+}
+
+async function exportToPDF(dateRange, includeOptions) {
+    try {
+        let chartData = {};
+        if (includeOptions.weekly_chart && weeklyDisbursementChart) {
+            chartData.weeklyChart = weeklyDisbursementChart.toBase64Image();
+        }
+        if (includeOptions.monthly_chart && monthlyDisbursementChart) {
+            chartData.monthlyChart = monthlyDisbursementChart.toBase64Image();
+        }
+
+        const params = new URLSearchParams();
+        if (dateRange.start) params.append('start_date', dateRange.start);
+        if (dateRange.end) params.append('end_date', dateRange.end);
+
+        const response = await fetch(
+            '{% url "export_weekly_cost_pdf" project.id %}?' + params.toString(),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ includeOptions, chartData })
+            }
+        );
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Cost_Report_${dateRange.start || 'All'}_to_${dateRange.end || 'All'}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('PDF exported successfully!', 'success');
+        } else {
+            showToast('Failed to export PDF', 'error');
+        }
+    } catch (error) {
+        showToast('Export failed. Please try again.', 'error');
+        console.error('Error:', error);
+    }
+}
+
+async function exportToExcel(dateRange, includeOptions) {
+    try {
+        let chartData = {};
+        if (includeOptions.weekly_chart && weeklyDisbursementChart) {
+            chartData.weeklyChart = weeklyDisbursementChart.toBase64Image();
+        }
+        if (includeOptions.monthly_chart && monthlyDisbursementChart) {
+            chartData.monthlyChart = monthlyDisbursementChart.toBase64Image();
+        }
+
+        const params = new URLSearchParams();
+        if (dateRange.start) params.append('start_date', dateRange.start);
+        if (dateRange.end) params.append('end_date', dateRange.end);
+
+        const response = await fetch(
+            '{% url "export_weekly_cost_excel" project.id %}?' + params.toString(),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ includeOptions, chartData })
+            }
+        );
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Cost_Report_${dateRange.start || 'All'}_to_${dateRange.end || 'All'}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('Excel exported successfully!', 'success');
+        } else {
+            showToast('Failed to export Excel', 'error');
+        }
+    } catch (error) {
+        showToast('Export failed. Please try again.', 'error');
+        console.error('Error:', error);
+    }
+}
+
+// Data Fetching and Rendering
+async function fetchWeeklyCostData(startDate = null, endDate = null) {
+    try {
+        let url = '{% url "api_weekly_cost_reports" project.id %}';
+        if (startDate && endDate) {
+            url += `?start_date=${startDate}&end_date=${endDate}`;
+        }
+
+        console.log('Fetching weekly cost data from:', url);
+        const response = await fetch(url);
+        const data = await response.json();
+
+        console.log('API Response:', data);
+        console.log('Weekly reports count:', data.weekly_reports?.length || 0);
+        console.log('Monthly summary count:', data.monthly_summary?.length || 0);
+
+        if (response.ok && data.success) {
+            renderWeekToWeekTable(data.weekly_reports, data.totals);
+            renderMonthToMonthTable(data.monthly_summary, data.totals);
+            updateCharts(data.weekly_reports, data.monthly_summary);
+            checkForMissingReports(data.weekly_reports);
+        } else {
+            console.error('API Error:', data.error || 'Unknown error');
+            if (typeof showProjectToast === 'function') {
+                showProjectToast(data.error || 'Failed to load cost reports', 'error');
+            } else {
+                showToast(data.error || 'Failed to load cost reports', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to fetch data:', error);
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Failed to load cost reports. Please refresh the page.', 'error');
+        } else {
+            showToast('Failed to load cost reports. Please refresh the page.', 'error');
+        }
+    }
+}
+
+// Pagination state
+let currentWeeklyPage = 1;
+const reportsPerPage = 10;
+let allWeeklyReports = [];
+
+function renderWeekToWeekTable(reports, totals) {
+    const tbody = document.getElementById('weeklyTableBody');
+
+    // Remove skeleton loader
+    const skeletonRows = tbody.querySelectorAll('.skeleton-row');
+    skeletonRows.forEach(row => row.remove());
+
+    tbody.innerHTML = '';
+
+    // Reverse the order - oldest first, newest last
+    allWeeklyReports = [...reports].sort((a, b) => {
+        return new Date(a.report_date) - new Date(b.report_date);
+    });
+
+    // Calculate pagination
+    const totalPages = Math.ceil(allWeeklyReports.length / reportsPerPage);
+    const startIndex = (currentWeeklyPage - 1) * reportsPerPage;
+    const endIndex = startIndex + reportsPerPage;
+    const paginatedReports = allWeeklyReports.slice(startIndex, endIndex);
+
+    if (paginatedReports.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="px-2 py-4 text-center text-gray-500">
+                    No reports found for this page.
+                </td>
+            </tr>
+        `;
+    } else {
+        paginatedReports.forEach(report => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.innerHTML = `
+                <td class="px-2 py-2">${formatDate(report.report_date)}</td>
+                <td class="px-2 py-2 text-xs">${report.period_label}</td>
+                <td class="px-2 py-2 text-right">${formatCurrency(report.genreq_amount)}</td>
+                <td class="px-2 py-2 text-right">${formatCurrency(report.materials_amount)}</td>
+                <td class="px-2 py-2 text-right">${formatCurrency(report.labor_amount)}</td>
+                <td class="px-2 py-2 text-right">${formatCurrency(report.equipment_amount)}</td>
+                <td class="px-2 py-2 text-right font-semibold">${formatCurrency(report.total_amount)}</td>
+                <td class="px-2 py-2 text-xs">${report.submitted_by || 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Render pagination controls
+    renderWeeklyPagination(totalPages);
+
+    // Update totals footer
+    document.getElementById('totalGenreq').textContent = formatCurrency(totals.genreq);
+    document.getElementById('totalMaterials').textContent = formatCurrency(totals.materials);
+    document.getElementById('totalLabor').textContent = formatCurrency(totals.labor);
+    document.getElementById('totalEquipment').textContent = formatCurrency(totals.equipment);
+    document.getElementById('totalAmount').textContent = formatCurrency(totals.total);
+
+    // Update budget status and category breakdown
+    const approvedBudget = parseFloat('{{ project.approved_budget|default:"0" }}');
+    updateBudgetStatus(totals.total, approvedBudget);
+    updateCategoryBreakdown(totals);
+}
+
+function renderWeeklyPagination(totalPages) {
+    const container = document.getElementById('weeklyPaginationControls');
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = `
+        <button onclick="changeWeeklyPage(${currentWeeklyPage - 1})"
+                ${currentWeeklyPage === 1 ? 'disabled' : ''}
+                class="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            Previous
+        </button>
+        <span class="text-sm text-gray-700">Page ${currentWeeklyPage} of ${totalPages}</span>
+        <button onclick="changeWeeklyPage(${currentWeeklyPage + 1})"
+                ${currentWeeklyPage === totalPages ? 'disabled' : ''}
+                class="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            Next
+        </button>
+    `;
+    container.innerHTML = html;
+}
+
+function changeWeeklyPage(newPage) {
+    const totalPages = Math.ceil(allWeeklyReports.length / reportsPerPage);
+    if (newPage < 1 || newPage > totalPages) return;
+
+    currentWeeklyPage = newPage;
+    // Re-render table with new page
+    const tbody = document.getElementById('weeklyTableBody');
+    tbody.innerHTML = '';
+
+    const startIndex = (currentWeeklyPage - 1) * reportsPerPage;
+    const endIndex = startIndex + reportsPerPage;
+    const paginatedReports = allWeeklyReports.slice(startIndex, endIndex);
+
+    paginatedReports.forEach(report => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-2 py-2">${formatDate(report.report_date)}</td>
+            <td class="px-2 py-2 text-xs">${report.period_label}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(report.genreq_amount)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(report.materials_amount)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(report.labor_amount)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(report.equipment_amount)}</td>
+            <td class="px-2 py-2 text-right font-semibold">${formatCurrency(report.total_amount)}</td>
+            <td class="px-2 py-2 text-xs">${report.submitted_by || 'N/A'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    renderWeeklyPagination(totalPages);
+}
+
+function renderMonthToMonthTable(monthlySummary, totals) {
+    const tbody = document.getElementById('monthlyTableBody');
+
+    // Remove skeleton loader
+    const skeletonRows = tbody.querySelectorAll('.skeleton-row');
+    skeletonRows.forEach(row => row.remove());
+
+    tbody.innerHTML = '';
+
+    monthlySummary.forEach(month => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-2 py-2">${month.month}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(month.genreq)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(month.materials)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(month.labor)}</td>
+            <td class="px-2 py-2 text-right">${formatCurrency(month.equipment)}</td>
+            <td class="px-2 py-2 text-right font-semibold">${formatCurrency(month.total)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Update totals footer
+    document.getElementById('totalMonthGenreq').textContent = formatCurrency(totals.genreq);
+    document.getElementById('totalMonthMaterials').textContent = formatCurrency(totals.materials);
+    document.getElementById('totalMonthLabor').textContent = formatCurrency(totals.labor);
+    document.getElementById('totalMonthEquipment').textContent = formatCurrency(totals.equipment);
+    document.getElementById('totalMonthAmount').textContent = formatCurrency(totals.total);
+}
+
+function updateCharts(weeklyReports, monthlySummary) {
+    // Destroy existing charts
+    if (weeklyDisbursementChart) weeklyDisbursementChart.destroy();
+    if (monthlyDisbursementChart) monthlyDisbursementChart.destroy();
+
+    // Create weekly chart
+    const weeklyCtx = document.getElementById('weeklyDisbursementChart').getContext('2d');
+    const weeklyData = prepareWeeklyChartData(weeklyReports);
+
+    weeklyDisbursementChart = new Chart(weeklyCtx, {
+        type: 'bar',
+        data: {
+            labels: weeklyData.labels,
+            datasets: [
+                {
+                    label: 'GENREQ',
+                    data: weeklyData.genreq,
+                    backgroundColor: '#60A5FA',
+                    borderColor: '#60A5FA',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'MATERIALS',
+                    data: weeklyData.materials,
+                    backgroundColor: '#FB923C',
+                    borderColor: '#FB923C',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'LABOR',
+                    data: weeklyData.labor,
+                    backgroundColor: '#9CA3AF',
+                    borderColor: '#9CA3AF',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'EQUIPMENT',
+                    data: weeklyData.equipment,
+                    backgroundColor: '#FBBF24',
+                    borderColor: '#FBBF24',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#FFFFFF',
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ₱' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#4B5563',
+                        display: true
+                    },
+                    ticks: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#4B5563',
+                        display: true
+                    },
+                    ticks: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Create monthly chart
+    const monthlyCtx = document.getElementById('monthlyDisbursementChart').getContext('2d');
+    const monthlyData = prepareMonthlyChartData(monthlySummary);
+
+    monthlyDisbursementChart = new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: monthlyData.labels,
+            datasets: [
+                {
+                    label: 'GENREQ',
+                    data: monthlyData.genreq,
+                    backgroundColor: '#60A5FA',
+                    borderColor: '#60A5FA',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'MATERIALS',
+                    data: monthlyData.materials,
+                    backgroundColor: '#FB923C',
+                    borderColor: '#FB923C',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'LABOR',
+                    data: monthlyData.labor,
+                    backgroundColor: '#9CA3AF',
+                    borderColor: '#9CA3AF',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: 'EQUIPMENT',
+                    data: monthlyData.equipment,
+                    backgroundColor: '#FBBF24',
+                    borderColor: '#FBBF24',
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#FFFFFF',
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ₱' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#4B5563',
+                        display: true
+                    },
+                    ticks: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#4B5563',
+                        display: true
+                    },
+                    ticks: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function prepareWeeklyChartData(reports) {
+    const labels = [];
+    const genreq = [];
+    const materials = [];
+    const labor = [];
+    const equipment = [];
+
+    reports.forEach((report, index) => {
+        // Format label as "Week 1", "Week 2", etc. or use period label if available
+        const weekLabel = report.period_label || `Week ${index + 1}`;
+        labels.push(weekLabel);
+        genreq.push(report.genreq_amount);
+        materials.push(report.materials_amount);
+        labor.push(report.labor_amount);
+        equipment.push(report.equipment_amount);
+    });
+
+    return { labels, genreq, materials, labor, equipment };
+}
+
+function prepareMonthlyChartData(monthlySummary) {
+    const labels = [];
+    const genreq = [];
+    const materials = [];
+    const labor = [];
+    const equipment = [];
+
+    monthlySummary.forEach(month => {
+        // Use the full month label (e.g., "January 2024" or just "January")
+        labels.push(month.month);
+        genreq.push(month.genreq);
+        materials.push(month.materials);
+        labor.push(month.labor);
+        equipment.push(month.equipment);
+    });
+
+    return { labels, genreq, materials, labor, equipment };
+}
+
+function checkForMissingReports(reports) {
+    const notification = document.getElementById('noReportsNotification');
+    if (reports.length === 0) {
+        notification.classList.remove('hidden');
+    } else {
+        notification.classList.add('hidden');
+    }
+}
+
+async function checkBudgetExceeded(newReportTotal, approvedBudget) {
+    try {
+        const response = await fetch('{% url "api_weekly_cost_reports" project.id %}');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            const currentTotal = data.totals.total || 0;
+            const newTotal = currentTotal + newReportTotal;
+            const exceeded = newTotal > approvedBudget;
+
+            return {
+                exceeded,
+                currentTotal,
+                thisReport: newReportTotal,
+                newTotal,
+                excess: newTotal - approvedBudget
+            };
+        }
+
+        return { exceeded: false, currentTotal: 0, thisReport: newReportTotal, newTotal: newReportTotal, excess: 0 };
+    } catch (error) {
+        console.error('Budget check error:', error);
+        return { exceeded: false, currentTotal: 0, thisReport: newReportTotal, newTotal: newReportTotal, excess: 0 };
+    }
+}
+
+// Utility Functions
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-600' :
+        type === 'error' ? 'bg-red-600' :
+        'bg-blue-600'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function showDownpaymentWarningModal() {
+    return new Promise((resolve, reject) => {
+        const modal = document.getElementById('downpaymentWarningModal');
+        const proceedBtn = document.getElementById('downpaymentProceedBtn');
+        const cancelBtn = document.getElementById('downpaymentCancelBtn');
+
+        modal.classList.remove('hidden');
+
+        const handleProceed = () => {
+            modal.classList.add('hidden');
+            proceedBtn.removeEventListener('click', handleProceed);
+            cancelBtn.removeEventListener('click', handleCancel);
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            modal.classList.add('hidden');
+            proceedBtn.removeEventListener('click', handleProceed);
+            cancelBtn.removeEventListener('click', handleCancel);
+            reject(new Error('User cancelled due to downpayment warning'));
+        };
+
+        proceedBtn.addEventListener('click', handleProceed);
+        cancelBtn.addEventListener('click', handleCancel);
+    });
+}
+
+function showBudgetExceededModal(approvedBudget, cumulativeCheck) {
+    return new Promise((resolve, reject) => {
+        const modal = document.getElementById('budgetExceededModal');
+        const proceedBtn = document.getElementById('budgetExceededProceedBtn');
+        const cancelBtn = document.getElementById('budgetExceededCancelBtn');
+
+        // Update modal values
+        document.getElementById('modalApprovedBudget').textContent = '₱' + formatCurrency(approvedBudget);
+        document.getElementById('modalCurrentTotal').textContent = '₱' + formatCurrency(cumulativeCheck.currentTotal);
+        document.getElementById('modalThisReport').textContent = '₱' + formatCurrency(cumulativeCheck.thisReport);
+        document.getElementById('modalNewTotal').textContent = '₱' + formatCurrency(cumulativeCheck.newTotal);
+        document.getElementById('modalExcess').textContent = '₱' + formatCurrency(cumulativeCheck.excess);
+
+        modal.classList.remove('hidden');
+
+        const handleProceed = () => {
+            modal.classList.add('hidden');
+            proceedBtn.removeEventListener('click', handleProceed);
+            cancelBtn.removeEventListener('click', handleCancel);
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            modal.classList.add('hidden');
+            proceedBtn.removeEventListener('click', handleProceed);
+            cancelBtn.removeEventListener('click', handleCancel);
+            reject(new Error('User cancelled due to budget exceeded warning'));
+        };
+
+        proceedBtn.addEventListener('click', handleProceed);
+        cancelBtn.addEventListener('click', handleCancel);
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    fetchWeeklyCostData();
 });
 </script>
 {% endblock %}

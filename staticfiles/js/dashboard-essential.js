@@ -317,19 +317,16 @@ function initializeProgressChart(projects) {
     console.log("Progress chart initialized");
 }
 
-// Budget Chart (Line Chart)
+// Budget Chart (Line Chart) - Simplified to show Approved Budget vs Actual Disbursement
 function initializeBudgetChart(projects) {
     const budgetChartEl = document.getElementById("budgetChart");
     if (!budgetChartEl) return;
 
     const ctx = budgetChartEl.getContext("2d");
 
-    // Map project budget data with enhanced structure
-    const estimatedData = projects.map(p => Number(p.budget_total?.estimated) || 0);
-    const approvedData  = projects.map(p => Number(p.budget_total?.approved) || 0);
-    const plannedData   = projects.map(p => Number(p.budget_total?.planned) || 0);
-    const allocatedData = projects.map(p => Number(p.budget_total?.allocated) || 0);
-    const spentData     = projects.map(p => Number(p.budget_total?.spent) || 0);
+    // Map project budget data - only Approved Budget and Actual Disbursement
+    const approvedData = projects.map(p => Number(p.budget_total?.approved) || 0);
+    const disbursementData = projects.map(p => Number(p.actual_disbursement) || 0);
 
     const labels = projects.map(p => p.name || p.project_name || 'Unnamed Project');
 
@@ -338,19 +335,6 @@ function initializeBudgetChart(projects) {
         data: {
             labels,
             datasets: [
-                {
-                    label: "Estimated Cost",
-                    data: estimatedData,
-                    borderColor: "rgba(255, 99, 132, 1)",
-                    backgroundColor: "rgba(255, 99, 132, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: "rgba(255, 99, 132, 1)",
-                    pointBorderColor: "#ffffff",
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                },
                 {
                     label: "Approved Budget",
                     data: approvedData,
@@ -365,39 +349,13 @@ function initializeBudgetChart(projects) {
                     pointHoverRadius: 8
                 },
                 {
-                    label: "Planned Budget",
-                    data: plannedData,
-                    borderColor: "rgba(249, 115, 22, 1)",
-                    backgroundColor: "rgba(249, 115, 22, 0.1)",
+                    label: "Actual Disbursement",
+                    data: disbursementData,
+                    borderColor: "rgba(16, 185, 129, 1)",
+                    backgroundColor: "rgba(16, 185, 129, 0.1)",
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: "rgba(249, 115, 22, 1)",
-                    pointBorderColor: "#ffffff",
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                },
-                {
-                    label: "Allocated Budget",
-                    data: allocatedData,
-                    borderColor: "rgba(139, 92, 246, 1)",
-                    backgroundColor: "rgba(139, 92, 246, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: "rgba(139, 92, 246, 1)",
-                    pointBorderColor: "#ffffff",
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                },
-                {
-                    label: "Spent Budget",
-                    data: spentData,
-                    borderColor: "rgba(34, 197, 94, 1)",
-                    backgroundColor: "rgba(34, 197, 94, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: "rgba(34, 197, 94, 1)",
+                    pointBackgroundColor: "rgba(16, 185, 129, 1)",
                     pointBorderColor: "#ffffff",
                     pointBorderWidth: 3,
                     pointRadius: 6,
@@ -426,9 +384,11 @@ function initializeBudgetChart(projects) {
                         afterBody: function(tooltipItems) {
                             if (tooltipItems.length > 0) {
                                 const dataIndex = tooltipItems[0].dataIndex;
-                                const remaining = allocatedData[dataIndex] - spentData[dataIndex];
-                                const utilization = allocatedData[dataIndex] > 0
-                                    ? ((spentData[dataIndex] / allocatedData[dataIndex]) * 100).toFixed(1)
+                                const approved = approvedData[dataIndex];
+                                const disbursed = disbursementData[dataIndex];
+                                const remaining = approved - disbursed;
+                                const utilization = approved > 0
+                                    ? ((disbursed / approved) * 100).toFixed(1)
                                     : 0;
 
                                 return [
@@ -1492,11 +1452,8 @@ function updateChartsWithFilteredData(projects) {
     // Budget Chart
     if (window.budgetChart) {
         window.budgetChart.data.labels = projects.map(p => p.name || p.project_name);
-        window.budgetChart.data.datasets[0].data = projects.map(p => p.budget_total?.estimated || 0);
-        window.budgetChart.data.datasets[1].data = projects.map(p => p.budget_total?.approved || 0);
-        window.budgetChart.data.datasets[2].data = projects.map(p => p.budget_total?.planned || 0);
-        window.budgetChart.data.datasets[3].data = projects.map(p => p.budget_total?.allocated || 0);
-        window.budgetChart.data.datasets[4].data = projects.map(p => p.budget_total?.spent || 0);
+        window.budgetChart.data.datasets[0].data = projects.map(p => p.budget_total?.approved || 0);
+        window.budgetChart.data.datasets[1].data = projects.map(p => p.actual_disbursement || 0);
         window.budgetChart.update('active');
     }
 }

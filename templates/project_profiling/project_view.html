@@ -750,7 +750,7 @@ window.addEventListener('click', function(e) {
                                                 View Rejected Schedule
                                             </a>
                                             {% if role == 'PM' %}
-                                                <button onclick="openUploadModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                                <button onclick="openScheduleUploadModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                                                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                                     </svg>
@@ -778,7 +778,7 @@ window.addEventListener('click', function(e) {
                                         Generate Template
                                     </a>
                                     {% if role == 'PM' %}
-                                        <button onclick="openUploadModal()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        <button onclick="openScheduleUploadModal()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                             </svg>
@@ -1238,6 +1238,7 @@ window.addEventListener('click', function(e) {
                                 {{ project.documents.count }} document{{ project.documents.count|pluralize }}
                             </p>
                         </div>
+                        {% if role == 'EG' or role == 'OM' %}
                         <button onclick="openUploadModal()" 
                                 class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1245,6 +1246,7 @@ window.addEventListener('click', function(e) {
                             </svg>
                             Upload
                         </button>
+                        {% endif %}
                     </div>
 
                     <div class="p-6">
@@ -2915,12 +2917,12 @@ function showNotification(type, title, message) {
 }
 
 // Upload Schedule Modal Functions
-function openUploadModal() {
+function openScheduleUploadModal() {
     document.getElementById('uploadScheduleModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
-function closeUploadModal() {
+function closeScheduleUploadModal() {
     document.getElementById('uploadScheduleModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
     // Reset form
@@ -2956,7 +2958,7 @@ function resetFileUpload() {
                     <p class="text-sm text-gray-600">{{ project.project_name }}</p>
                 </div>
             </div>
-            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-500">
+            <button onclick="closeScheduleUploadModal()" class="text-gray-400 hover:text-gray-500">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -3054,7 +3056,7 @@ function resetFileUpload() {
 
                 <!-- Modal Footer -->
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <button type="button" onclick="closeScheduleUploadModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                         Cancel
                     </button>
                     <button type="submit" id="upload-button" disabled class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">

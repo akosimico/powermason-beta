@@ -1496,3 +1496,146 @@ class BOQItemProgress(models.Model):
         return self.approved_contract_amount - self.cumulative_amount
 
 
+class WeeklyCostReport(models.Model):
+    """
+    Model for tracking weekly cost disbursements across different categories.
+    This provides structured weekly cost reporting for projects.
+    """
+    project = models.ForeignKey(
+        'ProjectProfile',
+        on_delete=models.CASCADE,
+        related_name='weekly_cost_reports',
+        help_text="Project this cost report belongs to"
+    )
+    report_date = models.DateField(
+        help_text="Date this report was created"
+    )
+    period_start = models.DateField(
+        help_text="Start date of the reporting period"
+    )
+    period_end = models.DateField(
+        help_text="End date of the reporting period"
+    )
+
+    # Cost Categories
+    genreq_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="General Requirements amount for this period"
+    )
+    materials_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Materials cost for this period"
+    )
+    labor_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Labor cost for this period"
+    )
+    equipment_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Equipment cost for this period"
+    )
+    total_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total disbursement amount (auto-calculated)"
+    )
+
+    # Status and Approval
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected')
+    ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="Approval status of this report"
+    )
+
+    # Metadata
+    submitted_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='submitted_weekly_cost_reports',
+        help_text="User who submitted this report"
+    )
+    submitted_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp when report was submitted"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="Timestamp of last update"
+    )
+
+    # Optional fields
+    remarks = models.TextField(
+        blank=True,
+        help_text="Additional notes or remarks for this report"
+    )
+
+    class Meta:
+        ordering = ['-period_start', '-report_date']
+        verbose_name = "Weekly Cost Report"
+        verbose_name_plural = "Weekly Cost Reports"
+        unique_together = ['project', 'period_start', 'period_end']
+        indexes = [
+            models.Index(fields=['project', 'period_start']),
+            models.Index(fields=['project', 'report_date']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"{self.project.name} - Week {self.period_start} to {self.period_end} (₱{self.total_amount:,.2f})"
+
+    def save(self, *args, **kwargs):
+        """Auto-calculate total amount on save"""
+        self.total_amount = (
+            self.genreq_amount +
+            self.materials_amount +
+            self.labor_amount +
+            self.equipment_amount
+        )
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        """Validate the model data"""
+        from django.core.exceptions import ValidationError
+
+        # Validate date range
+        if self.period_start and self.period_end:
+            if self.period_start > self.period_end:
+                raise ValidationError("Period start date must be before or equal to end date")
+
+        # Validate amounts are non-negative
+        if self.genreq_amount < 0:
+            raise ValidationError("GENREQ amount cannot be negative")
+        if self.materials_amount < 0:
+            raise ValidationError("Materials amount cannot be negative")
+        if self.labor_amount < 0:
+            raise ValidationError("Labor amount cannot be negative")
+        if self.equipment_amount < 0:
+            raise ValidationError("Equipment amount cannot be negative")
+
+    @property
+    def period_label(self):
+        """Return a formatted label for the period"""
+        return f"{self.period_start.strftime('%b %d')} - {self.period_end.strftime('%b %d, %Y')}"
+
+    @property
+    def week_number(self):
+        """Calculate the week number from period start"""
+        return self.period_start.isocalendar()[1]
+
+

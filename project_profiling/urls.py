@@ -8,6 +8,15 @@ from .cost_dashboard_views import (
     api_project_cost_summary,
     api_add_quick_expense
 )
+from .cost_tracking_views import (
+    api_weekly_cost_reports,
+    api_create_weekly_cost_report
+)
+from .cost_export_views import (
+    export_weekly_cost_pdf,
+    export_weekly_cost_excel,
+    api_dashboard_budget_summary
+)
 
 urlpatterns = [
     # ==============================================
@@ -103,6 +112,17 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     # Cost tracking API endpoints
     path('api/projects/<int:project_id>/cost-summary/', api_project_cost_summary, name='api_project_cost_summary'),
     path('api/projects/<int:project_id>/add-expense/', api_add_quick_expense, name='api_add_quick_expense'),
+
+    # Weekly Cost Report API endpoints
+    path('api/projects/<int:project_id>/weekly-cost-reports/', api_weekly_cost_reports, name='api_weekly_cost_reports'),
+    path('api/projects/<int:project_id>/weekly-cost-reports/create/', api_create_weekly_cost_report, name='api_create_weekly_cost_report'),
+
+    # Export endpoints for weekly cost reports
+    path('projects/<int:project_id>/reports/weekly-cost/export/pdf/', export_weekly_cost_pdf, name='export_weekly_cost_pdf'),
+    path('projects/<int:project_id>/reports/weekly-cost/export/excel/', export_weekly_cost_excel, name='export_weekly_cost_excel'),
+
+    # Dashboard budget summary API
+    path('api/dashboard/projects-budget-summary/', api_dashboard_budget_summary, name='api_dashboard_budget_summary'),
 
     # ==============================================
     # DRAFT PROJECTS
