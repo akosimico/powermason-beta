@@ -344,7 +344,7 @@
             </a>
 
             <!-- Cost Tracking -->
-            {% if project.approved_budget %}
+            
             <a href="{% url 'project_detail_cost_dashboard' project.id %}"
                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition">
                 <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,7 +353,7 @@
                 </svg>
                 Cost Tracking
             </a>
-            {% endif %}
+           
         </div>
     </div>
 </div>
