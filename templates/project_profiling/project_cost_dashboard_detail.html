@@ -189,14 +189,31 @@
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Weekly Cost Reports</h2>
             <div class="flex gap-3">
-                <button onclick="openWeeklyReportModal()"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    <i class="fas fa-plus mr-2"></i>Add Weekly Report
-                </button>
+                <div class="relative">
+                    <button id="addReportBtn" onclick="openWeeklyReportModal()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <i class="fas fa-plus mr-2"></i>Add Weekly Report
+                    </button>
+                    <div id="budgetWarningBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                        !
+                    </div>
+                </div>
                 <button onclick="openExportModal()"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                     <i class="fas fa-file-export mr-2"></i>Generate Report
                 </button>
+            </div>
+        </div>
+
+        <!-- Budget/Status Warning -->
+        <div id="submitWarningMessage" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700" id="submitWarningText"></p>
+                </div>
             </div>
         </div>
 
@@ -542,11 +559,11 @@
                         <i class="fas fa-file-excel text-green-500 mr-2"></i>
                         <span>Excel</span>
                     </label>
-                    <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
+                    <!-- <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
                         <input type="radio" name="format" value="print" class="mr-2">
                         <i class="fas fa-print text-blue-500 mr-2"></i>
                         <span>Print Preview</span>
-                    </label>
+                    </label> -->
                 </div>
             </div>
 
@@ -959,6 +976,58 @@ function updateBudgetStatus(totalDisbursed, approvedBudget) {
         statusText.className = 'text-sm font-semibold text-green-600';
         statusBar.className = 'h-full rounded-full transition-all duration-500 bg-green-500';
         statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+    }
+}
+
+// Check budget and project status to disable submit button if needed
+function checkBudgetAndStatusRestrictions() {
+    const addReportBtn = document.getElementById('addReportBtn');
+    const budgetWarningBadge = document.getElementById('budgetWarningBadge');
+    const submitWarningMessage = document.getElementById('submitWarningMessage');
+    const submitWarningText = document.getElementById('submitWarningText');
+
+    if (!addReportBtn) return;
+
+    const projectStatus = '{{ project.status }}';
+    const approvedBudget = parseFloat('{{ project.approved_budget|default:"0" }}');
+
+    // Get current total disbursed from the DOM
+    const totalDisbursedEl = document.getElementById('totalDisbursedAmount');
+    if (!totalDisbursedEl) return;
+
+    const totalDisbursedText = totalDisbursedEl.textContent.replace('₱', '').replace(/,/g, '').trim();
+    const totalDisbursed = parseFloat(totalDisbursedText) || 0;
+
+    const budgetPercentage = approvedBudget > 0 ? (totalDisbursed / approvedBudget) * 100 : 0;
+
+    let shouldDisable = false;
+    let warningMessage = '';
+
+    console.log('Budget Control Check:', { projectStatus, budgetPercentage, totalDisbursed, approvedBudget });
+
+    // Check if project is completed
+    if (projectStatus === 'CP') {
+        shouldDisable = true;
+        warningMessage = 'Cannot submit new cost reports - Project has been marked as Completed.';
+    }
+    // Check if budget is at or over 100%
+    else if (budgetPercentage >= 100) {
+        shouldDisable = true;
+        warningMessage = `Cannot submit new cost reports - Budget limit reached (${budgetPercentage.toFixed(1)}% utilized).`;
+    }
+
+    // Apply or remove restrictions
+    if (shouldDisable) {
+        addReportBtn.disabled = true;
+        if (budgetWarningBadge) budgetWarningBadge.classList.remove('hidden');
+        if (submitWarningMessage) submitWarningMessage.classList.remove('hidden');
+        if (submitWarningText) submitWarningText.textContent = warningMessage;
+        console.log('Submit button DISABLED:', warningMessage);
+    } else {
+        addReportBtn.disabled = false;
+        if (budgetWarningBadge) budgetWarningBadge.classList.add('hidden');
+        if (submitWarningMessage) submitWarningMessage.classList.add('hidden');
+        console.log('Submit button ENABLED');
     }
 }
 
@@ -1746,6 +1815,9 @@ function renderWeekToWeekTable(reports, totals) {
     const approvedBudget = parseFloat('{{ project.approved_budget|default:"0" }}');
     updateBudgetStatus(totals.total, approvedBudget);
     updateCategoryBreakdown(totals);
+
+    // Check budget/status restrictions after updating budget status
+    checkBudgetAndStatusRestrictions();
 }
 
 function renderWeeklyPagination(totalPages) {
@@ -2273,6 +2345,9 @@ window.addEventListener('beforeunload', () => {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Page loaded, fetching initial data...');
     fetchWeeklyCostData();
+
+    // Initial check for budget/status restrictions
+    checkBudgetAndStatusRestrictions();
 });
 </script>
 {% endblock %}

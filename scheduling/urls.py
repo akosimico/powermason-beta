@@ -13,6 +13,7 @@ from .weekly_progress_views import (
     submit_weekly_progress, enter_boq_progress, view_weekly_report,
     list_weekly_reports, review_weekly_reports, approve_weekly_report,
     reject_weekly_report, export_report_excel, export_project_reports_excel,
+    export_project_reports_pdf, print_project_reports,
     download_progress_template, upload_progress_excel
 )
 
@@ -106,9 +107,11 @@ urlpatterns = [
     path('progress/weekly/<int:report_id>/approve/', approve_weekly_report, name='approve_weekly_report'),
     path('progress/weekly/<int:report_id>/reject/', reject_weekly_report, name='reject_weekly_report'),
 
-    # Excel Export
+    # Export Options (Excel, PDF, Print)
     path('progress/weekly/<int:report_id>/export/', export_report_excel, name='export_report_excel'),
     path('<int:project_id>/progress/weekly/export-all/', export_project_reports_excel, name='export_project_reports_excel'),
+    path('<int:project_id>/progress/weekly/export-pdf/', export_project_reports_pdf, name='export_project_reports_pdf'),
+    path('<int:project_id>/progress/weekly/print/', print_project_reports, name='print_project_reports'),
 
     # Excel Template Download & Upload
     path('<int:project_id>/progress/weekly/download-template/', download_progress_template, name='download_progress_template'),

@@ -9,9 +9,16 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from datetime import datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
+import json
+import os
+import pytz
 
 from authentication.utils.decorators import role_required
 from authentication.utils.toast_helpers import set_toast_message
@@ -29,6 +36,12 @@ from .forms import WeeklyProgressReportForm, ProgressReportRejectionForm
 
 import logging
 
+try:
+    from weasyprint import HTML
+    WEASY_PRINT_AVAILABLE = True
+except ImportError:
+    WEASY_PRINT_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +58,11 @@ def submit_weekly_progress(request, project_id):
     if not project.tasks.exists():
         messages.error(request, "This project doesn't have an approved schedule yet. Please upload and get schedule approved first.")
         return redirect('project_detail', project_id=project.id)
+
+    # Check if project is completed
+    if project.status == 'CP':
+        messages.error(request, "Cannot submit new progress reports - Project has been marked as Completed.")
+        return redirect('list_weekly_reports', project_id=project.id)
 
     # Handle form submission
     if request.method == 'POST':
@@ -488,18 +506,41 @@ def export_project_reports_excel(request, project_id):
     """Export all progress reports for a project to Excel (multiple sheets)"""
     project = get_object_or_404(ProjectProfile, id=project_id)
 
-    # Get filter parameters
-    status_filter = request.GET.get('status', 'A')  # Default: approved only
+    # Get filter parameters - support both GET and POST
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            status_filter = data.get('status', 'A')
+        except:
+            start_date = None
+            end_date = None
+            status_filter = 'A'
+    else:
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        status_filter = request.GET.get('status', 'A')  # Default: approved only
 
     # Get reports
     reports = WeeklyProgressReport.objects.filter(project=project)
 
+    # Apply date filter
+    if start_date and end_date:
+        reports = reports.filter(
+            week_start_date__gte=start_date,
+            week_end_date__lte=end_date
+        )
+
+    # Apply status filter
     if status_filter != 'all':
         reports = reports.filter(status=status_filter)
 
     reports = reports.order_by('week_start_date')
 
     if not reports.exists():
+        if request.method == 'POST':
+            return HttpResponse("No reports found to export.", status=400)
         messages.warning(request, "No reports found to export.")
         return redirect('list_weekly_reports', project_id=project.id)
 
@@ -513,18 +554,238 @@ def export_project_reports_excel(request, project_id):
         )
 
         # Set filename
-        filename = f"{project.project_code}_Progress_Reports_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        filename = f"{project.project_id}_Progress_Reports_{datetime.now().strftime('%Y%m%d')}.xlsx"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         # Save workbook to response
         wb.save(response)
 
-        logger.info(f"Excel export successful for project {project.project_code} - {reports.count()} reports")
+        logger.info(f"Excel export successful for project {project.project_id} - {reports.count()} reports")
         return response
 
     except Exception as e:
         logger.error(f"Error exporting project reports to Excel: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        if request.method == 'POST':
+            return HttpResponse(f"Error exporting to Excel: {str(e)}", status=500)
         messages.error(request, f"Error exporting to Excel: {str(e)}")
+        return redirect('list_weekly_reports', project_id=project.id)
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def export_project_reports_pdf(request, project_id):
+    """Export progress reports to PDF"""
+    try:
+        if not WEASY_PRINT_AVAILABLE:
+            error_msg = 'PDF export not available - WeasyPrint library not installed'
+            if request.method == 'POST':
+                return JsonResponse({'error': error_msg}, status=500)
+            messages.error(request, error_msg)
+            return redirect('list_weekly_reports', project_id=project.id)
+
+        project = get_object_or_404(ProjectProfile, id=project_id)
+
+        # Get POST data
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+                start_date = data.get('start_date')
+                end_date = data.get('end_date')
+                status_filter = data.get('status', 'A')
+                include_options = data.get('includeOptions', {})
+                logger.info(f"PDF Export - Received data: {data}")
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode error: {str(e)}")
+                return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        else:
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            status_filter = request.GET.get('status', 'A')
+            include_options = {
+                'summary_table': True,
+                'project_header': True,
+                'status_summary': True,
+                'totals': True
+            }
+
+        # Get reports
+        reports = WeeklyProgressReport.objects.filter(project=project)
+        logger.info(f"PDF Export - Total reports for project: {reports.count()}")
+
+        # Apply date filter
+        if start_date and end_date:
+            reports = reports.filter(
+                week_start_date__gte=start_date,
+                week_end_date__lte=end_date
+            )
+            logger.info(f"PDF Export - After date filter: {reports.count()}")
+
+        # Apply status filter
+        if status_filter != 'all':
+            reports = reports.filter(status=status_filter)
+            logger.info(f"PDF Export - After status filter ({status_filter}): {reports.count()}")
+
+        reports = reports.order_by('week_start_date')
+
+        if not reports.exists():
+            error_msg = f"No reports found for the selected period (status={status_filter})"
+            logger.warning(error_msg)
+            if request.method == 'POST':
+                return JsonResponse({'error': error_msg}, status=400)
+            messages.warning(request, error_msg)
+            return redirect('list_weekly_reports', project_id=project.id)
+
+        # Calculate statistics
+        approved_count = reports.filter(status='A').count()
+        pending_count = reports.filter(status='P').count()
+        rejected_count = reports.filter(status='R').count()
+
+        # Calculate totals
+        total_period_amount = sum(r.total_period_amount for r in reports)
+        total_cumulative_amount = reports.last().cumulative_project_amount if reports.exists() else 0
+        latest_period_percent = reports.last().total_period_percent if reports.exists() else 0
+        latest_cumulative_percent = reports.last().cumulative_project_percent if reports.exists() else 0
+
+        # Get logo path
+        logo_path = os.path.join(settings.STATIC_ROOT or settings.BASE_DIR, 'powermason_capstone', 'static', 'img', 'powermason_logo.png')
+        if not os.path.exists(logo_path):
+            logo_path = os.path.join(settings.BASE_DIR, 'powermason_capstone', 'static', 'img', 'powermason_logo.png')
+        logo_url = f'file:///{logo_path.replace(os.sep, "/")}' if os.path.exists(logo_path) else None
+
+        # Get Philippines time
+        ph_tz = pytz.timezone('Asia/Manila')
+        ph_time = timezone.now().astimezone(ph_tz)
+
+        # Prepare context
+        context = {
+            'project': project,
+            'reports': reports,
+            'approved_count': approved_count,
+            'pending_count': pending_count,
+            'rejected_count': rejected_count,
+            'total_period_amount': total_period_amount,
+            'total_cumulative_amount': total_cumulative_amount,
+            'latest_period_percent': latest_period_percent,
+            'latest_cumulative_percent': latest_cumulative_percent,
+            'generated_date': ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)',
+            'logo_path': logo_url,
+            'include_summary_table': include_options.get('summary_table', True),
+            'include_project_header': include_options.get('project_header', True),
+            'include_status_summary': include_options.get('status_summary', True),
+            'include_totals': include_options.get('totals', True),
+        }
+
+        if start_date and end_date:
+            context['date_range'] = {
+                'start': datetime.strptime(start_date, '%Y-%m-%d').date(),
+                'end': datetime.strptime(end_date, '%Y-%m-%d').date()
+            }
+
+        # Render template
+        html_string = render_to_string('scheduling/weekly_progress/reports_pdf.html', context)
+
+        # Generate PDF
+        pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+
+        # Create response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"{project.project_id}_Progress_Report_{start_date or 'All'}_to_{end_date or 'All'}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating PDF: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        if request.method == 'POST':
+            return JsonResponse({'error': str(e)}, status=500)
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect('list_weekly_reports', project_id=project.id)
+
+
+@login_required
+def print_project_reports(request, project_id):
+    """Generate print preview for progress reports"""
+    try:
+        project = get_object_or_404(ProjectProfile, id=project_id)
+
+        # Get GET parameters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        status_filter = request.GET.get('status', 'A')
+        include_summary = request.GET.get('include_summary', 'true') == 'true'
+        include_header = request.GET.get('include_header', 'true') == 'true'
+        include_status = request.GET.get('include_status', 'true') == 'true'
+        include_totals = request.GET.get('include_totals', 'true') == 'true'
+
+        # Get reports
+        reports = WeeklyProgressReport.objects.filter(project=project)
+
+        # Apply date filter
+        if start_date and end_date:
+            reports = reports.filter(
+                week_start_date__gte=start_date,
+                week_end_date__lte=end_date
+            )
+
+        # Apply status filter
+        if status_filter != 'all':
+            reports = reports.filter(status=status_filter)
+
+        reports = reports.order_by('week_start_date')
+
+        # Calculate statistics
+        approved_count = reports.filter(status='A').count()
+        pending_count = reports.filter(status='P').count()
+        rejected_count = reports.filter(status='R').count()
+
+        # Calculate totals
+        total_period_amount = sum(r.total_period_amount for r in reports)
+        total_cumulative_amount = reports.last().cumulative_project_amount if reports.exists() else 0
+        latest_period_percent = reports.last().total_period_percent if reports.exists() else 0
+        latest_cumulative_percent = reports.last().cumulative_project_percent if reports.exists() else 0
+
+        # Get Philippines time
+        ph_tz = pytz.timezone('Asia/Manila')
+        ph_time = timezone.now().astimezone(ph_tz)
+
+        # Get logo path
+        logo_path = os.path.join(settings.BASE_DIR, 'powermason_capstone', 'static', 'img', 'powermason_logo.png')
+        logo_url = request.build_absolute_uri(settings.STATIC_URL + 'img/powermason_logo.png') if os.path.exists(logo_path) else None
+
+        # Prepare context
+        context = {
+            'project': project,
+            'reports': reports,
+            'approved_count': approved_count,
+            'pending_count': pending_count,
+            'rejected_count': rejected_count,
+            'total_period_amount': total_period_amount,
+            'total_cumulative_amount': total_cumulative_amount,
+            'latest_period_percent': latest_period_percent,
+            'latest_cumulative_percent': latest_cumulative_percent,
+            'generated_date': ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)',
+            'logo_url': logo_url,
+            'include_summary': include_summary,
+            'include_header': include_header,
+            'include_status': include_status,
+            'include_totals': include_totals,
+        }
+
+        if start_date and end_date:
+            context['date_range'] = {
+                'start': datetime.strptime(start_date, '%Y-%m-%d').date(),
+                'end': datetime.strptime(end_date, '%Y-%m-%d').date()
+            }
+
+        return render(request, 'scheduling/weekly_progress/reports_print.html', context)
+
+    except Exception as e:
+        logger.error(f"Error generating print preview: {str(e)}")
+        messages.error(request, f"Error generating print preview: {str(e)}")
         return redirect('list_weekly_reports', project_id=project.id)
 
 

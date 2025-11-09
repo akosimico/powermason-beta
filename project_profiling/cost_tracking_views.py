@@ -452,6 +452,26 @@ def api_create_weekly_cost_report(request, project_id):
         if user_profile.role == 'PM' and project.project_manager != user_profile:
             return JsonResponse({'error': 'Unauthorized'}, status=403)
 
+        # Check if project is completed
+        if project.status == 'CP':
+            return JsonResponse({
+                'error': 'Cannot submit new cost reports - Project has been marked as Completed.'
+            }, status=403)
+
+        # Check if budget is at or over 100%
+        total_disbursed = WeeklyCostReport.objects.filter(
+            project=project
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+        approved_budget = project.approved_budget or Decimal('0')
+
+        if approved_budget > 0:
+            budget_percentage = (total_disbursed / approved_budget) * 100
+            if budget_percentage >= 100:
+                return JsonResponse({
+                    'error': f'Cannot submit new cost reports - Budget limit reached ({budget_percentage:.1f}% utilized).'
+                }, status=403)
+
         # Parse request data
         data = json.loads(request.body)
 

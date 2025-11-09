@@ -47,23 +47,42 @@
                 </div>
                 <div class="flex gap-3">
                     {% if reports %}
-                        <a href="{% url 'export_project_reports_excel' project.id %}?status={{ status_filter }}"
-                           class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md">
+                        <button onclick="openExportModal()"
+                                class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm hover:shadow-md">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
-                            Export All
-                        </a>
+                            Generate Report
+                        </button>
                     {% endif %}
                     {% if user|has_role:"PM" %}
-                        <a href="{% url 'submit_weekly_progress' project.id %}"
-                           class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm hover:shadow-md">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            Submit New Report
-                        </a>
+                        <div class="relative">
+                            <a id="submitProgressReportBtn" href="{% url 'submit_weekly_progress' project.id %}"
+                               class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Submit New Report
+                            </a>
+                            <div id="progressWarningBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                !
+                            </div>
+                        </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Status Warning -->
+        <div id="progressSubmitWarningMessage" class="hidden bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-red-800" id="progressSubmitWarningText"></p>
                 </div>
             </div>
         </div>
@@ -208,4 +227,468 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Export Options Modal -->
+<div id="exportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Generate Progress Report</h3>
+            <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="exportForm" onsubmit="generateProgressReport(event)" class="space-y-6">
+            <!-- Date Range Selection -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Select Report Period: <span class="text-red-500">*</span></label>
+                <select id="periodSelect" name="period" onchange="toggleCustomDateRange()" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Period --</option>
+                    <option value="this_week">This Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="this_quarter">This Quarter</option>
+                    <option value="this_year">This Year</option>
+                    <option value="last_30_days">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+
+                <!-- Custom Date Range (Initially Hidden) -->
+                <div id="customDateRange" class="mt-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom Date Range:</label>
+                    <div class="flex gap-2 items-center">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-600 mb-1">Start Date *</label>
+                            <input type="date" id="custom_start" name="custom_start"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <span class="text-gray-500 mt-5">to</span>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-600 mb-1">End Date *</label>
+                            <input type="date" id="custom_end" name="custom_end"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Filter by Status:</label>
+                <select id="statusFilter" name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">All Reports</option>
+                    <option value="P">Pending Only</option>
+                    <option value="A" selected>Approved Only</option>
+                    <option value="R">Rejected Only</option>
+                </select>
+            </div>
+
+            <!-- Include Options -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Include in Report:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_summary_table" checked class="mr-2">
+                        <span>Week-to-Week Summary Table</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_project_header" checked class="mr-2">
+                        <span>Project Details Header</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_status_summary" checked class="mr-2">
+                        <span>Status Summary</span>
+                    </label>
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded">
+                        <input type="checkbox" name="include_totals" checked class="mr-2">
+                        <span>Totals & Calculations</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Export Format -->
+            <div>
+                <label class="block text-sm font-bold mb-3">Export Format: <span class="text-red-500">*</span></label>
+                <div class="flex gap-4">
+                    <label class="flex items-center hover:bg-gray-50 p-2 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200">
+                        <input type="radio" name="format" value="pdf" class="mr-2" required checked>
+                        <i class="fas fa-file-pdf text-red-500 mr-2"></i>
+                        <span>PDF</span>
+                    </label>
+                    <!-- <label class="flex items-center hover:bg-gray-50 p-3 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200 hover:border-green-300 transition">
+                        <input type="radio" name="format" value="excel" class="mr-2" required>
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z"/>
+                        </svg>
+                        <span>Excel</span>
+                    </label> -->
+                    <!-- <label class="flex items-center hover:bg-gray-50 p-3 rounded flex-1 justify-center cursor-pointer border-2 border-gray-200 hover:border-blue-300 transition">
+                        <input type="radio" name="format" value="print" class="mr-2" required>
+                        <svg class="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Print Preview</span>
+                    </label> -->
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onclick="closeExportModal()"
+                        class="px-6 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium">
+                    Cancel
+                </button>
+                <button type="submit" id="generateBtn"
+                        class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Modal Functions
+function openExportModal() {
+    document.getElementById('exportModal').classList.remove('hidden');
+    loadExportPreferences();
+}
+
+function closeExportModal() {
+    document.getElementById('exportModal').classList.add('hidden');
+}
+
+// Toggle custom date range visibility
+function toggleCustomDateRange() {
+    const periodSelect = document.getElementById('periodSelect');
+    const customDateRange = document.getElementById('customDateRange');
+    const customStart = document.getElementById('custom_start');
+    const customEnd = document.getElementById('custom_end');
+
+    if (periodSelect.value === 'custom') {
+        customDateRange.classList.remove('hidden');
+        customStart.required = true;
+        customEnd.required = true;
+    } else {
+        customDateRange.classList.add('hidden');
+        customStart.required = false;
+        customEnd.required = false;
+    }
+}
+
+// Save and load preferences
+function saveExportPreferences(period, status, format, includes) {
+    localStorage.setItem('progressExportPrefs', JSON.stringify({
+        period,
+        status,
+        format,
+        includes
+    }));
+}
+
+function loadExportPreferences() {
+    const prefs = JSON.parse(localStorage.getItem('progressExportPrefs') || '{}');
+
+    if (prefs.period) document.getElementById('periodSelect').value = prefs.period;
+    if (prefs.status) document.getElementById('statusFilter').value = prefs.status;
+    if (prefs.format) {
+        const formatRadio = document.querySelector(`input[name="format"][value="${prefs.format}"]`);
+        if (formatRadio) formatRadio.checked = true;
+    }
+}
+
+// Calculate date range based on period selection
+function calculateDateRange(period, customStart, customEnd) {
+    const today = new Date();
+    let startDate, endDate;
+
+    switch(period) {
+        case 'this_week':
+            const dayOfWeek = today.getDay();
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - dayOfWeek);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            break;
+
+        case 'this_month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+
+        case 'this_quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            startDate = new Date(today.getFullYear(), quarter * 3, 1);
+            endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+            break;
+
+        case 'this_year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            endDate = new Date(today.getFullYear(), 11, 31);
+            break;
+
+        case 'last_30_days':
+            endDate = new Date(today);
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
+            break;
+
+        case 'custom':
+            if (!customStart || !customEnd) {
+                throw new Error('Please select both start and end dates for custom range');
+            }
+            return {
+                start: customStart,
+                end: customEnd
+            };
+
+        default:
+            throw new Error('Please select a report period');
+    }
+
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    return {
+        start: formatDate(startDate),
+        end: formatDate(endDate)
+    };
+}
+
+// Main generate report function
+async function generateProgressReport(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const generateBtn = document.getElementById('generateBtn');
+    const originalBtnText = generateBtn.innerHTML;
+
+    try {
+        // Get form values
+        const period = form.period.value;
+        const status = form.status.value;
+        const format = form.format.value;
+        const customStart = form.custom_start.value;
+        const customEnd = form.custom_end.value;
+
+        // Validate
+        if (!period) {
+            alert('Please select a report period');
+            return;
+        }
+
+        if (!format) {
+            alert('Please select an export format');
+            return;
+        }
+
+        // Calculate date range
+        const dateRange = calculateDateRange(period, customStart, customEnd);
+
+        // Get include options
+        const includeOptions = {
+            summary_table: form.include_summary_table.checked,
+            project_header: form.include_project_header.checked,
+            status_summary: form.include_status_summary.checked,
+            totals: form.include_totals.checked
+        };
+
+        // Save preferences
+        saveExportPreferences(period, status, format, includeOptions);
+
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+
+        // Call appropriate export function
+        if (format === 'pdf') {
+            await exportProgressToPDF(dateRange, status, includeOptions);
+        } else if (format === 'excel') {
+            await exportProgressToExcel(dateRange, status, includeOptions);
+        } else if (format === 'print') {
+            await exportProgressToPrint(dateRange, status, includeOptions);
+        }
+
+        // Close modal
+        closeExportModal();
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert(error.message || 'Failed to generate report. Please try again.');
+    } finally {
+        // Reset button
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = originalBtnText;
+    }
+}
+
+// Export to PDF
+async function exportProgressToPDF(dateRange, status, includeOptions) {
+    const url = '{% url "export_project_reports_pdf" project.id %}';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                start_date: dateRange.start,
+                end_date: dateRange.end,
+                status: status,
+                includeOptions: includeOptions
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
+            throw new Error(errorData.error || 'Failed to generate PDF');
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `Progress_Report_${dateRange.start}_to_${dateRange.end}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        // Show success toast
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('PDF report generated successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('PDF Export Error:', error);
+        if (typeof showProjectToast === 'function') {
+            showProjectToast(error.message || 'Failed to generate PDF report', 'error');
+        }
+        throw error;
+    }
+}
+
+// Export to Excel
+async function exportProgressToExcel(dateRange, status, includeOptions) {
+    const url = '{% url "export_project_reports_excel" project.id %}';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                start_date: dateRange.start,
+                end_date: dateRange.end,
+                status: status,
+                includeOptions: includeOptions
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to generate Excel file');
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `Progress_Report_${dateRange.start}_to_${dateRange.end}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        // Show success toast
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Excel report generated successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Excel Export Error:', error);
+        if (typeof showProjectToast === 'function') {
+            showProjectToast(error.message || 'Failed to generate Excel report', 'error');
+        }
+        throw error;
+    }
+}
+
+// Export to Print Preview
+async function exportProgressToPrint(dateRange, status, includeOptions) {
+    const url = '{% url "print_project_reports" project.id %}';
+
+    const params = new URLSearchParams({
+        start_date: dateRange.start,
+        end_date: dateRange.end,
+        status: status,
+        include_summary: includeOptions.summary_table,
+        include_header: includeOptions.project_header,
+        include_status: includeOptions.status_summary,
+        include_totals: includeOptions.totals
+    });
+
+    window.open(`${url}?${params.toString()}`, '_blank');
+}
+
+// Check if project is completed and disable submit button if needed
+function checkProgressSubmitRestrictions() {
+    const submitBtn = document.getElementById('submitProgressReportBtn');
+    const warningBadge = document.getElementById('progressWarningBadge');
+    const warningMessage = document.getElementById('progressSubmitWarningMessage');
+    const warningText = document.getElementById('progressSubmitWarningText');
+
+    if (!submitBtn) return; // User is not PM, no submit button
+
+    const projectStatus = '{{ project.status }}';
+
+    console.log('Progress Submit Check:', { projectStatus });
+
+    // Check if project is completed
+    if (projectStatus === 'CP') {
+        // Disable the link by making it non-clickable and styling it as disabled
+        submitBtn.onclick = function(e) {
+            e.preventDefault();
+            return false;
+        };
+        submitBtn.style.pointerEvents = 'none';
+        submitBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+        submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+
+        if (warningBadge) warningBadge.classList.remove('hidden');
+        if (warningMessage) warningMessage.classList.remove('hidden');
+        if (warningText) warningText.textContent = 'Cannot submit new progress reports - Project has been marked as Completed.';
+
+        console.log('Submit button DISABLED - Project is completed');
+    } else {
+        // Enable the button (default state)
+        submitBtn.style.pointerEvents = 'auto';
+        submitBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+
+        if (warningBadge) warningBadge.classList.add('hidden');
+        if (warningMessage) warningMessage.classList.add('hidden');
+
+        console.log('Submit button ENABLED');
+    }
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkProgressSubmitRestrictions();
+});
+</script>
+
 {% endblock %}
