@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -103,10 +104,13 @@
         }
 
         .chart-container img {
-            max-width: 100%;
+            width: 100%;
+            max-width: 700px;
             height: auto;
             border: 1px solid #e5e7eb;
             border-radius: 4px;
+            display: block;
+            margin: 0 auto;
         }
 
         .chart-title {
@@ -182,7 +186,10 @@
 <body>
     {% if include_project_header %}
     <div class="header">
-        <h1>Budget Monitoring Report</h1>
+        {% if logo_path %}
+        <img src="{{ logo_path }}" alt="Powermason Logo" style="max-width: 150px; height: auto; margin-bottom: 10px;">
+        {% endif %}
+        <h2 style="margin: 5px 0; color: #000000;">Budget Monitoring Report</h2>
         <p class="project-name">{{ project.project_name }}</p>
         <p><strong>Project Code:</strong> {{ project.project_id }}</p>
         <p><strong>Report Period:</strong> {{ start_date }} to {{ end_date }}</p>
@@ -195,23 +202,23 @@
         <h3>Total Disbursement Summary</h3>
         <div class="category-row">
             <span>GENREQ:</span>
-            <span>₱{{ totals.genreq|floatformat:2 }}</span>
+            <span>₱{{ totals.genreq|floatformat:2|intcomma }}</span>
         </div>
         <div class="category-row">
             <span>MATERIALS:</span>
-            <span>₱{{ totals.materials|floatformat:2 }}</span>
+            <span>₱{{ totals.materials|floatformat:2|intcomma }}</span>
         </div>
         <div class="category-row">
             <span>LABOR:</span>
-            <span>₱{{ totals.labor|floatformat:2 }}</span>
+            <span>₱{{ totals.labor|floatformat:2|intcomma }}</span>
         </div>
         <div class="category-row">
             <span>EQUIPMENT:</span>
-            <span>₱{{ totals.equipment|floatformat:2 }}</span>
+            <span>₱{{ totals.equipment|floatformat:2|intcomma }}</span>
         </div>
         <div class="category-row">
             <span>TOTAL:</span>
-            <span>₱{{ totals.total|floatformat:2 }}</span>
+            <span>₱{{ totals.total|floatformat:2|intcomma }}</span>
         </div>
     </div>
     {% endif %}
@@ -235,11 +242,11 @@
             <tr>
                 <td>{{ report.report_date|date:"Y-m-d" }}</td>
                 <td style="font-size: 8pt;">{{ report.period_start|date:"M d" }} - {{ report.period_end|date:"M d, Y" }}</td>
-                <td class="number">{{ report.genreq_amount|floatformat:2 }}</td>
-                <td class="number">{{ report.materials_amount|floatformat:2 }}</td>
-                <td class="number">{{ report.labor_amount|floatformat:2 }}</td>
-                <td class="number">{{ report.equipment_amount|floatformat:2 }}</td>
-                <td class="number">{{ report.total_amount|floatformat:2 }}</td>
+                <td class="number">{{ report.genreq_amount|floatformat:2|intcomma }}</td>
+                <td class="number">{{ report.materials_amount|floatformat:2|intcomma }}</td>
+                <td class="number">{{ report.labor_amount|floatformat:2|intcomma }}</td>
+                <td class="number">{{ report.equipment_amount|floatformat:2|intcomma }}</td>
+                <td class="number">{{ report.total_amount|floatformat:2|intcomma }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -247,11 +254,11 @@
         <tfoot>
             <tr>
                 <td colspan="2" style="text-align: center;">TOTAL DISBURSEMENT</td>
-                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
-                <td class="number">{{ totals.materials|floatformat:2 }}</td>
-                <td class="number">{{ totals.labor|floatformat:2 }}</td>
-                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
-                <td class="number">{{ totals.total|floatformat:2 }}</td>
+                <td class="number">{{ totals.genreq|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.materials|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.labor|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.equipment|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.total|floatformat:2|intcomma }}</td>
             </tr>
         </tfoot>
         {% endif %}
@@ -283,11 +290,11 @@
             {% for month in monthly_summary %}
             <tr>
                 <td>{{ month.month }}</td>
-                <td class="number">{{ month.genreq|floatformat:2 }}</td>
-                <td class="number">{{ month.materials|floatformat:2 }}</td>
-                <td class="number">{{ month.labor|floatformat:2 }}</td>
-                <td class="number">{{ month.equipment|floatformat:2 }}</td>
-                <td class="number">{{ month.total|floatformat:2 }}</td>
+                <td class="number">{{ month.genreq|floatformat:2|intcomma }}</td>
+                <td class="number">{{ month.materials|floatformat:2|intcomma }}</td>
+                <td class="number">{{ month.labor|floatformat:2|intcomma }}</td>
+                <td class="number">{{ month.equipment|floatformat:2|intcomma }}</td>
+                <td class="number">{{ month.total|floatformat:2|intcomma }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -295,11 +302,11 @@
         <tfoot>
             <tr>
                 <td style="text-align: center;">TOTAL DISBURSEMENT</td>
-                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
-                <td class="number">{{ totals.materials|floatformat:2 }}</td>
-                <td class="number">{{ totals.labor|floatformat:2 }}</td>
-                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
-                <td class="number">{{ totals.total|floatformat:2 }}</td>
+                <td class="number">{{ totals.genreq|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.materials|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.labor|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.equipment|floatformat:2|intcomma }}</td>
+                <td class="number">{{ totals.total|floatformat:2|intcomma }}</td>
             </tr>
         </tfoot>
         {% endif %}
@@ -327,22 +334,22 @@
         <tbody>
             <tr>
                 <td>GENREQ</td>
-                <td class="number">{{ totals.genreq|floatformat:2 }}</td>
+                <td class="number">{{ totals.genreq|floatformat:2|intcomma }}</td>
                 <td class="number">{% widthratio totals.genreq totals.total 100 %}%</td>
             </tr>
             <tr>
                 <td>MATERIALS</td>
-                <td class="number">{{ totals.materials|floatformat:2 }}</td>
+                <td class="number">{{ totals.materials|floatformat:2|intcomma }}</td>
                 <td class="number">{% widthratio totals.materials totals.total 100 %}%</td>
             </tr>
             <tr>
                 <td>LABOR</td>
-                <td class="number">{{ totals.labor|floatformat:2 }}</td>
+                <td class="number">{{ totals.labor|floatformat:2|intcomma }}</td>
                 <td class="number">{% widthratio totals.labor totals.total 100 %}%</td>
             </tr>
             <tr>
                 <td>EQUIPMENT</td>
-                <td class="number">{{ totals.equipment|floatformat:2 }}</td>
+                <td class="number">{{ totals.equipment|floatformat:2|intcomma }}</td>
                 <td class="number">{% widthratio totals.equipment totals.total 100 %}%</td>
             </tr>
         </tbody>

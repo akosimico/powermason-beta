@@ -9,10 +9,15 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum
 from django.utils.timezone import localtime
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
 from decimal import Decimal
 
 from authentication.utils.decorators import verified_email_required, role_required
 from authentication.utils.tokens import get_user_profile, verify_user_profile
+from authentication.models import UserProfile
+from notifications.utils import send_notification
 from .models import (
     ProjectProfile, SubcontractorExpense, SubcontractorPayment
 )
@@ -485,6 +490,9 @@ def api_create_weekly_cost_report(request, project_id):
             remarks=data.get('remarks', '')
         )
 
+        # Check for budget overrun and send notifications
+        check_and_notify_budget_overrun(project, report)
+
         return JsonResponse({
             'success': True,
             'message': 'Weekly cost report created successfully',
@@ -551,5 +559,294 @@ def calculate_totals(reports):
         totals['total'] += float(report.total_amount)
 
     return totals
+
+
+def check_and_notify_budget_overrun(project, new_report):
+    """
+    Check if the project budget has been overrun and notify OM/EG
+    """
+    try:
+        # Get total disbursed amount including the new report
+        total_disbursed = WeeklyCostReport.objects.filter(
+            project=project
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+        # Get approved budget
+        approved_budget = project.approved_budget or Decimal('0')
+
+        print(f"Budget check for project {project.project_id}: Total disbursed: {total_disbursed}, Approved: {approved_budget}")
+
+        # Check if budget is overrun (100% or more utilized)
+        if approved_budget > 0:
+            percentage_used = (total_disbursed / approved_budget) * 100
+            print(f"Budget utilization: {percentage_used:.1f}%")
+
+            # Send notification if budget is overrun (>= 100%)
+            if percentage_used >= 100:
+                excess_amount = total_disbursed - approved_budget
+
+                message = (
+                    f"⚠️ BUDGET OVERRUN ALERT: Project '{project.project_name}' (ID: {project.project_id}) "
+                    f"has exceeded its approved budget of ₱{approved_budget:,.2f}. "
+                    f"Total disbursed: ₱{total_disbursed:,.2f} "
+                    f"({percentage_used:.1f}% utilized). "
+                    f"Excess amount: ₱{excess_amount:,.2f}. "
+                    f"Latest report submitted by {new_report.submitted_by.full_name if new_report.submitted_by else 'Unknown'}."
+                )
+
+                link = f"/projects/costing/{project.id}/"
+
+                # Send in-app notification to OM and EG roles
+                send_notification(
+                    roles=['OM', 'EG'],
+                    message=message,
+                    link=link
+                )
+
+                # Send email notification to OM and EG users
+                send_budget_email_notification(
+                    project=project,
+                    notification_type='overrun',
+                    total_disbursed=total_disbursed,
+                    approved_budget=approved_budget,
+                    percentage_used=percentage_used,
+                    excess_or_remaining=excess_amount,
+                    submitted_by=new_report.submitted_by.full_name if new_report.submitted_by else 'Unknown',
+                    roles=['OM', 'EG']
+                )
+
+                print(f"Budget overrun notification and email sent for project {project.project_id}")
+
+            # Also send warning at 90% utilization
+            elif percentage_used >= 90 and percentage_used < 100:
+                remaining_budget = approved_budget - total_disbursed
+
+                message = (
+                    f"⚠️ BUDGET WARNING: Project '{project.project_name}' (ID: {project.project_id}) "
+                    f"has used {percentage_used:.1f}% of its approved budget. "
+                    f"Approved budget: ₱{approved_budget:,.2f}. "
+                    f"Total disbursed: ₱{total_disbursed:,.2f}. "
+                    f"Remaining: ₱{remaining_budget:,.2f}. "
+                    f"Latest report submitted by {new_report.submitted_by.full_name if new_report.submitted_by else 'Unknown'}."
+                )
+
+                link = f"/projects/costing/{project.id}/"
+
+                # Send in-app notification to OM and EG roles
+                send_notification(
+                    roles=['OM', 'EG'],
+                    message=message,
+                    link=link
+                )
+
+                # Send email notification to OM and EG users
+                send_budget_email_notification(
+                    project=project,
+                    notification_type='warning',
+                    total_disbursed=total_disbursed,
+                    approved_budget=approved_budget,
+                    percentage_used=percentage_used,
+                    excess_or_remaining=remaining_budget,
+                    submitted_by=new_report.submitted_by.full_name if new_report.submitted_by else 'Unknown',
+                    roles=['OM', 'EG']
+                )
+
+                print(f"Budget warning notification and email sent for project {project.project_id}")
+
+    except Exception as e:
+        # Log error but don't fail the report creation
+        print(f"Error sending budget notification: {str(e)}")
+
+
+def send_budget_email_notification(project, notification_type, total_disbursed, approved_budget,
+                                   percentage_used, excess_or_remaining, submitted_by, roles):
+    """
+    Send email notifications to users with specified roles about budget status
+    notification_type: 'warning' (90-99%) or 'overrun' (100%+)
+    """
+    try:
+        # Get all users with the specified roles
+        recipients = UserProfile.objects.filter(role__in=roles, user__email__isnull=False)
+
+        if not recipients.exists():
+            print(f"No users found with roles {roles} for email notification")
+            return
+
+        # Prepare email subject and content based on notification type
+        if notification_type == 'overrun':
+            subject = f"🚨 BUDGET OVERRUN ALERT - {project.project_name}"
+            alert_color = "#DC2626"  # Red
+            alert_title = "BUDGET OVERRUN ALERT"
+            alert_icon = "⚠️"
+            status_message = f"has exceeded its approved budget by ₱{excess_or_remaining:,.2f}"
+        else:  # warning
+            subject = f"⚠️ BUDGET WARNING - {project.project_name}"
+            alert_color = "#F59E0B"  # Orange
+            alert_title = "BUDGET WARNING"
+            alert_icon = "⚠️"
+            status_message = f"is approaching its budget limit with ₱{excess_or_remaining:,.2f} remaining"
+
+        # Get domain for link
+        domain = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+        dashboard_link = f"{domain}/projects/costing/{project.id}/"
+
+        # HTML email template
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 20px;">
+                <tr>
+                    <td align="center">
+                        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <!-- Header -->
+                            <tr>
+                                <td style="background-color: {alert_color}; padding: 30px 40px; text-align: center;">
+                                    <h1 style="margin: 0; color: #ffffff; font-size: 24px;">
+                                        {alert_icon} {alert_title}
+                                    </h1>
+                                </td>
+                            </tr>
+
+                            <!-- Content -->
+                            <tr>
+                                <td style="padding: 40px;">
+                                    <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">
+                                        Project: {project.project_name}
+                                    </h2>
+
+                                    <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.5;">
+                                        This project {status_message}.
+                                    </p>
+
+                                    <!-- Budget Details -->
+                                    <table width="100%" cellpadding="12" cellspacing="0" style="background-color: #f9fafb; border-radius: 6px; margin: 20px 0;">
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; border-bottom: 1px solid #e5e7eb;">
+                                                <strong>Project Code:</strong>
+                                            </td>
+                                            <td style="color: #1f2937; font-size: 14px; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                                                {project.project_id}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; border-bottom: 1px solid #e5e7eb;">
+                                                <strong>Approved Budget:</strong>
+                                            </td>
+                                            <td style="color: #1f2937; font-size: 14px; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                                                ₱{approved_budget:,.2f}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; border-bottom: 1px solid #e5e7eb;">
+                                                <strong>Total Disbursed:</strong>
+                                            </td>
+                                            <td style="color: #1f2937; font-size: 14px; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                                                ₱{total_disbursed:,.2f}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; border-bottom: 1px solid #e5e7eb;">
+                                                <strong>Budget Utilization:</strong>
+                                            </td>
+                                            <td style="color: {alert_color}; font-size: 16px; font-weight: bold; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                                                {percentage_used:.1f}%
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px;">
+                                                <strong>Latest Report By:</strong>
+                                            </td>
+                                            <td style="color: #1f2937; font-size: 14px; text-align: right;">
+                                                {submitted_by}
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- Action Button -->
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="{dashboard_link}" style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
+                                                    View Cost Dashboard
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                        Please review the project's cost dashboard and take appropriate action if necessary.
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f9fafb; padding: 20px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+                                    <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                                        This is an automated notification from PowerMason Cost Tracking System
+                                    </p>
+                                    <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 11px;">
+                                        © 2024 PowerMason. All rights reserved.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+
+        # Plain text version for email clients that don't support HTML
+        text_content = f"""
+{alert_title}
+
+Project: {project.project_name}
+Project Code: {project.project_id}
+
+This project {status_message}.
+
+Budget Details:
+- Approved Budget: ₱{approved_budget:,.2f}
+- Total Disbursed: ₱{total_disbursed:,.2f}
+- Budget Utilization: {percentage_used:.1f}%
+- Latest Report By: {submitted_by}
+
+View the cost dashboard: {dashboard_link}
+
+Please review the project's cost dashboard and take appropriate action if necessary.
+
+---
+This is an automated notification from PowerMason Cost Tracking System
+© 2024 PowerMason. All rights reserved.
+        """
+
+        # Send email to each recipient
+        recipient_emails = [user.user.email for user in recipients if user.user.email]
+
+        if recipient_emails:
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=recipient_emails,
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send(fail_silently=True)
+
+            print(f"Budget {notification_type} email sent to {len(recipient_emails)} recipients: {', '.join(recipient_emails)}")
+        else:
+            print(f"No valid email addresses found for roles {roles}")
+
+    except Exception as e:
+        print(f"Error sending budget email notification: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 

@@ -63,24 +63,28 @@
 
     <!-- Budget Status Summary -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="text-center">
                 <p class="text-sm text-gray-600 mb-1">Approved Budget</p>
-                <p class="text-2xl font-bold text-blue-600">₱<span id="approvedBudgetAmount">{{ project.approved_budget|floatformat:2|intcomma|default:"0.00" }}</span></p>
+                <p class="text-3xl font-bold text-blue-600">₱<span id="approvedBudgetAmount">{{ project.approved_budget|floatformat:2|intcomma|default:"0.00" }}</span></p>
             </div>
             <div class="text-center">
                 <p class="text-sm text-gray-600 mb-1">Total Disbursed</p>
-                <p class="text-2xl font-bold" id="totalDisbursedAmount">₱0.00</p>
+                <p class="text-3xl font-bold text-gray-900" id="totalDisbursedAmount">₱0.00</p>
             </div>
-            <div class="text-center">
-                <p class="text-sm text-gray-600 mb-1">Budget Status</p>
-                <p class="text-2xl font-bold" id="budgetStatusText">--</p>
-                <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div id="budgetStatusBar" class="h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                    <p class="text-xs text-gray-600 mt-1" id="budgetPercentageText">0% utilized</p>
+        </div>
+
+        <!-- Progress Bar with Status Indicator -->
+        <div class="mt-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <div id="budgetStatusIndicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <span id="budgetStatusText" class="text-sm font-semibold text-gray-600">--</span>
                 </div>
+                <span id="budgetPercentageText" class="text-sm font-semibold text-gray-600">0% utilized</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div id="budgetStatusBar" class="h-full rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
         </div>
     </div>
@@ -310,16 +314,16 @@
         <!-- Charts Row for Weekly Reports -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- Monthly Disbursement Chart -->
-            <div class="bg-white rounded-lg shadow p-6" style="background: #374151;">
-                <h3 class="text-lg font-bold mb-4 text-center text-white">Actual Disbursement<br><span class="text-sm font-normal">(Monthly)</span></h3>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold mb-4 text-center text-gray-800">Actual Disbursement<br><span class="text-sm font-normal">(Monthly)</span></h3>
                 <div style="height: 400px;">
                     <canvas id="monthlyDisbursementChart"></canvas>
                 </div>
             </div>
 
             <!-- Weekly Disbursement Chart -->
-            <div class="bg-white rounded-lg shadow p-6" style="background: #374151;">
-                <h3 class="text-lg font-bold mb-4 text-center text-white">Actual Disbursement<br><span class="text-sm font-normal">(Weekly)</span></h3>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold mb-4 text-center text-gray-800">Actual Disbursement<br><span class="text-sm font-normal">(Weekly)</span></h3>
                 <div style="height: 400px;">
                     <canvas id="weeklyDisbursementChart"></canvas>
                 </div>
@@ -912,43 +916,49 @@ function validateAmount(input) {
 
 // Update budget status display
 function updateBudgetStatus(totalDisbursed, approvedBudget) {
+    console.log('updateBudgetStatus called:', { totalDisbursed, approvedBudget });
+
     const statusText = document.getElementById('budgetStatusText');
     const statusBar = document.getElementById('budgetStatusBar');
+    const statusIndicator = document.getElementById('budgetStatusIndicator');
     const percentageText = document.getElementById('budgetPercentageText');
     const totalDisbursedDisplay = document.getElementById('totalDisbursedAmount');
 
-    if (!statusText || !statusBar || !percentageText || !totalDisbursedDisplay) return;
+    if (!statusText || !statusBar || !statusIndicator || !percentageText || !totalDisbursedDisplay) return;
 
     // Update total disbursed
     totalDisbursedDisplay.textContent = '₱' + formatCurrency(totalDisbursed);
 
     // Calculate percentage
     const percentage = approvedBudget > 0 ? (totalDisbursed / approvedBudget) * 100 : 0;
-    const remaining = approvedBudget - totalDisbursed;
 
     // Update percentage text
     percentageText.textContent = percentage.toFixed(1) + '% utilized';
 
-    // Update status bar
+    // Update status bar width
     statusBar.style.width = Math.min(percentage, 100) + '%';
 
-    // Determine status and color
+    // Determine status, color, and update all elements
     if (percentage >= 100) {
         statusText.textContent = 'BUDGET OVERRUN';
-        statusText.className = 'text-2xl font-bold text-red-600';
-        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-red-500';
+        statusText.className = 'text-sm font-semibold text-red-600';
+        statusBar.className = 'h-full rounded-full transition-all duration-500 bg-red-500';
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
     } else if (percentage >= 90) {
         statusText.textContent = 'CLOSE TO LIMIT';
-        statusText.className = 'text-2xl font-bold text-orange-500';
-        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-orange-500';
+        statusText.className = 'text-sm font-semibold text-orange-500';
+        statusBar.className = 'h-full rounded-full transition-all duration-500 bg-orange-500';
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-orange-500';
     } else if (percentage >= 75) {
         statusText.textContent = 'CAUTION';
-        statusText.className = 'text-2xl font-bold text-yellow-500';
-        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-yellow-500';
+        statusText.className = 'text-sm font-semibold text-yellow-500';
+        statusBar.className = 'h-full rounded-full transition-all duration-500 bg-yellow-500';
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-yellow-500';
     } else {
         statusText.textContent = 'GOOD';
-        statusText.className = 'text-2xl font-bold text-green-600';
-        statusBar.className = 'h-3 rounded-full transition-all duration-300 bg-green-500';
+        statusText.className = 'text-sm font-semibold text-green-600';
+        statusBar.className = 'h-full rounded-full transition-all duration-500 bg-green-500';
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
     }
 }
 
@@ -1355,11 +1365,22 @@ function calculateDateRange(period, customStart, customEnd) {
 async function exportToPDF(dateRange, includeOptions) {
     try {
         let chartData = {};
-        if (includeOptions.weekly_chart && weeklyDisbursementChart) {
-            chartData.weeklyChart = weeklyDisbursementChart.toBase64Image();
+
+        // Fetch filtered data for the export period
+        let exportUrl = '{% url "api_weekly_cost_reports" project.id %}';
+        if (dateRange.start && dateRange.end) {
+            exportUrl += `?start_date=${dateRange.start}&end_date=${dateRange.end}`;
         }
-        if (includeOptions.monthly_chart && monthlyDisbursementChart) {
-            chartData.monthlyChart = monthlyDisbursementChart.toBase64Image();
+
+        const dataResponse = await fetch(exportUrl);
+        const filteredData = await dataResponse.json();
+
+        // Generate charts with filtered data
+        if (includeOptions.weekly_chart && filteredData.weekly_reports) {
+            chartData.weeklyChart = await generateFilteredChartImage(filteredData.weekly_reports, 'weekly');
+        }
+        if (includeOptions.monthly_chart && filteredData.monthly_summary) {
+            chartData.monthlyChart = await generateFilteredChartImage(filteredData.monthly_summary, 'monthly');
         }
 
         const params = new URLSearchParams();
@@ -1400,11 +1421,22 @@ async function exportToPDF(dateRange, includeOptions) {
 async function exportToExcel(dateRange, includeOptions) {
     try {
         let chartData = {};
-        if (includeOptions.weekly_chart && weeklyDisbursementChart) {
-            chartData.weeklyChart = weeklyDisbursementChart.toBase64Image();
+
+        // Fetch filtered data for the export period
+        let exportUrl = '{% url "api_weekly_cost_reports" project.id %}';
+        if (dateRange.start && dateRange.end) {
+            exportUrl += `?start_date=${dateRange.start}&end_date=${dateRange.end}`;
         }
-        if (includeOptions.monthly_chart && monthlyDisbursementChart) {
-            chartData.monthlyChart = monthlyDisbursementChart.toBase64Image();
+
+        const dataResponse = await fetch(exportUrl);
+        const filteredData = await dataResponse.json();
+
+        // Generate charts with filtered data
+        if (includeOptions.weekly_chart && filteredData.weekly_reports) {
+            chartData.weeklyChart = await generateFilteredChartImage(filteredData.weekly_reports, 'weekly');
+        }
+        if (includeOptions.monthly_chart && filteredData.monthly_summary) {
+            chartData.monthlyChart = await generateFilteredChartImage(filteredData.monthly_summary, 'monthly');
         }
 
         const params = new URLSearchParams();
@@ -1442,27 +1474,189 @@ async function exportToExcel(dateRange, includeOptions) {
     }
 }
 
+// Helper function to generate filtered chart images for export
+async function generateFilteredChartImage(data, type) {
+    // Create a temporary off-screen canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 1400; // 2x resolution for quality
+    tempCanvas.height = 900;
+    const ctx = tempCanvas.getContext('2d');
+
+    let chartData, chartConfig;
+
+    if (type === 'weekly') {
+        chartData = prepareWeeklyChartData(data);
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    { label: 'GENREQ', data: chartData.genreq, backgroundColor: '#60A5FA', borderColor: '#60A5FA', borderWidth: 1 },
+                    { label: 'MATERIALS', data: chartData.materials, backgroundColor: '#FB923C', borderColor: '#FB923C', borderWidth: 1 },
+                    { label: 'LABOR', data: chartData.labor, backgroundColor: '#9CA3AF', borderColor: '#9CA3AF', borderWidth: 1 },
+                    { label: 'EQUIPMENT', data: chartData.equipment, backgroundColor: '#FBBF24', borderColor: '#FBBF24', borderWidth: 1 }
+                ]
+            },
+            options: getChartOptions()
+        };
+    } else {
+        chartData = prepareMonthlyChartData(data);
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    { label: 'GENREQ', data: chartData.genreq, backgroundColor: '#60A5FA', borderColor: '#60A5FA', borderWidth: 1 },
+                    { label: 'MATERIALS', data: chartData.materials, backgroundColor: '#FB923C', borderColor: '#FB923C', borderWidth: 1 },
+                    { label: 'LABOR', data: chartData.labor, backgroundColor: '#9CA3AF', borderColor: '#9CA3AF', borderWidth: 1 },
+                    { label: 'EQUIPMENT', data: chartData.equipment, backgroundColor: '#FBBF24', borderColor: '#FBBF24', borderWidth: 1 }
+                ]
+            },
+            options: getChartOptions()
+        };
+    }
+
+    // Create temporary chart
+    const tempChart = new Chart(ctx, chartConfig);
+
+    // Wait for chart to render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Get image data
+    const imageData = tempCanvas.toDataURL('image/png', 1.0);
+
+    // Destroy temporary chart
+    tempChart.destroy();
+
+    return imageData;
+}
+
+// Helper function to get chart options
+function getChartOptions() {
+    return {
+        responsive: false,
+        maintainAspectRatio: false,
+        devicePixelRatio: 2,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#1F2937',
+                    usePointStyle: true,
+                    padding: 15,
+                    font: { size: 14 }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ₱' + formatCurrency(context.parsed.y);
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: '#E5E7EB', display: true },
+                ticks: {
+                    color: '#374151',
+                    font: { size: 12 },
+                    maxRotation: 45,
+                    minRotation: 45
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#E5E7EB', display: true },
+                ticks: {
+                    color: '#374151',
+                    font: { size: 12 },
+                    callback: function(value) {
+                        return formatChartValue(value);
+                    }
+                }
+            }
+        }
+    };
+}
+
 // Data Fetching and Rendering
-async function fetchWeeklyCostData(startDate = null, endDate = null) {
+let isFetchingData = false; // Prevent concurrent fetches
+let hasInitialDataLoaded = false; // Track if initial data has been loaded
+let lastReportCount = 0; // Track number of reports to detect new submissions
+let autoUpdateInterval = null; // Store interval ID
+
+async function fetchWeeklyCostData(startDate = null, endDate = null, isAutoUpdate = false) {
+    // Prevent multiple simultaneous fetches
+    if (isFetchingData) {
+        console.log('Already fetching data, skipping...');
+        return;
+    }
+
+    isFetchingData = true;
+    console.log('fetchWeeklyCostData called with:', { startDate, endDate, hasInitialDataLoaded, isAutoUpdate });
+
     try {
         let url = '{% url "api_weekly_cost_reports" project.id %}';
+
+        // Add cache-busting timestamp to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        const separator = url.includes('?') ? '&' : '?';
+        url += `${separator}_t=${cacheBuster}`;
+
         if (startDate && endDate) {
-            url += `?start_date=${startDate}&end_date=${endDate}`;
+            url += `&start_date=${startDate}&end_date=${endDate}`;
         }
 
         console.log('Fetching weekly cost data from:', url);
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            cache: 'no-store', // Disable browser caching
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         const data = await response.json();
 
         console.log('API Response:', data);
         console.log('Weekly reports count:', data.weekly_reports?.length || 0);
         console.log('Monthly summary count:', data.monthly_summary?.length || 0);
+        console.log('Totals from API:', data.totals);
 
         if (response.ok && data.success) {
+            const currentReportCount = data.report_count || data.weekly_reports?.length || 0;
+
+            // Check if this is a new report (only update if count changed)
+            if (isAutoUpdate && currentReportCount === lastReportCount) {
+                console.log('No new reports detected, skipping update');
+                return;
+            }
+
+            // Update UI with new data
             renderWeekToWeekTable(data.weekly_reports, data.totals);
             renderMonthToMonthTable(data.monthly_summary, data.totals);
             updateCharts(data.weekly_reports, data.monthly_summary);
             checkForMissingReports(data.weekly_reports);
+
+            // Update report count
+            lastReportCount = currentReportCount;
+
+            // Mark that initial data has been loaded
+            if (!hasInitialDataLoaded) {
+                hasInitialDataLoaded = true;
+                console.log('Initial data loaded successfully');
+
+                // Start auto-update polling only after initial load
+                startAutoUpdate();
+            }
+
+            // Show notification if new report was added (only during auto-update)
+            if (isAutoUpdate && currentReportCount > lastReportCount) {
+                console.log('New report detected! Updating dashboard...');
+                if (typeof showProjectToast === 'function') {
+                    showProjectToast('New cost report added. Dashboard updated.', 'success');
+                }
+            }
         } else {
             console.error('API Error:', data.error || 'Unknown error');
             if (typeof showProjectToast === 'function') {
@@ -1478,6 +1672,9 @@ async function fetchWeeklyCostData(startDate = null, endDate = null) {
         } else {
             showToast('Failed to load cost reports. Please refresh the page.', 'error');
         }
+    } finally {
+        isFetchingData = false; // Reset flag after fetch completes
+        console.log('Fetch completed, isFetchingData reset to false');
     }
 }
 
@@ -1487,6 +1684,9 @@ const reportsPerPage = 10;
 let allWeeklyReports = [];
 
 function renderWeekToWeekTable(reports, totals) {
+    console.log('renderWeekToWeekTable called with totals:', totals);
+    console.log('Number of reports:', reports?.length || 0);
+
     const tbody = document.getElementById('weeklyTableBody');
 
     // Remove skeleton loader
@@ -1634,6 +1834,22 @@ function renderMonthToMonthTable(monthlySummary, totals) {
     document.getElementById('totalMonthAmount').textContent = formatCurrency(totals.total);
 }
 
+// Helper function to format Y-axis values in charts
+function formatChartValue(value) {
+    if (value === 0) return '₱0';
+
+    if (value >= 1000000) {
+        // Display in millions (M)
+        return '₱' + (value / 1000000).toFixed(1) + 'M';
+    } else if (value >= 1000) {
+        // Display in thousands (K)
+        return '₱' + (value / 1000).toFixed(1) + 'K';
+    } else {
+        // Display as is for values under 1000
+        return '₱' + value.toFixed(0);
+    }
+}
+
 function updateCharts(weeklyReports, monthlySummary) {
     // Destroy existing charts
     if (weeklyDisbursementChart) weeklyDisbursementChart.destroy();
@@ -1645,6 +1861,7 @@ function updateCharts(weeklyReports, monthlySummary) {
 
     weeklyDisbursementChart = new Chart(weeklyCtx, {
         type: 'bar',
+        devicePixelRatio: 2, // Higher resolution for better quality exports
         data: {
             labels: weeklyData.labels,
             datasets: [
@@ -1693,7 +1910,7 @@ function updateCharts(weeklyReports, monthlySummary) {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#FFFFFF',
+                        color: '#1F2937',
                         usePointStyle: true,
                         padding: 15,
                         font: {
@@ -1712,29 +1929,33 @@ function updateCharts(weeklyReports, monthlySummary) {
             scales: {
                 x: {
                     grid: {
-                        color: '#4B5563',
+                        color: '#E5E7EB',
                         display: true
                     },
                     ticks: {
-                        color: '#FFFFFF',
+                        color: '#374151',
                         font: {
                             size: 12
-                        }
+                        },
+                        maxRotation: 45,
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 15
                     }
                 },
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: '#4B5563',
+                        color: '#E5E7EB',
                         display: true
                     },
                     ticks: {
-                        color: '#FFFFFF',
+                        color: '#374151',
                         font: {
                             size: 12
                         },
                         callback: function(value) {
-                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                            return formatChartValue(value);
                         }
                     }
                 }
@@ -1748,6 +1969,7 @@ function updateCharts(weeklyReports, monthlySummary) {
 
     monthlyDisbursementChart = new Chart(monthlyCtx, {
         type: 'bar',
+        devicePixelRatio: 2, // Higher resolution for better quality exports
         data: {
             labels: monthlyData.labels,
             datasets: [
@@ -1796,7 +2018,7 @@ function updateCharts(weeklyReports, monthlySummary) {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#FFFFFF',
+                        color: '#1F2937',
                         usePointStyle: true,
                         padding: 15,
                         font: {
@@ -1815,29 +2037,33 @@ function updateCharts(weeklyReports, monthlySummary) {
             scales: {
                 x: {
                     grid: {
-                        color: '#4B5563',
+                        color: '#E5E7EB',
                         display: true
                     },
                     ticks: {
-                        color: '#FFFFFF',
+                        color: '#374151',
                         font: {
                             size: 12
-                        }
+                        },
+                        maxRotation: 45,
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 15
                     }
                 },
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: '#4B5563',
+                        color: '#E5E7EB',
                         display: true
                     },
                     ticks: {
-                        color: '#FFFFFF',
+                        color: '#374151',
                         font: {
                             size: 12
                         },
                         callback: function(value) {
-                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                            return formatChartValue(value);
                         }
                     }
                 }
@@ -2014,8 +2240,38 @@ function showBudgetExceededModal(approvedBudget, cumulativeCheck) {
     });
 }
 
+// Auto-update functions
+function startAutoUpdate() {
+    // Clear any existing interval
+    if (autoUpdateInterval) {
+        clearInterval(autoUpdateInterval);
+    }
+
+    // Poll for new reports every 30 seconds
+    autoUpdateInterval = setInterval(() => {
+        console.log('Auto-update: Checking for new reports...');
+        fetchWeeklyCostData(null, null, true);
+    }, 30000); // 30 seconds
+
+    console.log('Auto-update started: checking for new reports every 30 seconds');
+}
+
+function stopAutoUpdate() {
+    if (autoUpdateInterval) {
+        clearInterval(autoUpdateInterval);
+        autoUpdateInterval = null;
+        console.log('Auto-update stopped');
+    }
+}
+
+// Stop auto-update when user navigates away
+window.addEventListener('beforeunload', () => {
+    stopAutoUpdate();
+});
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, fetching initial data...');
     fetchWeeklyCostData();
 });
 </script>

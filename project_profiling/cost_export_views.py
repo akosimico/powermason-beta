@@ -74,15 +74,33 @@ def export_weekly_cost_pdf(request, project_id):
         monthly_summary = aggregate_monthly_data(reports)
         totals = calculate_totals(reports)
 
+        # Get logo path
+        import os
+        from django.conf import settings
+        logo_path = os.path.join(settings.STATIC_ROOT or settings.BASE_DIR, 'powermason_capstone', 'static', 'img', 'powermason_logo.png')
+
+        # Fallback to static directory if STATIC_ROOT doesn't have the file
+        if not os.path.exists(logo_path):
+            logo_path = os.path.join(settings.BASE_DIR, 'powermason_capstone', 'static', 'img', 'powermason_logo.png')
+
+        # Convert to file URL for WeasyPrint
+        logo_url = f'file:///{logo_path.replace(os.sep, "/")}' if os.path.exists(logo_path) else None
+
+        # Get Philippines timezone
+        import pytz
+        ph_tz = pytz.timezone('Asia/Manila')
+        ph_time = timezone.now().astimezone(ph_tz)
+
         # Prepare context for PDF template
         context = {
             'project': project,
             'start_date': start_date or 'All',
             'end_date': end_date or 'All',
-            'generated_date': timezone.now().strftime('%B %d, %Y %I:%M %p'),
+            'generated_date': ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)',
             'weekly_reports': reports,
             'monthly_summary': monthly_summary,
             'totals': totals,
+            'logo_path': logo_url,
             'include_project_header': include_options.get('project_header', True),
             'include_weekly_table': include_options.get('weekly_table', True),
             'include_monthly_table': include_options.get('monthly_table', True),
@@ -219,7 +237,12 @@ def create_overview_sheet(ws, project, start_date, end_date, totals, include_opt
     ws['A5'] = 'Report Period:'
     ws['B5'] = f"{start_date or 'All'} to {end_date or 'All'}"
     ws['A6'] = 'Generated:'
-    ws['B6'] = timezone.now().strftime('%B %d, %Y %I:%M %p')
+
+    # Get Philippines timezone for generated timestamp
+    import pytz
+    ph_tz = pytz.timezone('Asia/Manila')
+    ph_time = timezone.now().astimezone(ph_tz)
+    ws['B6'] = ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)'
 
     # Make labels bold
     for row in range(3, 7):
@@ -315,11 +338,22 @@ def create_weekly_sheet(ws, reports, chart_image, include_options):
         ws.column_dimensions[get_column_letter(col)].width = 15
 
     # Insert chart image if provided
-    if chart_image and include_options.get('weekly_chart', True):
-        try:
-            insert_chart_image(ws, chart_image, row + 2)
-        except:
-            pass  # Skip if chart insertion fails
+    if chart_image:
+        print(f"Weekly chart image received: {len(chart_image) if chart_image else 0} characters")
+        if include_options.get('weekly_chart', True):
+            try:
+                # Add chart title
+                ws.cell(row + 2, 1, 'Weekly Disbursement Chart')
+                ws.cell(row + 2, 1).font = Font(size=12, bold=True)
+                ws.merge_cells(f'A{row + 2}:G{row + 2}')
+                insert_chart_image(ws, chart_image, row + 3)
+                print(f"Weekly chart inserted successfully at row {row + 3}")
+            except Exception as e:
+                print(f"Failed to insert weekly chart: {str(e)}")
+                import traceback
+                traceback.print_exc()
+    else:
+        print("No weekly chart image provided")
 
 
 def create_monthly_sheet(ws, monthly_summary, chart_image, include_options):
@@ -375,11 +409,22 @@ def create_monthly_sheet(ws, monthly_summary, chart_image, include_options):
         ws.column_dimensions[get_column_letter(col)].width = 15
 
     # Insert chart image if provided
-    if chart_image and include_options.get('monthly_chart', True):
-        try:
-            insert_chart_image(ws, chart_image, row + 2)
-        except:
-            pass
+    if chart_image:
+        print(f"Monthly chart image received: {len(chart_image) if chart_image else 0} characters")
+        if include_options.get('monthly_chart', True):
+            try:
+                # Add chart title
+                ws.cell(row + 2, 1, 'Monthly Disbursement Chart')
+                ws.cell(row + 2, 1).font = Font(size=12, bold=True)
+                ws.merge_cells(f'A{row + 2}:F{row + 2}')
+                insert_chart_image(ws, chart_image, row + 3)
+                print(f"Monthly chart inserted successfully at row {row + 3}")
+            except Exception as e:
+                print(f"Failed to insert monthly chart: {str(e)}")
+                import traceback
+                traceback.print_exc()
+    else:
+        print("No monthly chart image provided")
 
 
 def create_category_sheet(ws, reports, totals):
@@ -425,23 +470,40 @@ def create_category_sheet(ws, reports, totals):
 def insert_chart_image(ws, base64_image, start_row):
     """Insert chart image into Excel worksheet"""
     try:
-        # Decode base64 image
-        image_data = base64.b64decode(base64_image.split(',')[1])
+        if not base64_image:
+            return
+
+        # Decode base64 image - handle both with and without data URL prefix
+        if ',' in base64_image:
+            image_data = base64.b64decode(base64_image.split(',')[1])
+        else:
+            image_data = base64.b64decode(base64_image)
+
         image = PILImage.open(BytesIO(image_data))
+
+        # Convert to RGB if image has transparency (RGBA)
+        if image.mode in ('RGBA', 'LA', 'P'):
+            background = PILImage.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+            image = background
 
         # Save to temp BytesIO
         img_io = BytesIO()
         image.save(img_io, format='PNG')
         img_io.seek(0)
 
-        # Insert into Excel
+        # Insert into Excel with proper sizing
         img = XLImage(img_io)
-        img.width = 600
-        img.height = 400
+        # Maintain aspect ratio
+        img.width = 700
+        img.height = 450
         ws.add_image(img, f'A{start_row}')
 
     except Exception as e:
-        # Silently fail if image insertion doesn't work
+        # Log the error but continue execution
+        print(f"Error inserting chart image: {str(e)}")
         pass
 
 
