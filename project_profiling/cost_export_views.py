@@ -21,6 +21,7 @@ from .cost_tracking_views import aggregate_monthly_data, calculate_totals
 
 # WeasyPrint for PDF generation
 from weasyprint import HTML, CSS
+import weasyprint
 
 # OpenPyXL for Excel generation
 from openpyxl import Workbook
@@ -28,6 +29,123 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image as XLImage
 from PIL import Image as PILImage
+
+import sys
+import os
+import traceback as tb
+import django
+
+
+# ========================================
+# DEBUG HELPER FOR PDF ERRORS
+# ========================================
+
+def render_pdf_error_debug(request, project_id, error, error_stage):
+    """
+    Render a detailed debug page for PDF generation errors
+    """
+    import traceback
+
+    # Collect system information
+    context = {
+        'error_message': str(error),
+        'error_type': type(error).__name__,
+        'error_stage': error_stage,
+        'project_id': project_id,
+        'project_name': 'Unknown',
+        'timestamp': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'traceback': traceback.format_exc(),
+        'python_version': sys.version,
+        'django_version': django.get_version(),
+        'weasyprint_version': weasyprint.__version__ if hasattr(weasyprint, '__version__') else 'Unknown',
+        'environment': os.environ.get('RENDER', 'Development'),
+        'suggestions': []
+    }
+
+    # Get project name if available
+    try:
+        if project_id:
+            project = ProjectProfile.objects.get(id=project_id)
+            context['project_name'] = project.project_name
+    except:
+        pass
+
+    # Check for Cairo/Pango installation
+    try:
+        import cairocffi
+        context['cairo_installed'] = f'✓ Yes (version {cairocffi.version})'
+    except ImportError as e:
+        context['cairo_installed'] = f'✗ No - {str(e)}'
+        context['suggestions'].append('Install Cairo library: Add "libcairo2" to apt.txt')
+
+    try:
+        import pangocffi
+        context['pango_installed'] = '✓ Yes'
+    except ImportError:
+        context['pango_installed'] = '✗ No'
+        context['suggestions'].append('Install Pango library: Add "libpango-1.0-0" to apt.txt')
+
+    try:
+        import gi
+        gi.require_version('GdkPixbuf', '2.0')
+        context['gdk_installed'] = '✓ Yes'
+    except:
+        context['gdk_installed'] = '✗ No'
+        context['suggestions'].append('Install GDK-Pixbuf: Add "libgdk-pixbuf2.0-0" to apt.txt')
+
+    # Check fonts
+    try:
+        font_dirs = ['/usr/share/fonts', '/usr/local/share/fonts']
+        font_count = 0
+        for font_dir in font_dirs:
+            if os.path.exists(font_dir):
+                for root, dirs, files in os.walk(font_dir):
+                    font_count += len([f for f in files if f.endswith(('.ttf', '.otf'))])
+        context['fonts_count'] = f'{font_count} fonts found'
+    except:
+        context['fonts_count'] = 'Unable to check'
+        context['suggestions'].append('Install fonts: Add "fonts-liberation" to apt.txt')
+
+    # Add common error suggestions
+    error_str = str(error).lower()
+    if 'cairo' in error_str:
+        context['suggestions'].append('Cairo library error detected. Ensure all Cairo dependencies are installed.')
+    if 'pango' in error_str:
+        context['suggestions'].append('Pango library error detected. Ensure Pango and PangoCairo are installed.')
+    if 'font' in error_str:
+        context['suggestions'].append('Font-related error. Install system fonts or embed fonts in CSS.')
+    if 'permission' in error_str or 'denied' in error_str:
+        context['suggestions'].append('Permission error. Check file system permissions on Render.')
+
+    # Create raw debug data for copying
+    context['raw_debug_data'] = f"""
+PDF Generation Error Debug Report
+==================================
+Timestamp: {context['timestamp']}
+Project ID: {context['project_id']}
+Project Name: {context['project_name']}
+Error Stage: {error_stage}
+
+Error Type: {context['error_type']}
+Error Message: {context['error_message']}
+
+System Information:
+- Python: {context['python_version']}
+- Django: {context['django_version']}
+- WeasyPrint: {context['weasyprint_version']}
+- Environment: {context['environment']}
+
+Dependencies:
+- Cairo: {context['cairo_installed']}
+- Pango: {context['pango_installed']}
+- GDK-Pixbuf: {context['gdk_installed']}
+- Fonts: {context['fonts_count']}
+
+Full Traceback:
+{context['traceback']}
+    """.strip()
+
+    return render(request, 'debug/pdf_error.html', context)
 
 
 # ========================================
@@ -119,8 +237,12 @@ def export_weekly_cost_pdf(request, project_id):
         )
 
         # Generate PDF
-        html = HTML(string=html_string)
-        pdf = html.write_pdf()
+        try:
+            html = HTML(string=html_string)
+            pdf = html.write_pdf()
+        except Exception as pdf_error:
+            # Show debug page for PDF generation errors
+            return render_pdf_error_debug(request, project_id, pdf_error, 'PDF Generation')
 
         # Create response
         response = HttpResponse(pdf, content_type='application/pdf')
@@ -130,7 +252,8 @@ def export_weekly_cost_pdf(request, project_id):
         return response
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        # Show debug page for general errors
+        return render_pdf_error_debug(request, project_id if 'project_id' in locals() else None, e, 'General')
 
 
 # ========================================

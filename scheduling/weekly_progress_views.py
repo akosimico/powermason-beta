@@ -57,7 +57,7 @@ def submit_weekly_progress(request, project_id):
     # Check if project has approved schedule
     if not project.tasks.exists():
         messages.error(request, "This project doesn't have an approved schedule yet. Please upload and get schedule approved first.")
-        return redirect('project_detail', project_id=project.id)
+        return redirect('project_view', project_source=project.project_source, pk=project.id)
 
     # Check if project is completed
     if project.status == 'CP':
@@ -397,6 +397,17 @@ def approve_weekly_report(request, report_id):
                 is_read=False
             )
 
+            # Send email notification to PM
+            from notifications.email_utils import send_progress_report_approved_email, get_site_url
+
+            domain = get_site_url()
+            send_progress_report_approved_email(
+                pm_user=report.submitted_by.user,
+                report=report,
+                approver_name=request.user.userprofile.full_name,
+                domain=domain
+            )
+
             # Redirect back to the review weekly reports page
             return redirect('review_weekly_reports')
 
@@ -450,6 +461,18 @@ def reject_weekly_report(request, report_id):
                     notification=notification,
                     user=report.submitted_by,
                     is_read=False
+                )
+
+                # Send email notification to PM
+                from notifications.email_utils import send_progress_report_rejected_email, get_site_url
+
+                domain = get_site_url()
+                send_progress_report_rejected_email(
+                    pm_user=report.submitted_by.user,
+                    report=report,
+                    rejector_name=request.user.userprofile.full_name,
+                    rejection_reason=reason,
+                    domain=domain
                 )
 
                 return redirect('review_weekly_reports')
@@ -686,8 +709,13 @@ def export_project_reports_pdf(request, project_id):
         # Render template
         html_string = render_to_string('scheduling/weekly_progress/reports_pdf.html', context)
 
-        # Generate PDF
-        pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+        # Generate PDF with error handling
+        try:
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+        except Exception as pdf_error:
+            # Import debug helper from cost_export_views
+            from project_profiling.cost_export_views import render_pdf_error_debug
+            return render_pdf_error_debug(request, project_id, pdf_error, 'Weekly Progress PDF Generation')
 
         # Create response
         response = HttpResponse(pdf, content_type='application/pdf')
@@ -700,10 +728,9 @@ def export_project_reports_pdf(request, project_id):
         logger.error(f"Error generating PDF: {str(e)}")
         import traceback
         traceback.print_exc()
-        if request.method == 'POST':
-            return JsonResponse({'error': str(e)}, status=500)
-        messages.error(request, f"Error generating PDF: {str(e)}")
-        return redirect('list_weekly_reports', project_id=project.id)
+        # Import debug helper for general errors
+        from project_profiling.cost_export_views import render_pdf_error_debug
+        return render_pdf_error_debug(request, project_id if 'project_id' in locals() else None, e, 'Weekly Progress General')
 
 
 @login_required
@@ -1054,6 +1081,31 @@ def upload_progress_excel(request, project_id):
                     notification=om_eg_notification,
                     user=user_profile,
                     is_read=False
+                )
+
+            # Send email notifications
+            from notifications.email_utils import (
+                send_progress_report_submitted_email,
+                send_progress_report_pending_email,
+                get_site_url
+            )
+
+            domain = get_site_url()
+
+            # Email to PM (confirmation)
+            send_progress_report_submitted_email(
+                pm_user=request.user,
+                report=report,
+                domain=domain
+            )
+
+            # Email to OM/EG users (pending review)
+            if om_eg_users.exists():
+                send_progress_report_pending_email(
+                    om_eg_users=om_eg_users,
+                    report=report,
+                    pm_name=request.user.userprofile.full_name,
+                    domain=domain
                 )
 
             logger.info(f"Progress report submitted: Project {project.id}, Week {week_start_date}")
