@@ -59,10 +59,26 @@ def project_detail_cost_dashboard(request, project_id):
         project=project
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-    # Calculate key metrics
-    remaining_budget = total_allocated - total_spent
-    budget_utilization = (total_spent / total_allocated * 100) if total_allocated > 0 else 0
-    is_over_budget = total_spent > total_allocated
+    # Total Disbursed Amount (includes weekly cost reports + subcontractor payments)
+    from project_profiling.models import WeeklyCostReport
+
+    # Get total from all weekly cost reports (all submitted reports)
+    total_weekly_costs = WeeklyCostReport.objects.filter(
+        project=project
+    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+    # Get total from subcontractor payments (amount_paid field)
+    total_subcontractor_paid = SubcontractorExpense.objects.filter(
+        project=project
+    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0')
+
+    # Total disbursed is weekly costs + subcontractor payments
+    total_disbursed = total_weekly_costs + total_subcontractor_paid
+
+    # Calculate key metrics using total disbursed
+    remaining_budget = total_allocated - total_disbursed
+    budget_utilization = (total_disbursed / total_allocated * 100) if total_allocated > 0 else 0
+    is_over_budget = total_disbursed > total_allocated
 
     # Budget status
     if budget_utilization >= 90:
@@ -248,6 +264,7 @@ def project_detail_cost_dashboard(request, project_id):
         'total_planned': total_planned,
         'total_allocated': total_allocated,
         'total_spent': total_spent,
+        'total_disbursed': total_disbursed,  # Total disbursed amount
         'remaining_budget': remaining_budget,
         'budget_utilization': budget_utilization,
         'is_over_budget': is_over_budget,

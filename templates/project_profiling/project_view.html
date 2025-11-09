@@ -5,6 +5,11 @@
 {% load humanize %}
 {% load tz %}
 
+{% block extra_head %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock %}
+
 {% block extra_css %}
 <style>
     .upload-zone {
@@ -213,6 +218,19 @@
                             {% else %} bg-red-100 text-red-800 {% endif %}">
                             {{ project.get_status_display }}
                         </span>
+
+                        <!-- Mark as Complete Button (shown when progress is 100% but not marked complete) -->
+                        {% if schedule_performance.display_progress >= 100 and project.status != 'CP' and schedule_performance.has_real_progress %}
+                            {% if role == 'OM' or role == 'EG' or role == 'PM' %}
+                                <button onclick="openCompletionModal()"
+                                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 border border-green-600 rounded-lg transition-all shadow-sm">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Mark as Complete
+                                </button>
+                            {% endif %}
+                        {% endif %}
                     </div>
                     <p class="text-gray-600 text-sm mt-1">{{ project.project_id }}</p>
                 </div>
@@ -463,12 +481,26 @@ window.addEventListener('click', function(e) {
                                    </div>
 
                                     <div class="text-center relative">
-                                        <div class="text-xs font-medium text-gray-500 mb-1">Target Completion</div>
+                                        <div class="text-xs font-medium text-gray-500 mb-1">
+                                            {% if project.status == 'CP' and project.actual_completion_date %}
+                                                Completed On
+                                            {% else %}
+                                                Target Completion
+                                            {% endif %}
+                                        </div>
                                         <div class="flex items-center justify-center gap-2">
-                                            <div id="targetDateDisplay" class="text-sm font-semibold text-gray-900">
-                                                {{ project.target_completion_date|format_date|default:"Not set" }}
+                                            <div id="targetDateDisplay" class="text-sm font-semibold
+                                                {% if project.status == 'CP' %}text-green-700{% else %}text-gray-900{% endif %}">
+                                                {% if project.status == 'CP' and project.actual_completion_date %}
+                                                    {{ project.actual_completion_date|format_date }}
+                                                    <svg class="w-4 h-4 inline-block ml-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                {% else %}
+                                                    {{ project.target_completion_date|format_date|default:"Not set" }}
+                                                {% endif %}
                                             </div>
-                                            {% if not project.target_completion_date %}
+                                            {% if not project.target_completion_date and project.status != 'CP' %}
                                                 {% if user.is_superuser or user|has_role:"OM" or user|has_role:"EG" %}
                                                     <button id="editTargetDateBtn"
                                                             onclick="showDatePicker()"
@@ -1040,6 +1072,26 @@ window.addEventListener('click', function(e) {
                                 <p class="text-sm">Loading subcontractors...</p>
                             </div>
                         </div>
+
+                        <!-- Pagination Controls -->
+                        <div id="subcontractorPagination" class="hidden mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                            <div class="text-sm text-gray-700">
+                                Showing <span id="subcontractorRangeStart">1</span> to <span id="subcontractorRangeEnd">5</span> of <span id="subcontractorTotal">0</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="previousSubcontractorPage()"
+                                        id="prevSubcontractorBtn"
+                                        class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled>
+                                    Previous
+                                </button>
+                                <button onclick="nextSubcontractorPage()"
+                                        id="nextSubcontractorBtn"
+                                        class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -1165,10 +1217,92 @@ window.addEventListener('click', function(e) {
                                         <span class="text-sm font-semibold text-gray-900">₱{{ project.allocated_funds|floatformat:2|intcomma  }}</span>
                                     </div>
                                 {% endif %}
+
+                                <!-- Disbursement Breakdown Section -->
+                                <div class="pt-2 border-t border-gray-100 space-y-2">
+                                    <!-- Weekly Cost Reports -->
+                                    <div class="flex justify-between items-center pl-2">
+                                        <div class="flex items-center">
+                                            <svg class="w-3 h-3 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span class="text-xs text-gray-600">Weekly Cost Reports</span>
+                                        </div>
+                                        <span class="text-xs font-medium text-gray-700">₱{{ weekly_cost_total|floatformat:2|intcomma }}</span>
+                                    </div>
+
+                                    <!-- Subcontractor Payments (only show if > 0) -->
+                                    {% if subcontractor_paid_total > 0 %}
+                                    <div class="flex justify-between items-center pl-2">
+                                        <div class="flex items-center">
+                                            <svg class="w-3 h-3 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span class="text-xs text-gray-600">Subcontractor Payments</span>
+                                        </div>
+                                        <span class="text-xs font-medium text-gray-700">₱{{ subcontractor_paid_total|floatformat:2|intcomma }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Total Disbursed -->
+                                    <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                                        <div class="flex items-center">
+                                            <span class="text-sm font-semibold text-gray-700">Total Disbursed</span>
+                                            <div class="relative group ml-1">
+                                                <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <div class="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                                    Sum of all weekly cost reports and subcontractor payments
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-bold
+                                                {% if disbursement_status == 'danger' %}text-red-600
+                                                {% elif disbursement_status == 'warning' %}text-orange-600
+                                                {% else %}text-blue-600{% endif %}">
+                                                ₱{{ total_disbursed|floatformat:2|intcomma }}
+                                            </span>
+                                            {% if disbursement_percentage > 0 %}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                                    {% if disbursement_status == 'danger' %}bg-red-100 text-red-800
+                                                    {% elif disbursement_status == 'warning' %}bg-orange-100 text-orange-800
+                                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                    {{ disbursement_percentage|floatformat:1 }}%
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Disbursement Status Indicator -->
+                                {% if disbursement_status == 'danger' %}
+                                    <div class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div class="text-xs text-red-800">
+                                            <p class="font-semibold">Budget Exceeded!</p>
+                                            <p class="mt-0.5">Disbursed amount has exceeded the approved budget. Review required.</p>
+                                        </div>
+                                    </div>
+                                {% elif disbursement_status == 'warning' %}
+                                    <div class="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                        <svg class="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div class="text-xs text-orange-800">
+                                            <p class="font-semibold">Approaching Budget Limit</p>
+                                            <p class="mt-0.5">Disbursed amount is close to exceeding the budget (≥90%). Monitor carefully.</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
                                 {% if project.expense %}
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm font-medium text-gray-500">Total Expenses</span>
-                                        <span class="text-sm font-semibold text-red-600">₱{{ project.expense|floatformat:2|intcomma  }}</span>
+                                        <span class="text-sm font-semibold text-gray-700">₱{{ project.expense|floatformat:2|intcomma  }}</span>
                                     </div>
                                 {% endif %}
                                 
@@ -1906,6 +2040,60 @@ window.addEventListener('click', function(e) {
     </div>
 </div>
 
+<!-- Project Completion Confirmation Modal -->
+<div id="projectCompletionModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-[60]">
+    <div class="relative top-20 mx-auto p-0 border w-full max-w-md shadow-2xl rounded-2xl bg-white animate-fadeIn">
+        <!-- Modal Header -->
+        <div class="px-6 pt-6 pb-4">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 border-2 border-yellow-400 shadow-md animate-pulse">
+                <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl"></i>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 pb-6">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Project Progress Complete!</h3>
+                <p class="text-sm text-gray-600 mb-6">
+                    This project has reached 100% completion. Would you like to mark this project as complete?
+                </p>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="text-left text-xs text-blue-800">
+                            <p class="font-medium mb-1">Marking as complete will:</p>
+                            <ul class="list-disc list-inside space-y-0.5 ml-2">
+                                <li>Update project status to "Completed"</li>
+                                <li>Set the actual completion date</li>
+                                <li>This action can be reversed if needed</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button onclick="closeCompletionModal()"
+                            class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        Not Yet
+                    </button>
+                    <button onclick="confirmProjectCompletion()"
+                            id="confirmCompleteBtn"
+                            class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-green-600 border-2 border-green-600 rounded-lg hover:bg-green-700 transition-all shadow-sm">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Mark Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Subcontractor Modal -->
 <div id="subcontractorModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
     <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
@@ -2101,13 +2289,25 @@ function loadProjectSubcontractors() {
         });
 }
 
+// Pagination variables for subcontractors
+let allSubcontractors = [];
+let currentSubcontractorPage = 1;
+const subcontractorsPerPage = 5;
+
 function displaySubcontractors(subcontractors) {
+    allSubcontractors = subcontractors; // Store all subcontractors
+    currentSubcontractorPage = 1; // Reset to first page
+    renderSubcontractorPage();
+}
+
+function renderSubcontractorPage() {
     const container = document.getElementById('subcontractorsList');
     const countEl = document.getElementById('subcontractorCount');
+    const paginationEl = document.getElementById('subcontractorPagination');
 
-    countEl.textContent = `${subcontractors.length} subcontractor${subcontractors.length !== 1 ? 's' : ''}`;
+    countEl.textContent = `${allSubcontractors.length} subcontractor${allSubcontractors.length !== 1 ? 's' : ''}`;
 
-    if (subcontractors.length === 0) {
+    if (allSubcontractors.length === 0) {
         container.innerHTML = `
             <div class="text-center py-6 text-gray-500">
                 <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2119,10 +2319,24 @@ function displaySubcontractors(subcontractors) {
                 </button>
             </div>
         `;
+        paginationEl.classList.add('hidden');
         return;
     }
 
-    container.innerHTML = subcontractors.map(sub => {
+    // Calculate pagination
+    const startIndex = (currentSubcontractorPage - 1) * subcontractorsPerPage;
+    const endIndex = Math.min(startIndex + subcontractorsPerPage, allSubcontractors.length);
+    const paginatedSubcontractors = allSubcontractors.slice(startIndex, endIndex);
+
+    // Show pagination if needed
+    if (allSubcontractors.length > subcontractorsPerPage) {
+        paginationEl.classList.remove('hidden');
+        updateSubcontractorPaginationControls();
+    } else {
+        paginationEl.classList.add('hidden');
+    }
+
+    container.innerHTML = paginatedSubcontractors.map(sub => {
         const balance = parseFloat(sub.contract_amount) - parseFloat(sub.amount_paid);
         const statusColor = {
             'PEND': 'bg-yellow-100 text-yellow-800',
@@ -2177,6 +2391,36 @@ function displaySubcontractors(subcontractors) {
             </div>
         `;
     }).join('');
+}
+
+function updateSubcontractorPaginationControls() {
+    const startIndex = (currentSubcontractorPage - 1) * subcontractorsPerPage;
+    const endIndex = Math.min(startIndex + subcontractorsPerPage, allSubcontractors.length);
+    const totalPages = Math.ceil(allSubcontractors.length / subcontractorsPerPage);
+
+    // Update range display
+    document.getElementById('subcontractorRangeStart').textContent = startIndex + 1;
+    document.getElementById('subcontractorRangeEnd').textContent = endIndex;
+    document.getElementById('subcontractorTotal').textContent = allSubcontractors.length;
+
+    // Update button states
+    document.getElementById('prevSubcontractorBtn').disabled = currentSubcontractorPage === 1;
+    document.getElementById('nextSubcontractorBtn').disabled = currentSubcontractorPage === totalPages;
+}
+
+function previousSubcontractorPage() {
+    if (currentSubcontractorPage > 1) {
+        currentSubcontractorPage--;
+        renderSubcontractorPage();
+    }
+}
+
+function nextSubcontractorPage() {
+    const totalPages = Math.ceil(allSubcontractors.length / subcontractorsPerPage);
+    if (currentSubcontractorPage < totalPages) {
+        currentSubcontractorPage++;
+        renderSubcontractorPage();
+    }
 }
 
 function openAddSubcontractorModal() {
@@ -3593,6 +3837,125 @@ function saveTargetDate(dateValue) {
 
 // Note: Date picker now uses backdrop for close-on-click-outside
 // The backdrop element has onclick="hideDatePicker()" attribute
+
+// ============================================
+// Project Completion Modal Functions
+// ============================================
+
+// Check if project has reached 100% and show modal
+function checkProjectCompletion() {
+    const displayProgress = {{ schedule_performance.display_progress|default:0 }};
+    const projectStatus = '{{ project.status }}';
+    const hasRealProgress = {{ schedule_performance.has_real_progress|yesno:"true,false" }};
+
+    // Only show modal if:
+    // 1. Progress is 100%
+    // 2. Project status is NOT already "CP" (Completed)
+    // 3. Has real progress (not just timeline-based estimate)
+    // 4. Modal hasn't been dismissed for this session
+    if (displayProgress >= 100 && projectStatus !== 'CP' && hasRealProgress) {
+        const modalDismissed = sessionStorage.getItem('completion_modal_dismissed_{{ project.id }}');
+        if (!modalDismissed) {
+            // Show modal after a short delay for better UX
+            setTimeout(() => {
+                openCompletionModal();
+            }, 1000);
+        }
+    }
+}
+
+function openCompletionModal() {
+    const modal = document.getElementById('projectCompletionModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCompletionModal() {
+    const modal = document.getElementById('projectCompletionModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        // Remember that user dismissed the modal for this session
+        sessionStorage.setItem('completion_modal_dismissed_{{ project.id }}', 'true');
+    }
+}
+
+function confirmProjectCompletion() {
+    const confirmBtn = document.getElementById('confirmCompleteBtn');
+
+    // Disable button and show loading state
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 inline-block mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Processing...
+    `;
+
+    // Make AJAX request to mark project as complete
+    fetch("{% url 'mark_project_complete' project.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success toast
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Project marked as complete successfully!', 'success');
+            }
+
+            // Clear the session storage
+            sessionStorage.removeItem('completion_modal_dismissed_{{ project.id }}');
+
+            // Reload page after short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Show error
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Error: ' + (data.error || 'Failed to mark project as complete'), 'error');
+            } else {
+                alert('Error: ' + (data.error || 'Failed to mark project as complete'));
+            }
+
+            // Re-enable button
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `
+                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Mark Complete
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while marking the project as complete. Please try again.');
+
+        // Re-enable button
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = `
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Mark Complete
+        `;
+    });
+}
+
+// Check for project completion on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkProjectCompletion();
+});
+
 </script>
 
 {% endblock %}

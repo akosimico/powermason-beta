@@ -486,6 +486,37 @@ def project_view(request, project_source, pk):
     draft_schedule = ProjectSchedule.objects.filter(project=project, status='DRAFT').first()
     rejected_schedule = ProjectSchedule.objects.filter(project=project, status='REJECTED').order_by('-reviewed_at').first()
 
+    # --- Calculate Total Disbursed Amount ---
+    from project_profiling.models import SubcontractorExpense, WeeklyCostReport
+
+    # Get total from all weekly cost reports (all submitted reports)
+    total_weekly_costs = WeeklyCostReport.objects.filter(
+        project=project
+    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+    # Get total from subcontractor payments (amount_paid field)
+    total_subcontractor_paid = SubcontractorExpense.objects.filter(
+        project=project
+    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0')
+
+    # Total disbursed is sum of weekly cost reports + subcontractor payments
+    total_disbursed = total_weekly_costs + total_subcontractor_paid
+
+    # Calculate disbursement percentage and status
+    disbursement_percentage = 0
+    disbursement_status = 'safe'  # safe, warning, danger
+
+    if project.approved_budget and project.approved_budget > 0:
+        disbursement_percentage = (total_disbursed / project.approved_budget) * 100
+
+        # Determine status based on percentage
+        if disbursement_percentage >= 100:
+            disbursement_status = 'danger'  # Exceeded budget
+        elif disbursement_percentage >= 90:
+            disbursement_status = 'warning'  # Close to exceeding
+        else:
+            disbursement_status = 'safe'
+
     # --- Render ---
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
@@ -497,6 +528,11 @@ def project_view(request, project_source, pk):
         'draft_schedule': draft_schedule,
         'rejected_schedule': rejected_schedule,
         'schedule_performance': schedule_performance,
+        'total_disbursed': total_disbursed,
+        'disbursement_percentage': disbursement_percentage,
+        'disbursement_status': disbursement_status,
+        'weekly_cost_total': total_weekly_costs,
+        'subcontractor_paid_total': total_subcontractor_paid,
     })
 
 
@@ -4235,6 +4271,54 @@ def update_target_date(request, project_id):
             'success': False,
             'error': 'Invalid JSON data'
         }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@verified_email_required
+@require_POST
+def mark_project_complete(request, project_id):
+    """
+    Mark a project as complete when progress reaches 100% (AJAX endpoint)
+    """
+    try:
+        # Get project
+        project = get_object_or_404(ProjectProfile, id=project_id)
+
+        # Check permissions (only OM, EG, and PM can mark complete)
+        user_profile = request.user.userprofile
+        if not (request.user.is_superuser or user_profile.role in ['OM', 'EG', 'PM']):
+            return JsonResponse({
+                'success': False,
+                'error': 'You do not have permission to mark this project as complete'
+            }, status=403)
+
+        # Additional check: if PM, must be assigned to this project
+        if user_profile.role == 'PM' and project.project_manager != user_profile:
+            return JsonResponse({
+                'success': False,
+                'error': 'You are not the project manager for this project'
+            }, status=403)
+
+        # Update the project status to Completed
+        project.status = 'CP'
+
+        # Set actual completion date if not already set
+        if not project.actual_completion_date:
+            from django.utils import timezone
+            project.actual_completion_date = timezone.now().date()
+
+        project.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Project marked as complete successfully'
+        })
+
     except Exception as e:
         return JsonResponse({
             'success': False,

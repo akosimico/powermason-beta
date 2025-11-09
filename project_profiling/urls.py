@@ -52,6 +52,9 @@ urlpatterns = [
     # Update target completion date
     path('projects/<int:project_id>/update-target-date/', views.update_target_date, name='update_target_date'),
 
+    # Mark project as complete
+    path('projects/<int:project_id>/mark-complete/', views.mark_project_complete, name='mark_project_complete'),
+
     # Archive/Unarchive project - Session-based
     path('delete/<str:project_type>/<int:pk>/', views.project_archive_signed_with_role, name='project_archive'),
     path('unarchive/<str:project_type>/<int:pk>/', views.project_unarchive_signed_with_role, name='project_unarchive'),
