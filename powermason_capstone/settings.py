@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 ENVIRONMENT = os.getenv("ENVIRONMENT")
 POSTGRES_LOCALLY = os.getenv("POSTGRES_LOCALLY")
-
+SITE_URL = os.getenv('SITE_URL', default='http://127.0.0.1:8000')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
