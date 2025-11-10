@@ -5,3 +5,5 @@ libffi-dev
 libpangoft2-1.0-0
 libpangocairo-1.0-0
 fonts-liberation
+libgirepository1.0-dev
+gir1.2-gtk-3.0
