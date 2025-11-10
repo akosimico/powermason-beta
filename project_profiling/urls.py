@@ -17,6 +17,7 @@ from .cost_export_views import (
     export_weekly_cost_excel,
     api_dashboard_budget_summary
 )
+from .debug_pdf_view import pdf_debug_test
 
 urlpatterns = [
     # ==============================================
@@ -226,4 +227,9 @@ path('<int:project_id>/categories/<int:category_id>/allocation/', views.get_cate
     # RFS DOWNLOAD (moved to quotation_views)
     # ==============================================
     # path('rfs/download/<path:file_path>/', views.download_rfs_file, name='download_rfs_file'),
+
+    # ==============================================
+    # DEBUG UTILITIES
+    # ==============================================
+    path('debug/pdf-test/', pdf_debug_test, name='pdf_debug_test'),
 ]

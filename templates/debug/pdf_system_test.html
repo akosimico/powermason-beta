@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF System Test - PowerMason</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .summary-card h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 24px;
+            color: #2d3748;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .test-card {
+            background: #f7fafc;
+            border-left: 4px solid #cbd5e0;
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .test-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-card.pass {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        .test-card.fail {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        .test-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .test-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 16px;
+        }
+        .test-status {
+            font-size: 24px;
+        }
+        .test-details {
+            color: #4a5568;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 8px;
+        }
+        .env-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .env-item {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #4299e1;
+        }
+        .env-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .env-value {
+            color: #2d3748;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .suggestions {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .suggestions h3 {
+            color: #92400e;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .suggestions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .suggestions li {
+            padding: 10px 0;
+            color: #78350f;
+            font-size: 14px;
+            border-bottom: 1px solid #fde68a;
+        }
+        .suggestions li:last-child {
+            border-bottom: none;
+        }
+        .suggestions li:before {
+            content: "⚠️ ";
+            margin-right: 8px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        .ready-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #48bb78;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .issues-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f56565;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🔍</span>
+                PDF System Test
+            </h1>
+            <p>Comprehensive diagnostic check for PDF generation capabilities</p>
+        </div>
+
+        <div class="content">
+            <!-- Summary Card -->
+            <div class="summary-card">
+                <h2>Test Summary</h2>
+                {% if summary.status == 'Ready for PDF Generation' %}
+                    <span class="ready-badge">✅ {{ summary.status }}</span>
+                {% else %}
+                    <span class="issues-badge">❌ {{ summary.status }}</span>
+                {% endif %}
+
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ summary.total }}</div>
+                        <div class="stat-label">Total Tests</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ summary.passed }}</div>
+                        <div class="stat-label">Passed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ summary.failed }}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environment Information -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span>🖥️</span>
+                    Environment Information
+                </h2>
+                <div class="env-grid">
+                    {% for key, value in environment.items %}
+                    <div class="env-item">
+                        <div class="env-label">{{ key }}</div>
+                        <div class="env-value">{{ value }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span>🧪</span>
+                    Test Results
+                </h2>
+                <div class="test-grid">
+                    {% for test in tests %}
+                    <div class="test-card {% if '✓' in test.status %}pass{% else %}fail{% endif %}">
+                        <div class="test-header">
+                            <span class="test-name">{{ test.name }}</span>
+                            <span class="test-status">{% if '✓' in test.status %}✅{% else %}❌{% endif %}</span>
+                        </div>
+                        <div class="test-details">{{ test.details }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            {% if suggestions %}
+            <div class="section">
+                <h2 class="section-title">
+                    <span>💡</span>
+                    Suggested Fixes
+                </h2>
+                <div class="suggestions">
+                    <h3>Actions Required to Enable PDF Generation</h3>
+                    <ul>
+                        {% for suggestion in suggestions %}
+                        <li>{{ suggestion }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="javascript:history.back()" class="btn btn-secondary">
+                    <span>←</span> Go Back
+                </a>
+                <a href="{% url 'project_costing_dashboard' %}" class="btn btn-primary">
+                    <span>📊</span> Go to Dashboard
+                </a>
+                <button onclick="copyTestResults()" class="btn btn-secondary">
+                    <span>📋</span> Copy Test Results
+                </button>
+                <button onclick="location.reload()" class="btn btn-primary">
+                    <span>🔄</span> Rerun Tests
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyTestResults() {
+            const results = `
+PDF SYSTEM TEST RESULTS
+=======================
+Status: {{ summary.status }}
+Tests: {{ summary.passed }}/{{ summary.total }} passed
+
+ENVIRONMENT:
+{% for key, value in environment.items %}- {{ key }}: {{ value }}
+{% endfor %}
+
+TEST DETAILS:
+{% for test in tests %}- {{ test.name }}: {{ test.status }}
+  {{ test.details }}
+{% endfor %}
+
+SUGGESTIONS:
+{% for suggestion in suggestions %}- {{ suggestion }}
+{% endfor %}
+            `.trim();
+
+            navigator.clipboard.writeText(results).then(() => {
+                alert('Test results copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy results. Please copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>
