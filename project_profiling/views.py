@@ -517,6 +517,11 @@ def project_view(request, project_source, pk):
         else:
             disbursement_status = 'safe'
 
+    # --- Serialize BOQ data to JSON for JavaScript ---
+    boq_items_json = json.dumps(project.boq_items if project.boq_items else [])
+    boq_division_subtotals_json = json.dumps(project.boq_division_subtotals if project.boq_division_subtotals else {})
+    boq_project_info_json = json.dumps(project.boq_project_info if project.boq_project_info else {})
+
     # --- Render ---
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
@@ -533,6 +538,10 @@ def project_view(request, project_source, pk):
         'disbursement_status': disbursement_status,
         'weekly_cost_total': total_weekly_costs,
         'subcontractor_paid_total': total_subcontractor_paid,
+        # JSON serialized BOQ data for JavaScript
+        'boq_items_json': boq_items_json,
+        'boq_division_subtotals_json': boq_division_subtotals_json,
+        'boq_project_info_json': boq_project_info_json,
     })
 
 
@@ -1079,6 +1088,7 @@ def review_pending_project(request, project_id):
                     payment_terms=project.project_data.get("payment_terms"),
                     # BOQ related fields
                     lot_size=project.project_data.get("lot_size", 0),
+                    floor_area=project.project_data.get("floor_area", 0),
                 )
                 print(f"DEBUG: Created new ProjectProfile ID={new_profile.id}")
 
@@ -1241,6 +1251,12 @@ def review_pending_project(request, project_id):
                         if boq_project_info:
                             new_profile.boq_project_info = boq_project_info
                             print(f"DEBUG: Saved project info to approved project: {boq_project_info}")
+
+                            # Also update floor_area from boq_project_info if main floor_area is 0
+                            if 'floor_area' in boq_project_info and boq_project_info['floor_area']:
+                                if not new_profile.floor_area or new_profile.floor_area == 0:
+                                    new_profile.floor_area = boq_project_info['floor_area']
+                                    print(f"DEBUG: Updated floor_area from boq_project_info: {new_profile.floor_area}")
                         
                         if boq_total_cost:
                             new_profile.boq_total_cost = boq_total_cost

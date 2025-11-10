@@ -1000,7 +1000,6 @@ function addProjectMarker(project, lat, lng) {
             </div>
             ${project.start_date ? `<div style=\"margin-top:6px;font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Start Date:</span> <span style=\"color:#374151;\">${formatDate(project.start_date)}</span></div>` : ''}
             ${targetCompletion ? `<div style=\"font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Target Completion:</span> <span style=\"color:#374151;\">${formatDate(targetCompletion)}</span></div>` : ''}
-            ${estCost !== undefined && estCost !== null ? `<div style=\"font-size:12px;color:#111827;\"><span style=\"font-weight:700;\">Estimated Cost:</span> <span style=\"color:#374151;\">${formatCurrency(estCost)}</span></div>` : ''}
         </div>
     `;
     marker.bindTooltip(tooltipHtml, { direction: 'auto', offset: [0, -16], opacity: 0.98, sticky: true, className: 'leaflet-tooltip pm-tooltip' });

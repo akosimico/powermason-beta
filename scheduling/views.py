@@ -978,6 +978,13 @@ def submit_schedule_for_approval(request, schedule_id):
         schedule.submitted_at = timezone.now()
         schedule.save()
 
+        # Notify PM (submitter) - confirmation
+        pm_notif = Notification.objects.create(
+            message=f'Schedule Submitted: Your schedule for Project {schedule.project.project_id} v{schedule.version} has been submitted and is awaiting approval.',
+            link=reverse('schedule_detail', args=[schedule.id])
+        )
+        NotificationStatus.objects.create(notification=pm_notif, user=verified_profile)
+
         # Notify OM and EG users
         om_eg_users = UserProfile.objects.filter(role__in=['OM', 'EG'])
         notif_message = f'Schedule Pending Approval: Project {schedule.project.project_id} v{schedule.version} submitted by {verified_profile.full_name}'
@@ -989,6 +996,31 @@ def submit_schedule_for_approval(request, schedule_id):
             )
             for user in om_eg_users:
                 NotificationStatus.objects.create(notification=notif, user=user)
+
+        # Send email notifications
+        from notifications.email_utils import (
+            send_schedule_submitted_email,
+            send_schedule_pending_approval_email,
+            get_site_url
+        )
+
+        domain = get_site_url()
+
+        # Email to PM (confirmation)
+        send_schedule_submitted_email(
+            pm_user=request.user,
+            schedule=schedule,
+            domain=domain
+        )
+
+        # Email to OM/EG users (pending approval)
+        if om_eg_users.exists():
+            send_schedule_pending_approval_email(
+                om_eg_users=om_eg_users,
+                schedule=schedule,
+                pm_name=verified_profile.full_name,
+                domain=domain
+            )
 
         set_toast_message(request, "Schedule submitted for approval!", "success")
         return redirect('schedule_detail', schedule_id=schedule.id)
@@ -1089,9 +1121,20 @@ def approve_schedule(request, schedule_id):
                 # Notify PM
                 notif = Notification.objects.create(
                     message=f'Schedule Approved: Your schedule for {schedule.project.project_id} has been approved. {result["created_count"]} tasks created.',
-                    link=reverse('task_list', args=[schedule.project.id])
+                    link=reverse('schedule_detail', args=[schedule.id])
                 )
                 NotificationStatus.objects.create(notification=notif, user=schedule.uploaded_by)
+
+                # Send email notification to PM
+                from notifications.email_utils import send_schedule_approved_email, get_site_url
+
+                domain = get_site_url()
+                send_schedule_approved_email(
+                    pm_user=schedule.uploaded_by.user,
+                    schedule=schedule,
+                    approver_name=verified_profile.full_name,
+                    domain=domain
+                )
 
                 set_toast_message(
                     request,
@@ -1152,6 +1195,18 @@ def reject_schedule(request, schedule_id):
                 link=reverse('schedule_detail', args=[schedule.id])
             )
             NotificationStatus.objects.create(notification=notif, user=schedule.uploaded_by)
+
+            # Send email notification to PM
+            from notifications.email_utils import send_schedule_rejected_email, get_site_url
+
+            domain = get_site_url()
+            send_schedule_rejected_email(
+                pm_user=schedule.uploaded_by.user,
+                schedule=schedule,
+                rejector_name=verified_profile.full_name,
+                rejection_reason=rejection_reason,
+                domain=domain
+            )
 
             set_toast_message(request, "Schedule rejected. PM has been notified.", "success")
             # Redirect back to the project view

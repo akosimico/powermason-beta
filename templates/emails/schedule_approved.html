@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Approved</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .success-badge {
+            background-color: #10b981;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .project-info {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .project-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .project-info strong {
+            color: #059669;
+            font-weight: 600;
+        }
+        .approval-box {
+            background-color: #d1fae5;
+            border: 2px solid #10b981;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .approval-box p {
+            margin: 0;
+            color: #065f46;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .approval-box .checkmark {
+            font-size: 48px;
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #10b981;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #059669;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>✅ Schedule Approved!</h1>
+        </div>
+
+        <div class="content">
+            <div class="success-badge">✓ Approved</div>
+
+            <p>Hello {{ pm_name }},</p>
+
+            <p><strong>Great news!</strong> Your project schedule has been approved and you can now proceed with project execution.</p>
+
+            <div class="approval-box">
+                <div class="checkmark">✓</div>
+                <p>Schedule Approved by {{ approver_name }}</p>
+            </div>
+
+            <div class="project-info">
+                <p><strong>Project Code:</strong> {{ project_code }}</p>
+                <p><strong>Project Name:</strong> {{ project_name }}</p>
+                <p><strong>Schedule Version:</strong> {{ version }}</p>
+                <p><strong>Approved By:</strong> {{ approver_name }}</p>
+            </div>
+
+            <p>You can now proceed with project execution according to the approved schedule. Please ensure all activities are completed as planned.</p>
+
+            <center>
+                <a href="{{ schedule_link }}" class="button">View Approved Schedule</a>
+            </center>
+
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                Make sure to submit weekly progress reports to keep the team updated on project status.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p><strong>Powermason Project Management System</strong></p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

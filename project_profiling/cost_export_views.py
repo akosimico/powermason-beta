@@ -238,8 +238,13 @@ def export_weekly_cost_pdf(request, project_id):
 
         # Generate PDF
         try:
-            html = HTML(string=html_string)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
             pdf = html.write_pdf()
+
+            # Validate PDF content
+            if not pdf or len(pdf) < 100:
+                raise ValueError(f"PDF generation produced invalid or empty file (size: {len(pdf) if pdf else 0} bytes)")
+
         except Exception as pdf_error:
             # Show debug page for PDF generation errors
             return render_pdf_error_debug(request, project_id, pdf_error, 'PDF Generation')

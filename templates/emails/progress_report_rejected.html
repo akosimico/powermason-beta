@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Report Rejected</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .rejected-badge {
+            background-color: #ef4444;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .report-info {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .report-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .report-info strong {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .feedback-box {
+            background-color: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .feedback-box h3 {
+            margin: 0 0 10px 0;
+            color: #92400e;
+            font-size: 16px;
+        }
+        .feedback-box p {
+            margin: 0;
+            color: #78350f;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .action-box {
+            background-color: #dbeafe;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .action-box p {
+            margin: 0;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3b82f6;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>❌ Progress Report Rejected</h1>
+        </div>
+
+        <div class="content">
+            <div class="rejected-badge">✗ Rejected</div>
+
+            <p>Hello {{ pm_name }},</p>
+
+            <p>Your weekly progress report has been reviewed and requires revisions before it can be approved.</p>
+
+            <div class="report-info">
+                <p><strong>Project Code:</strong> {{ project_code }}</p>
+                <p><strong>Project Name:</strong> {{ project_name }}</p>
+                <p><strong>Week Ending:</strong> {{ week_ending }}</p>
+                <p><strong>Rejected By:</strong> {{ rejector_name }}</p>
+            </div>
+
+            <div class="feedback-box">
+                <h3>📝 Feedback/Reason:</h3>
+                <p>{{ rejection_reason }}</p>
+            </div>
+
+            <div class="action-box">
+                <p>📊 Next Steps: Please review the feedback, make necessary corrections, and resubmit your progress report.</p>
+            </div>
+
+            <center>
+                <a href="{{ report_link }}" class="button">View Report & Resubmit</a>
+            </center>
+
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                If you have any questions about the feedback, please contact {{ rejector_name }} for clarification.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p><strong>Powermason Project Management System</strong></p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

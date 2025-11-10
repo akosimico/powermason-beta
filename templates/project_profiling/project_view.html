@@ -1099,9 +1099,9 @@ window.addEventListener('click', function(e) {
                 <!-- BOQ Data Script -->
                 <script type="application/json" id="boq-data">
                 {
-                    "boq_items": {{ project.boq_items|default:"[]"|safe }},
-                    "division_subtotals": {{ project.boq_division_subtotals|default:"{}"|safe }},
-                    "boq_project_info": {{ project.boq_project_info|default:"{}"|safe }},
+                    "boq_items": {{ boq_items_json|safe }},
+                    "division_subtotals": {{ boq_division_subtotals_json|safe }},
+                    "boq_project_info": {{ boq_project_info_json|safe }},
                     "floor_area": {{ project.floor_area|default:0|floatformat:0 }},
                     "lot_size": {{ project.lot_size|default:0|floatformat:0 }}
                 }
@@ -2562,35 +2562,26 @@ function initializeBOQPagination() {
     // Get BOQ data from JSON script tag
     const boqDataScript = document.getElementById('boq-data');
     let rawBoqItems = [];
-    
+
     if (boqDataScript) {
         try {
-            // Get the raw text content
-            let rawData = boqDataScript.textContent;
-            console.log('DEBUG: Raw BOQ Data:', rawData);
-            
-            // Clean up Python-style data to proper JSON
-            rawData = rawData
-                .replace(/'/g, '"')  // Replace single quotes with double quotes
-                .replace(/True/g, 'true')  // Replace Python True with JavaScript true
-                .replace(/False/g, 'false')  // Replace Python False with JavaScript false
-                .replace(/None/g, 'null');  // Replace Python None with JavaScript null
-            
-            console.log('DEBUG: Cleaned BOQ Data:', rawData);
-            
-            const boqData = JSON.parse(rawData);
+            // Parse the JSON data directly (already properly formatted from backend)
+            const boqData = JSON.parse(boqDataScript.textContent);
             rawBoqItems = boqData.boq_items || [];
+            console.log('DEBUG: Successfully parsed BOQ data');
+            console.log('DEBUG: BOQ items:', rawBoqItems);
         } catch (e) {
             console.error('DEBUG: Error parsing BOQ data:', e);
             console.error('DEBUG: Raw data was:', boqDataScript.textContent);
             rawBoqItems = [];
         }
+    } else {
+        console.error('DEBUG: boq-data script tag not found');
     }
-    
+
     allBOQItems = rawBoqItems;
-    
-    console.log('DEBUG: Processed BOQ items:', allBOQItems);
-    console.log('DEBUG: BOQ items length:', allBOQItems.length);
+
+    console.log('DEBUG: Total BOQ items loaded:', allBOQItems.length);
     
     if (allBOQItems.length > 0) {
         renderHierarchicalBOQItems();

@@ -1,0 +1,288 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weekly Progress Report - {{ project.project_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #10b981;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 20pt;
+            color: #059669;
+        }
+
+        .header p {
+            margin: 3px 0;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .header .project-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #047857;
+            margin: 8px 0;
+        }
+
+        {% if logo_path %}
+        .header img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        {% endif %}
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 6px;
+            color: #1f2937;
+            page-break-after: avoid;
+        }
+
+        .project-info {
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .project-info p {
+            margin: 5px 0;
+            font-size: 9pt;
+        }
+
+        .project-info strong {
+            color: #374151;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 9pt;
+            page-break-inside: auto;
+        }
+
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 8px 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            color: #374151;
+            text-align: center;
+        }
+
+        td.number {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        td.center {
+            text-align: center;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        tfoot td {
+            background-color: #fef9c3;
+            font-weight: bold;
+            color: #854d0e;
+            border-top: 2px solid #ca8a04;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .summary-box {
+            background-color: #eff6ff;
+            border: 2px solid #3b82f6;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+
+        .summary-box h3 {
+            margin: 0 0 8px 0;
+            font-size: 11pt;
+            color: #1e40af;
+        }
+
+        .summary-box p {
+            margin: 4px 0;
+            font-size: 9pt;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 8pt;
+            color: #6b7280;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        {% if logo_path %}
+        <img src="{{ logo_path }}" alt="Powermason Logo">
+        {% endif %}
+        <h1>WEEKLY PROGRESS REPORTS</h1>
+        <p class="project-name">{{ project.project_name }}</p>
+        <p><strong>Project Code:</strong> {{ project.project_id }}</p>
+        <p><strong>Generated:</strong> {{ generated_date }}</p>
+        {% if date_range %}
+        <p><strong>Report Period:</strong> {{ date_range.start|date:"F d, Y" }} - {{ date_range.end|date:"F d, Y" }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Project Information -->
+    {% if include_project_header %}
+    <div class="section-title">Project Information</div>
+    <div class="project-info">
+        <p><strong>Project Name:</strong> {{ project.project_name }}</p>
+        <p><strong>Project Code:</strong> {{ project.project_id }}</p>
+        <p><strong>Location:</strong> {{ project.location|default:"N/A" }}</p>
+        <p><strong>Project Manager:</strong> {{ project.project_manager.user.get_full_name|default:project.project_manager.user.username|default:"N/A" }}</p>
+        <p><strong>Status:</strong> {{ project.get_status_display }}</p>
+        <p><strong>Total Reports:</strong> {{ reports|length }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Status Summary -->
+    {% if include_status_summary %}
+    <div class="section-title">Status Summary</div>
+    <div class="summary-box">
+        <h3>Report Status Breakdown</h3>
+        <p><strong>Total Reports:</strong> {{ reports|length }}</p>
+        <p><strong>Approved:</strong> {{ approved_count }}</p>
+        <p><strong>Pending:</strong> {{ pending_count }}</p>
+        <p><strong>Rejected:</strong> {{ rejected_count }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Progress Reports Table -->
+    {% if include_summary_table %}
+    <div class="section-title">Weekly Progress Summary</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Report #</th>
+                <th>Week Period</th>
+                <th>Status</th>
+                <th>Period<br>Progress %</th>
+                <th>Period<br>Amount (₱)</th>
+                <th>Cumulative<br>Progress %</th>
+                <th>Cumulative<br>Amount (₱)</th>
+                <th>Submitted By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td class="center">{{ report.report_number }}</td>
+                <td>{{ report.week_start_date|date:"M d" }} - {{ report.week_end_date|date:"M d, Y" }}</td>
+                <td class="center">
+                    {% if report.status == 'A' %}
+                    <span class="status-badge status-approved">APPROVED</span>
+                    {% elif report.status == 'P' %}
+                    <span class="status-badge status-pending">PENDING</span>
+                    {% else %}
+                    <span class="status-badge status-rejected">REJECTED</span>
+                    {% endif %}
+                </td>
+                <td class="number">{{ report.total_period_percent|floatformat:2 }}%</td>
+                <td class="number">{{ report.total_period_amount|floatformat:2|intcomma }}</td>
+                <td class="number">{{ report.cumulative_project_percent|floatformat:2 }}%</td>
+                <td class="number">{{ report.cumulative_project_amount|floatformat:2|intcomma }}</td>
+                <td>{% if report.submitted_by %}{{ report.submitted_by.user.get_full_name|default:report.submitted_by.user.username }}{% else %}N/A{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="center">No reports found for the selected period</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if include_totals and reports %}
+        <tfoot>
+            <tr>
+                <td colspan="3"><strong>TOTALS / LATEST</strong></td>
+                <td class="number"><strong>{{ latest_period_percent|floatformat:2 }}%</strong></td>
+                <td class="number"><strong>{{ total_period_amount|floatformat:2|intcomma }}</strong></td>
+                <td class="number"><strong>{{ latest_cumulative_percent|floatformat:2 }}%</strong></td>
+                <td class="number"><strong>{{ total_cumulative_amount|floatformat:2|intcomma }}</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>This is an automatically generated report from PowerMason Cost Tracking System</p>
+        <p>© 2024 PowerMason. All rights reserved.</p>
+    </div>
+</body>
+</html>
