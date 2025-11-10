@@ -73,4 +73,5 @@ waitress==3.0.2
 weasyprint==60.2
 cairocffi==1.7.1
 pangocffi==0.13.0
+pydyf==0.10.0
 whitenoise==6.9.0
