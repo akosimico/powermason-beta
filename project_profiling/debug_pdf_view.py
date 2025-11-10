@@ -101,24 +101,24 @@ def pdf_debug_test(request):
         })
         debug_info['suggestions'].append('Install system packages: libpango-1.0-0, libpangocairo-1.0-0')
 
-    # Test 6: GDK-Pixbuf
+    # Test 6: GDK-Pixbuf (Optional - only needed for SVG/WebP images)
     try:
         import gi
         gi.require_version('GdkPixbuf', '2.0')
         debug_info['dependencies']['GDK-Pixbuf'] = '✓ Installed'
         debug_info['tests'].append({
-            'name': 'GDK-Pixbuf',
+            'name': 'GDK-Pixbuf (Optional)',
             'status': '✓ Installed',
-            'details': 'Available'
+            'details': 'Available for SVG/WebP images'
         })
     except Exception as e:
-        debug_info['dependencies']['GDK-Pixbuf'] = f'✗ Not installed: {str(e)}'
+        debug_info['dependencies']['GDK-Pixbuf'] = f'⚠ Not installed: {str(e)}'
         debug_info['tests'].append({
-            'name': 'GDK-Pixbuf',
-            'status': '✗ Missing',
-            'details': str(e)
+            'name': 'GDK-Pixbuf (Optional)',
+            'status': '⚠ Missing',
+            'details': 'Not required for basic PDF generation. Only needed for SVG/WebP images.'
         })
-        debug_info['suggestions'].append('Install system package: libgdk-pixbuf2.0-0')
+        # Don't add to suggestions since it's optional
 
     # Test 7: Fonts
     font_dirs = ['/usr/share/fonts', '/usr/local/share/fonts']
@@ -153,6 +153,7 @@ def pdf_debug_test(request):
     # Test 8: Try to create a simple PDF
     try:
         from weasyprint import HTML
+        from io import BytesIO
 
         simple_html = """
         <!DOCTYPE html>
@@ -160,7 +161,7 @@ def pdf_debug_test(request):
         <head>
             <meta charset="UTF-8">
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
+                body { font-family: DejaVu Sans, Arial, sans-serif; padding: 20px; }
                 h1 { color: #2563eb; }
             </style>
         </head>
@@ -172,14 +173,15 @@ def pdf_debug_test(request):
         </html>
         """
 
-        html = HTML(string=simple_html)
-        pdf_bytes = html.write_pdf()
+        # Create HTML object and render to PDF
+        html_obj = HTML(string=simple_html)
+        pdf_bytes = html_obj.write_pdf()
 
         if pdf_bytes and len(pdf_bytes) > 100:
             debug_info['tests'].append({
                 'name': 'PDF Generation Test',
                 'status': '✓ Success',
-                'details': f'Generated {len(pdf_bytes)} bytes PDF'
+                'details': f'Generated {len(pdf_bytes):,} bytes PDF successfully'
             })
         else:
             debug_info['tests'].append({
@@ -190,10 +192,12 @@ def pdf_debug_test(request):
             debug_info['suggestions'].append('PDF generation produced invalid output')
 
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         debug_info['tests'].append({
             'name': 'PDF Generation Test',
             'status': '✗ Error',
-            'details': str(e)
+            'details': f'{str(e)}\n\nTraceback:\n{error_details}'
         })
         debug_info['suggestions'].append(f'PDF generation failed: {str(e)}')
 
