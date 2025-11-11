@@ -960,7 +960,7 @@
         
         <!-- Modal Body -->
         <div class="p-6">
-            <!-- Final Confirmation with DELETE input (Hidden initially) -->
+            <!-- Final Confirmation with REJECT input (Hidden initially) -->
             <div id="finalConfirmationSection" class="hidden mb-6">
                 <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div class="flex items-center mb-3">
@@ -969,10 +969,10 @@
                                 </svg>
                         <h4 class="text-sm font-bold text-red-800">Final Confirmation Required</h4>
                             </div>
-                    <p class="text-xs text-red-700 mb-3">To confirm the rejection, please type <strong>DELETE</strong> in the field below:</p>
-                    <input type="text" 
-                           id="deleteConfirmation" 
-                           placeholder="Type DELETE to confirm"
+                    <p class="text-xs text-red-700 mb-3">To confirm the rejection, please type <strong>REJECT</strong> in the field below:</p>
+                    <input type="text"
+                           id="deleteConfirmation"
+                           placeholder="Type REJECT to confirm"
                            class="w-full px-3 py-2 text-sm border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
                            autocomplete="off">
                     </div>
@@ -1286,12 +1286,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteConfirmationInput = document.getElementById('deleteConfirmation');
     
     if (finalRejectBtn && rejectForm && deleteConfirmationInput) {
-        // Enable/disable button based on DELETE input
+        // Enable/disable button based on REJECT input
         deleteConfirmationInput.addEventListener('input', function() {
-            const isDeleteTyped = this.value.trim().toUpperCase() === 'DELETE';
-            finalRejectBtn.disabled = !isDeleteTyped;
-            
-            if (isDeleteTyped) {
+            const isRejectTyped = this.value.trim().toUpperCase() === 'REJECT';
+            finalRejectBtn.disabled = !isRejectTyped;
+
+            if (isRejectTyped) {
                 finalRejectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 finalRejectBtn.classList.add('hover:bg-red-900');
             } else {
@@ -1299,18 +1299,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 finalRejectBtn.classList.remove('hover:bg-red-900');
             }
         });
-        
+
         finalRejectBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // Check if DELETE is typed correctly
-            if (deleteConfirmationInput.value.trim().toUpperCase() !== 'DELETE') {
+
+            // Check if REJECT is typed correctly
+            if (deleteConfirmationInput.value.trim().toUpperCase() !== 'REJECT') {
                 // Add error styling to input
                 deleteConfirmationInput.classList.add('border-red-500', 'bg-red-50');
                 deleteConfirmationInput.classList.remove('border-red-300');
-                
+
                 // Show error message
-                showDeleteError();
+                showRejectError();
                 return;
             }
             
@@ -1360,20 +1360,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Function to show DELETE error message
-    function showDeleteError() {
+    // Function to show REJECT error message
+    function showRejectError() {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'mt-2 text-xs text-red-600 font-medium';
-        errorDiv.textContent = 'Please type "DELETE" exactly to confirm rejection';
-        
+        errorDiv.textContent = 'Please type "REJECT" exactly to confirm rejection';
+
         // Remove any existing error message
         const existingError = deleteConfirmationInput.parentElement.querySelector('.text-red-600');
         if (existingError) {
             existingError.remove();
         }
-        
+
         deleteConfirmationInput.parentElement.appendChild(errorDiv);
-        
+
         // Remove error styling after 3 seconds
         setTimeout(() => {
             deleteConfirmationInput.classList.remove('border-red-500', 'bg-red-50');

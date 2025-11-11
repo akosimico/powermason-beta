@@ -3,7 +3,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import date, timedelta
+from django.contrib.auth import get_user_model
 from .models import Employee
+
+User = get_user_model()
 
 
 class EmployeeForm(forms.ModelForm):
@@ -73,11 +76,30 @@ class EmployeeForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         role = self.cleaned_data.get('role')
-        
+
         # Email is required for Project Managers
         if role == 'PM' and not email:
             raise ValidationError('Email is required for Project Manager role.')
-        
+
+        # For PM role, check if email is already in use
+        if role == 'PM' and email:
+            # Validate email format
+            if not email or '@' not in email:
+                raise ValidationError('Please enter a valid email address.')
+
+            # Check if email already exists in User model (exclude current instance if editing)
+            existing_user = User.objects.filter(email=email).first()
+            if existing_user:
+                # If editing and this user is linked to current employee, allow it
+                if self.instance.pk and self.instance.user_profile and self.instance.user_profile.user == existing_user:
+                    return email
+                raise ValidationError('This email is already associated with an existing user account. Please use a different email.')
+
+            # Check if email is already used by another employee
+            existing_employee = Employee.objects.filter(email=email).exclude(pk=self.instance.pk if self.instance.pk else None).first()
+            if existing_employee:
+                raise ValidationError(f'This email is already used by employee: {existing_employee.full_name} ({existing_employee.employee_id})')
+
         return email
     
     def clean_hire_date(self):

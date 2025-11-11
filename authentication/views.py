@@ -25,6 +25,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+# Local imports
+from authentication.utils.toast_helpers import set_toast_message
+
 # Allauth imports - FIXED IMPORTS
 from allauth.account.models import EmailAddress, EmailConfirmation
 from allauth.account.signals import email_confirmation_sent
@@ -365,6 +368,11 @@ def clear_welcome_flag(request):
     if not profile.has_seen_welcome:
         profile.has_seen_welcome = True
         profile.save()
+
+    # Also clear the password change welcome flag if it exists
+    if 'show_welcome_after_password_change' in request.session:
+        del request.session['show_welcome_after_password_change']
+
     return JsonResponse({"status": "ok"})
 
 # Add this view for the verification sent page
@@ -760,13 +768,109 @@ def dashboard_signed_with_role(request, token=None, role=None):
 class CustomPasswordChangeView(PasswordChangeView):
     template_name = 'account/password_change.html'
     form_class = StyledPasswordChangeForm
-    success_url = reverse_lazy('account_change_password')
+    success_url = reverse_lazy('dashboard')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Check if this is a forced password change
+        if hasattr(self.request.user, 'userprofile'):
+            context['is_forced'] = self.request.user.userprofile.force_password_change
+        else:
+            context['is_forced'] = False
+        return context
 
     def form_valid(self, form):
         form.save()
         update_session_auth_hash(self.request, form.user)
-        messages.success(self.request, "Your password has been changed successfully!")
+
+        # Clear the force_password_change flag if it was set
+        was_forced = False
+        if hasattr(self.request.user, 'userprofile'):
+            user_profile = self.request.user.userprofile
+            if user_profile.force_password_change:
+                user_profile.force_password_change = False
+                user_profile.save()
+                was_forced = True
+
+                # Use toast notification for forced password change
+                set_toast_message(
+                    self.request,
+                    "Password changed successfully! You can now access all features.",
+                    'success',
+                    duration=6000
+                )
+
+                # Set flag to show welcome popup after password change
+                if not user_profile.has_seen_welcome:
+                    self.request.session['show_welcome_after_password_change'] = True
+            else:
+                # Regular password change
+                set_toast_message(
+                    self.request,
+                    "✓ Your password has been changed successfully!",
+                    'success'
+                )
+        else:
+            set_toast_message(
+                self.request,
+                "✓ Your password has been changed successfully!",
+                'success'
+            )
+
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        # Collect all error messages with user-friendly formatting
+        error_messages = []
+
+        # Get field-specific errors
+        for field, errors in form.errors.items():
+            if field == '__all__':
+                # Non-field errors (e.g., passwords don't match)
+                for error in errors:
+                    error_messages.append(f"• {str(error)}")
+            elif field == 'old_password':
+                # Old password errors
+                for error in errors:
+                    if 'incorrect' in str(error).lower() or 'wrong' in str(error).lower():
+                        error_messages.append("• Your current password is incorrect")
+                    else:
+                        error_messages.append(f"• Current password: {error}")
+            elif field == 'new_password1':
+                # New password errors
+                for error in errors:
+                    error_messages.append(f"• New password: {error}")
+            elif field == 'new_password2':
+                # Password confirmation errors
+                for error in errors:
+                    if 'match' in str(error).lower():
+                        error_messages.append("• New passwords don't match")
+                    else:
+                        error_messages.append(f"• Password confirmation: {error}")
+            else:
+                # Other field errors
+                field_name = form.fields[field].label or field.replace('_', ' ').title()
+                for error in errors:
+                    error_messages.append(f"• {field_name}: {error}")
+
+        # Show error toast with all messages
+        if error_messages:
+            error_text = "\n".join(error_messages)
+            set_toast_message(
+                self.request,
+                f"❌ Password Change Failed\n\n{error_text}",
+                'error',
+                duration=8000
+            )
+        else:
+            set_toast_message(
+                self.request,
+                "❌ Please correct the errors in the form.",
+                'error',
+                duration=5000
+            )
+
+        return super().form_invalid(form)
 
 @login_required
 @verified_email_required

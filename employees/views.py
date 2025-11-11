@@ -1,6 +1,7 @@
 # employees/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
@@ -18,9 +19,11 @@ from .models import Employee, ProjectAssignment
 from .forms import EmployeeForm, EmployeeFilterForm
 from authentication.models import UserProfile
 from authentication.utils.decorators import verified_email_required, role_required
+from authentication.utils.toast_helpers import set_toast_message
 from project_profiling.models import ProjectProfile
 from manage_client.models import Client
 
+User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
@@ -185,18 +188,74 @@ class EmployeeCreateView(CreateView):
     form_class = EmployeeForm
     template_name = 'employees/employee_form.html'
     success_url = reverse_lazy('employee:list')
-    
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
-        
-        messages.success(self.request, f'Employee {self.object.full_name} has been created successfully.')
-        
+
+        # Auto-create user account for Project Managers
+        if self.object.role == 'PM' and self.object.email:
+            try:
+                # Generate default password: {first_initial}.{lastname}{MMDDYYYY}
+                first_initial = self.object.first_name[0].lower()
+                lastname = self.object.last_name.lower().replace(' ', '')
+                hire_date_formatted = self.object.hire_date.strftime('%m%d%Y')
+                default_password = f"{first_initial}.{lastname}{hire_date_formatted}"
+
+                # Create User account
+                user = User.objects.create_user(
+                    email=self.object.email,
+                    password=default_password,
+                    first_name=self.object.first_name,
+                    last_name=self.object.last_name
+                )
+
+                # Create UserProfile with PM role and force password change
+                user_profile = UserProfile.objects.create(
+                    user=user,
+                    role='PM',
+                    force_password_change=True
+                )
+
+                # Link Employee to UserProfile
+                self.object.user_profile = user_profile
+                self.object.save()
+
+                # Log the account creation
+                logger.info(
+                    f'PM account auto-created for {self.object.full_name} ({self.object.email}) '
+                    f'by {self.request.user}. Default password format: {first_initial}.{lastname}{hire_date_formatted}'
+                )
+
+                # Use toast notification with detailed info
+                toast_message = (
+                    f'✓ Employee {self.object.full_name} created successfully!\n\n'
+                    f'📧 Email: {self.object.email}\n'
+                    f'🔑 Default Password: {default_password}\n\n'
+                    f'⚠️ User must change password on first login.'
+                )
+                set_toast_message(self.request, toast_message, 'success', duration=10000)
+
+            except Exception as e:
+                logger.error(f'Error creating PM account for {self.object.full_name}: {str(e)}')
+                toast_message = (
+                    f'⚠️ Employee {self.object.full_name} was created, but account creation failed.\n'
+                    f'Please create the user account manually.'
+                )
+                set_toast_message(self.request, toast_message, 'warning', duration=8000)
+        else:
+            # Use toast for non-PM employees
+            set_toast_message(
+                self.request,
+                f'✓ Employee {self.object.full_name} has been created successfully!',
+                'success'
+            )
+
         # Log the creation
         logger.info(f'Employee {self.object.full_name} created by {self.request.user}')
-        
+
         return response
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Add New Employee'

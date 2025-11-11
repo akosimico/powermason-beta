@@ -277,12 +277,16 @@ def view_weekly_report(request, report_id):
             divisions[item.division] = []
         divisions[item.division].append(item)
 
+    # Check if user came from project view
+    from_project_view = request.GET.get('from_project', 'false') == 'true'
+
     context = {
         'report': report,
         'project': report.project,
         'divisions': divisions,
         'can_approve': request.user.userprofile.role in ['OM', 'EG'] and report.status == 'P',
         'can_edit': request.user.userprofile.role == 'PM' and report.status == 'R',  # Can edit if rejected
+        'from_project_view': from_project_view,
     }
 
     return render(request, 'scheduling/weekly_progress/view_report.html', context)

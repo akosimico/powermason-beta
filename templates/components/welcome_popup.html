@@ -1,7 +1,8 @@
 
 {% load static %}
 <!-- Welcome Popup Component -->
-{% if user.is_authenticated and not user.userprofile.has_seen_welcome %}
+{% if user.is_authenticated and not user.userprofile.force_password_change %}
+{% if not user.userprofile.has_seen_welcome or request.session.show_welcome_after_password_change %}
 
     <div id="welcome-popup-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform scale-95 transition-all duration-500 ease-out max-h-[90vh] overflow-y-auto">
@@ -159,16 +160,19 @@
     <script>
         (function() {
             'use strict';
-            
+
             let popupElement = null;
             let countdownActive = true;
             let seconds = 10;
             let countdownInterval = null;
-            
+
+            // Check if we should show welcome after password change
+            const showWelcomeAfterPasswordChange = {{ request.session.show_welcome_after_password_change|yesno:"true,false" }};
+
             function initializePopup() {
                 popupElement = document.getElementById('welcome-popup-overlay');
                 if (!popupElement) return;
-                
+
                 showPopupWithAnimation();
                 setupEventListeners();
                 startCountdown();
@@ -306,4 +310,5 @@
             }
         })();
     </script>
+{% endif %}
 {% endif %}

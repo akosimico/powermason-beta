@@ -22,10 +22,15 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 15px;
         }
         .header h1 {
             margin: 0;
@@ -36,7 +41,7 @@
             padding: 30px 20px;
         }
         .alert-badge {
-            background-color: #06b6d4;
+            background-color: #2563eb;
             color: #ffffff;
             padding: 8px 16px;
             border-radius: 20px;
@@ -46,8 +51,8 @@
             margin-bottom: 20px;
         }
         .report-info {
-            background-color: #cffafe;
-            border-left: 4px solid #06b6d4;
+            background-color: #dbeafe;
+            border-left: 4px solid #2563eb;
             padding: 15px;
             margin: 20px 0;
             border-radius: 4px;
@@ -57,7 +62,7 @@
             font-size: 14px;
         }
         .report-info strong {
-            color: #0891b2;
+            color: #1d4ed8;
             font-weight: 600;
         }
         .action-required {
@@ -77,8 +82,8 @@
         .button {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #06b6d4;
-            color: #ffffff;
+            background-color: #2563eb;
+            color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
@@ -86,7 +91,7 @@
             text-align: center;
         }
         .button:hover {
-            background-color: #0891b2;
+            background-color: #1d4ed8;
         }
         .footer {
             background-color: #f9fafb;
@@ -113,6 +118,7 @@
 <body>
     <div class="email-container">
         <div class="header">
+            <img src="{{ logo_path }}" alt="Powermason Logo">
             <h1>🔔 New Progress Report for Review</h1>
         </div>
 

@@ -22,10 +22,15 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 15px;
         }
         .header h1 {
             margin: 0;
@@ -36,7 +41,7 @@
             padding: 30px 20px;
         }
         .rejected-badge {
-            background-color: #ef4444;
+            background-color: #991b1b;
             color: #ffffff;
             padding: 8px 16px;
             border-radius: 20px;
@@ -47,7 +52,7 @@
         }
         .report-info {
             background-color: #fee2e2;
-            border-left: 4px solid #ef4444;
+            border-left: 4px solid #991b1b;
             padding: 15px;
             margin: 20px 0;
             border-radius: 4px;
@@ -57,7 +62,7 @@
             font-size: 14px;
         }
         .report-info strong {
-            color: #dc2626;
+            color: #7f1d1d;
             font-weight: 600;
         }
         .feedback-box {
@@ -94,7 +99,7 @@
             display: inline-block;
             padding: 12px 24px;
             background-color: #3b82f6;
-            color: #ffffff;
+            color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
@@ -129,6 +134,7 @@
 <body>
     <div class="email-container">
         <div class="header">
+            <img src="{{ logo_path }}" alt="Powermason Logo">
             <h1>❌ Progress Report Rejected</h1>
         </div>
 

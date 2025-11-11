@@ -22,10 +22,15 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 15px;
         }
         .header h1 {
             margin: 0;
@@ -36,7 +41,7 @@
             padding: 30px 20px;
         }
         .success-badge {
-            background-color: #10b981;
+            background-color: #1e40af;
             color: #ffffff;
             padding: 8px 16px;
             border-radius: 20px;
@@ -46,8 +51,8 @@
             margin-bottom: 20px;
         }
         .project-info {
-            background-color: #d1fae5;
-            border-left: 4px solid #10b981;
+            background-color: #dbeafe;
+            border-left: 4px solid #1e40af;
             padding: 15px;
             margin: 20px 0;
             border-radius: 4px;
@@ -57,12 +62,12 @@
             font-size: 14px;
         }
         .project-info strong {
-            color: #059669;
+            color: #1e3a8a;
             font-weight: 600;
         }
         .approval-box {
-            background-color: #d1fae5;
-            border: 2px solid #10b981;
+            background-color: #dbeafe;
+            border: 2px solid #1e40af;
             padding: 20px;
             border-radius: 6px;
             margin: 20px 0;
@@ -70,20 +75,20 @@
         }
         .approval-box p {
             margin: 0;
-            color: #065f46;
+            color: #1e3a8a;
             font-weight: 600;
             font-size: 18px;
         }
         .approval-box .checkmark {
             font-size: 48px;
-            color: #10b981;
+            color: #1e40af;
             margin-bottom: 10px;
         }
         .button {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #10b981;
-            color: #ffffff;
+            background-color: #1e40af;
+            color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
@@ -91,7 +96,7 @@
             text-align: center;
         }
         .button:hover {
-            background-color: #059669;
+            background-color: #1e3a8a;
         }
         .footer {
             background-color: #f9fafb;
@@ -118,6 +123,7 @@
 <body>
     <div class="email-container">
         <div class="header">
+            <img src="{{ logo_path }}" alt="Powermason Logo">
             <h1>✅ Schedule Approved!</h1>
         </div>
 

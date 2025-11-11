@@ -75,6 +75,7 @@ def send_schedule_submitted_email(pm_user, schedule, domain):
         'project_name': schedule.project.project_name,
         'version': schedule.version,
         'schedule_link': f"{domain}/scheduling/schedule/{schedule.id}/detail/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/schedule_submitted.html', context)
@@ -112,6 +113,7 @@ def send_schedule_pending_approval_email(om_eg_users, schedule, pm_name, domain)
         'project_name': schedule.project.project_name,
         'version': schedule.version,
         'review_link': f"{domain}/scheduling/schedule/{schedule.id}/review/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/schedule_pending_approval.html', context)
@@ -152,6 +154,7 @@ def send_schedule_approved_email(pm_user, schedule, approver_name, domain):
         'version': schedule.version,
         'approver_name': approver_name,
         'schedule_link': f"{domain}/scheduling/schedule/{schedule.id}/detail/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/schedule_approved.html', context)
@@ -189,6 +192,7 @@ def send_schedule_rejected_email(pm_user, schedule, rejector_name, rejection_rea
         'rejector_name': rejector_name,
         'rejection_reason': rejection_reason or "No specific reason provided",
         'schedule_link': f"{domain}/scheduling/schedule/{schedule.id}/detail/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/schedule_rejected.html', context)
@@ -226,6 +230,7 @@ def send_progress_report_submitted_email(pm_user, report, domain):
         'project_name': report.project.project_name,
         'week_ending': report.week_end_date.strftime('%Y-%m-%d'),
         'report_link': f"{domain}/scheduling/progress/weekly/{report.id}/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/progress_report_submitted.html', context)
@@ -263,6 +268,7 @@ def send_progress_report_pending_email(om_eg_users, report, pm_name, domain):
         'project_name': report.project.project_name,
         'week_ending': report.week_end_date.strftime('%Y-%m-%d'),
         'review_link': f"{domain}/scheduling/progress/weekly/{report.id}/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/progress_report_pending.html', context)
@@ -303,6 +309,7 @@ def send_progress_report_approved_email(pm_user, report, approver_name, domain):
         'week_ending': report.week_end_date.strftime('%Y-%m-%d'),
         'approver_name': approver_name,
         'report_link': f"{domain}/scheduling/progress/weekly/{report.id}/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/progress_report_approved.html', context)
@@ -338,6 +345,7 @@ def send_progress_report_rejected_email(pm_user, report, rejector_name, rejectio
         'rejector_name': rejector_name,
         'rejection_reason': rejection_reason or "No specific reason provided",
         'report_link': f"{domain}/scheduling/progress/weekly/{report.id}/",
+        'logo_path': f"{domain}/static/img/powermason_logo.png",
     }
 
     html_message = render_to_string('emails/progress_report_rejected.html', context)

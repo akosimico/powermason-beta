@@ -240,55 +240,137 @@ def general_projects_list(request):
     # Use profile role
     role = verified_profile.role
 
-    # Toggle: show archived or active projects
-    show_archived = request.GET.get('archived') == '1'
-    projects = ProjectProfile.objects.filter(
-        archived=show_archived,
-        project_source="GC"
-    )
-     # Attach approved schedule to each project
-    for project in projects:
-        approved_schedule = ProjectSchedule.objects.filter(
-            project=project,
-            status="APPROVED",
-            is_active=True
-        ).first()
-        project.approved_schedule = approved_schedule  # dynamically attach it
-        
-    # Get pending projects for General Contractor
-    pending_projects = ProjectStaging.objects.filter(
-        status="PL", 
-        is_draft=False,
-        project_data__project_source="GC"
-    ).order_by('-submitted_at')
-    
-    # Get project managers for pending projects
-    pending_project_managers = {}
-    for pending_project in pending_projects:
-        if pending_project.project_data and isinstance(pending_project.project_data, dict):
-            manager_id = pending_project.project_data.get('project_manager_id')
-            if manager_id:
-                try:
-                    from authentication.models import UserProfile
-                    manager = UserProfile.objects.get(id=manager_id)
-                    pending_project_managers[pending_project.id] = manager
-                except UserProfile.DoesNotExist:
-                    pending_project_managers[pending_project.id] = None
-    
-    # Calculate total approved budget
-    total_budget = projects.aggregate(
-        total=models.Sum('approved_budget')
-    )['total'] or 0
-    
-    return render(request, "project_profiling/general_project_list.html", {
-        "projects": projects,
-        "pending_projects": pending_projects,
-        "pending_project_managers": pending_project_managers,
-        "url_name": resolve(request.path_info).url_name,  
-        "project_type": "GC",
-        "show_archived": show_archived,
-        "total_budget": total_budget
-    })
+    try:
+        # Get filter parameters
+        show_archived = request.GET.get('archived') == '1'
+        status_filter = request.GET.get('status', '').strip()
+        search_query = request.GET.get('search', '').strip()
+
+        # Validate status filter
+        valid_statuses = ['PL', 'OG', 'CP', 'CN']
+        if status_filter and status_filter not in valid_statuses:
+            status_filter = ''
+
+        # Base query
+        projects = ProjectProfile.objects.filter(
+            archived=show_archived,
+            project_source="GC"
+        )
+
+        # Apply status filter
+        if status_filter:
+            projects = projects.filter(status=status_filter)
+
+        # Apply search filter with error handling
+        if search_query:
+            try:
+                projects = projects.filter(
+                    Q(project_name__icontains=search_query) |
+                    Q(project_id__icontains=search_query) |
+                    Q(location__icontains=search_query) |
+                    Q(client__company_name__icontains=search_query) |
+                    Q(client__contact_name__icontains=search_query)
+                )
+            except Exception as e:
+                print(f"Search filter error: {e}")
+                # If search fails, just filter by project name as fallback
+                projects = projects.filter(project_name__icontains=search_query)
+
+        # Order by status and creation date
+        projects = projects.order_by('-created_at')
+
+        # Attach approved schedule to each project
+        for project in projects:
+            approved_schedule = ProjectSchedule.objects.filter(
+                project=project,
+                status="APPROVED",
+                is_active=True
+            ).first()
+            project.approved_schedule = approved_schedule  # dynamically attach it
+
+        # Get pending projects for General Contractor
+        pending_projects = ProjectStaging.objects.filter(
+            status="PL",
+            is_draft=False,
+            project_data__project_source="GC"
+        ).order_by('-submitted_at')
+
+        # Get project managers for pending projects
+        pending_project_managers = {}
+        for pending_project in pending_projects:
+            if pending_project.project_data and isinstance(pending_project.project_data, dict):
+                manager_id = pending_project.project_data.get('project_manager_id')
+                if manager_id:
+                    try:
+                        from authentication.models import UserProfile
+                        manager = UserProfile.objects.get(id=manager_id)
+                        pending_project_managers[pending_project.id] = manager
+                    except UserProfile.DoesNotExist:
+                        pending_project_managers[pending_project.id] = None
+
+        # Calculate total approved budget
+        total_budget = projects.aggregate(
+            total=models.Sum('approved_budget')
+        )['total'] or 0
+
+        # Status choices for filter dropdown
+        status_choices = [
+            ('PL', 'Planned'),
+            ('OG', 'Ongoing'),
+            ('CP', 'Completed'),
+            ('CN', 'Cancelled'),
+        ]
+
+        # Count projects by status with error handling
+        try:
+            status_counts = {
+                'all': ProjectProfile.objects.filter(archived=show_archived, project_source="GC").count(),
+                'PL': ProjectProfile.objects.filter(archived=show_archived, project_source="GC", status='PL').count(),
+                'OG': ProjectProfile.objects.filter(archived=show_archived, project_source="GC", status='OG').count(),
+                'CP': ProjectProfile.objects.filter(archived=show_archived, project_source="GC", status='CP').count(),
+                'CN': ProjectProfile.objects.filter(archived=show_archived, project_source="GC", status='CN').count(),
+            }
+        except Exception as e:
+            print(f"Error counting projects by status: {e}")
+            status_counts = {'all': 0, 'PL': 0, 'OG': 0, 'CP': 0, 'CN': 0}
+
+        return render(request, "project_profiling/general_project_list.html", {
+            "projects": projects,
+            "pending_projects": pending_projects,
+            "pending_project_managers": pending_project_managers,
+            "url_name": resolve(request.path_info).url_name,
+            "project_type": "GC",
+            "show_archived": show_archived,
+            "total_budget": total_budget,
+            "status_filter": status_filter,
+            "search_query": search_query,
+            "status_choices": status_choices,
+            "status_counts": status_counts,
+        })
+
+    except Exception as e:
+        # Log the error
+        print(f"Error in general_projects_list: {e}")
+        import traceback
+        traceback.print_exc()
+
+        # Show error message to user
+        messages.error(request, f"An error occurred while loading projects: {str(e)}")
+
+        # Return with empty data
+        return render(request, "project_profiling/general_project_list.html", {
+            "projects": ProjectProfile.objects.none(),
+            "pending_projects": ProjectStaging.objects.none(),
+            "pending_project_managers": {},
+            "url_name": resolve(request.path_info).url_name,
+            "project_type": "GC",
+            "show_archived": False,
+            "total_budget": 0,
+            "status_filter": '',
+            "search_query": '',
+            "status_choices": [('PL', 'Planned'), ('OG', 'Ongoing'), ('CP', 'Completed'), ('CN', 'Cancelled')],
+            "status_counts": {'all': 0, 'PL': 0, 'OG': 0, 'CP': 0, 'CN': 0},
+        })
     
 @role_required('OM', 'EG')
 def project_unarchive_signed_with_role(request, project_type, pk):
@@ -348,54 +430,137 @@ def direct_projects_list(request):
     # Use profile role
     role = verified_profile.role
 
-    # Toggle: show archived or active projects
-    show_archived = request.GET.get('archived') == '1'
-    projects = ProjectProfile.objects.filter(
-        archived=show_archived,
-        project_source="DC"
-    )
-     # Attach approved schedule to each project
-    for project in projects:
-        approved_schedule = ProjectSchedule.objects.filter(
-            project=project,
-            status="APPROVED",
-            is_active=True
-        ).first()
-        project.approved_schedule = approved_schedule  
-    # Get pending projects for Direct Client
-    pending_projects = ProjectStaging.objects.filter(
-        status="PL", 
-        is_draft=False,
-        project_data__project_source="DC"
-    ).order_by('-submitted_at')
-    
-    # Get project managers for pending projects
-    pending_project_managers = {}
-    for pending_project in pending_projects:
-        if pending_project.project_data and isinstance(pending_project.project_data, dict):
-            manager_id = pending_project.project_data.get('project_manager_id')
-            if manager_id:
-                try:
-                    from authentication.models import UserProfile
-                    manager = UserProfile.objects.get(id=manager_id)
-                    pending_project_managers[pending_project.id] = manager
-                except UserProfile.DoesNotExist:
-                    pending_project_managers[pending_project.id] = None
-    
-    # Calculate total approved budget
-    total_budget = projects.aggregate(
-        total=models.Sum('approved_budget')
-    )['total'] or 0
-    
-    return render(request, "project_profiling/direct_project_list.html", {
-        "projects": projects,
-        "pending_projects": pending_projects,
-        "pending_project_managers": pending_project_managers,
-        "url_name": resolve(request.path_info).url_name,  
-        "project_type": "DC",
-        "show_archived": show_archived,
-        "total_budget": total_budget
-    })
+    try:
+        # Get filter parameters
+        show_archived = request.GET.get('archived') == '1'
+        status_filter = request.GET.get('status', '').strip()
+        search_query = request.GET.get('search', '').strip()
+
+        # Validate status filter
+        valid_statuses = ['PL', 'OG', 'CP', 'CN']
+        if status_filter and status_filter not in valid_statuses:
+            status_filter = ''
+
+        # Base query
+        projects = ProjectProfile.objects.filter(
+            archived=show_archived,
+            project_source="DC"
+        )
+
+        # Apply status filter
+        if status_filter:
+            projects = projects.filter(status=status_filter)
+
+        # Apply search filter with error handling
+        if search_query:
+            try:
+                projects = projects.filter(
+                    Q(project_name__icontains=search_query) |
+                    Q(project_id__icontains=search_query) |
+                    Q(location__icontains=search_query) |
+                    Q(client__company_name__icontains=search_query) |
+                    Q(client__contact_name__icontains=search_query)
+                )
+            except Exception as e:
+                print(f"Search filter error: {e}")
+                # If search fails, just filter by project name as fallback
+                projects = projects.filter(project_name__icontains=search_query)
+
+        # Order by status and creation date
+        projects = projects.order_by('-created_at')
+
+        # Attach approved schedule to each project
+        for project in projects:
+            approved_schedule = ProjectSchedule.objects.filter(
+                project=project,
+                status="APPROVED",
+                is_active=True
+            ).first()
+            project.approved_schedule = approved_schedule
+
+        # Get pending projects for Direct Client
+        pending_projects = ProjectStaging.objects.filter(
+            status="PL",
+            is_draft=False,
+            project_data__project_source="DC"
+        ).order_by('-submitted_at')
+
+        # Get project managers for pending projects
+        pending_project_managers = {}
+        for pending_project in pending_projects:
+            if pending_project.project_data and isinstance(pending_project.project_data, dict):
+                manager_id = pending_project.project_data.get('project_manager_id')
+                if manager_id:
+                    try:
+                        from authentication.models import UserProfile
+                        manager = UserProfile.objects.get(id=manager_id)
+                        pending_project_managers[pending_project.id] = manager
+                    except UserProfile.DoesNotExist:
+                        pending_project_managers[pending_project.id] = None
+
+        # Calculate total approved budget
+        total_budget = projects.aggregate(
+            total=models.Sum('approved_budget')
+        )['total'] or 0
+
+        # Status choices for filter dropdown
+        status_choices = [
+            ('PL', 'Planned'),
+            ('OG', 'Ongoing'),
+            ('CP', 'Completed'),
+            ('CN', 'Cancelled'),
+        ]
+
+        # Count projects by status with error handling
+        try:
+            status_counts = {
+                'all': ProjectProfile.objects.filter(archived=show_archived, project_source="DC").count(),
+                'PL': ProjectProfile.objects.filter(archived=show_archived, project_source="DC", status='PL').count(),
+                'OG': ProjectProfile.objects.filter(archived=show_archived, project_source="DC", status='OG').count(),
+                'CP': ProjectProfile.objects.filter(archived=show_archived, project_source="DC", status='CP').count(),
+                'CN': ProjectProfile.objects.filter(archived=show_archived, project_source="DC", status='CN').count(),
+            }
+        except Exception as e:
+            print(f"Error counting projects by status: {e}")
+            status_counts = {'all': 0, 'PL': 0, 'OG': 0, 'CP': 0, 'CN': 0}
+
+        return render(request, "project_profiling/direct_project_list.html", {
+            "projects": projects,
+            "pending_projects": pending_projects,
+            "pending_project_managers": pending_project_managers,
+            "url_name": resolve(request.path_info).url_name,
+            "project_type": "DC",
+            "show_archived": show_archived,
+            "total_budget": total_budget,
+            "status_filter": status_filter,
+            "search_query": search_query,
+            "status_choices": status_choices,
+            "status_counts": status_counts,
+        })
+
+    except Exception as e:
+        # Log the error
+        print(f"Error in direct_projects_list: {e}")
+        import traceback
+        traceback.print_exc()
+
+        # Show error message to user
+        messages.error(request, f"An error occurred while loading projects: {str(e)}")
+
+        # Return with empty data
+        return render(request, "project_profiling/direct_project_list.html", {
+            "projects": ProjectProfile.objects.none(),
+            "pending_projects": ProjectStaging.objects.none(),
+            "pending_project_managers": {},
+            "url_name": resolve(request.path_info).url_name,
+            "project_type": "DC",
+            "show_archived": False,
+            "total_budget": 0,
+            "status_filter": '',
+            "search_query": '',
+            "status_choices": [('PL', 'Planned'), ('OG', 'Ongoing'), ('CP', 'Completed'), ('CN', 'Cancelled')],
+            "status_counts": {'all': 0, 'PL': 0, 'OG': 0, 'CP': 0, 'CN': 0},
+        })
 
 # def update_project_status(request, project_id):
 #     if request.method == "POST":
@@ -522,6 +687,11 @@ def project_view(request, project_source, pk):
     boq_division_subtotals_json = json.dumps(project.boq_division_subtotals if project.boq_division_subtotals else {})
     boq_project_info_json = json.dumps(project.boq_project_info if project.boq_project_info else {})
 
+    # --- Get Recent Weekly Progress Reports (Latest 3) ---
+    recent_reports = WeeklyProgressReport.objects.filter(
+        project=project
+    ).order_by('-week_end_date')[:3]
+
     # --- Render ---
     return render(request, 'project_profiling/project_view.html', {
         'project': project,
@@ -542,6 +712,8 @@ def project_view(request, project_source, pk):
         'boq_items_json': boq_items_json,
         'boq_division_subtotals_json': boq_division_subtotals_json,
         'boq_project_info_json': boq_project_info_json,
+        # Recent weekly reports
+        'recent_reports': recent_reports,
     })
 
 
@@ -1384,18 +1556,153 @@ def review_pending_project(request, project_id):
 
         elif action == "reject":
             print("DEBUG: Reject action triggered")
-            project_name = project.project_data.get('project_name', 'Untitled')
-            project_id = project.project_data.get('project_id', 'N/A')
-            project_source = project.project_source
-            project.delete()
-            print("DEBUG: Deleted staging project after rejection")
-            set_toast_message(request, f"⚠️ Project '{project_name}' (ID: {project_id}) has been rejected and removed from the system.", "warning")
-            
-            # Redirect to appropriate project list based on project source
-            if project_source == "GC":
-                return redirect("project_list_general_contractor")
-            else:
-                return redirect("project_list_direct_client")
+            try:
+                # Import required models
+                from employees.models import Employee
+                from authentication.models import UserProfile
+                from manage_client.models import Client
+
+                project_name = project.project_data.get('project_name', 'Untitled')
+                project_id_placeholder = project.project_data.get('project_id', 'N/A')
+                project_source = project.project_source
+                rejection_reason = request.POST.get('rejection_reason', '')
+
+                # Get related objects
+                client = None
+                if project.project_data.get("client_id"):
+                    try:
+                        client = Client.objects.get(id=project.project_data.get("client_id"))
+                    except Client.DoesNotExist:
+                        print(f"DEBUG: Client with ID {project.project_data.get('client_id')} not found")
+
+                project_type_instance = None
+                if project.project_data.get("project_type_id"):
+                    try:
+                        project_type_instance = ProjectType.objects.get(id=project.project_data.get("project_type_id"))
+                    except ProjectType.DoesNotExist:
+                        print(f"DEBUG: ProjectType with ID {project.project_data.get('project_type_id')} not found")
+
+                # Parse dates
+                from datetime import datetime as dt
+                start_date = None
+                if project.project_data.get("start_date"):
+                    try:
+                        start_date = dt.strptime(project.project_data.get("start_date"), "%Y-%m-%d").date()
+                    except (ValueError, TypeError):
+                        print(f"DEBUG: Invalid start_date: {project.project_data.get('start_date')}")
+
+                target_completion_date = None
+                if project.project_data.get("target_completion_date"):
+                    try:
+                        target_completion_date = dt.strptime(project.project_data.get("target_completion_date"), "%Y-%m-%d").date()
+                    except (ValueError, TypeError):
+                        print(f"DEBUG: Invalid target_completion_date: {project.project_data.get('target_completion_date')}")
+
+                # Get employee assignments
+                project_in_charge = None
+                safety_officer = None
+                quality_assurance_officer = None
+                quality_officer = None
+                foreman = None
+                project_manager = None
+
+                if project.project_data.get("project_in_charge"):
+                    try:
+                        project_in_charge = Employee.objects.get(id=project.project_data.get("project_in_charge"))
+                    except Employee.DoesNotExist:
+                        print(f"DEBUG: Employee with ID {project.project_data.get('project_in_charge')} not found")
+
+                if project.project_data.get("safety_officer"):
+                    try:
+                        safety_officer = Employee.objects.get(id=project.project_data.get("safety_officer"))
+                    except Employee.DoesNotExist:
+                        print(f"DEBUG: Employee with ID {project.project_data.get('safety_officer')} not found")
+
+                if project.project_data.get("quality_assurance_officer"):
+                    try:
+                        quality_assurance_officer = Employee.objects.get(id=project.project_data.get("quality_assurance_officer"))
+                    except Employee.DoesNotExist:
+                        print(f"DEBUG: Employee with ID {project.project_data.get('quality_assurance_officer')} not found")
+
+                if project.project_data.get("quality_officer"):
+                    try:
+                        quality_officer = Employee.objects.get(id=project.project_data.get("quality_officer"))
+                    except Employee.DoesNotExist:
+                        print(f"DEBUG: Employee with ID {project.project_data.get('quality_officer')} not found")
+
+                if project.project_data.get("foreman"):
+                    try:
+                        foreman = Employee.objects.get(id=project.project_data.get("foreman"))
+                    except Employee.DoesNotExist:
+                        print(f"DEBUG: Employee with ID {project.project_data.get('foreman')} not found")
+
+                if project.project_data.get("project_manager_id"):
+                    try:
+                        project_manager = UserProfile.objects.get(id=project.project_data.get("project_manager_id"))
+                    except UserProfile.DoesNotExist:
+                        print(f"DEBUG: UserProfile with ID {project.project_data.get('project_manager_id')} not found")
+
+                # Create rejected project with Cancelled status
+                rejected_profile = ProjectProfile.objects.create(
+                    project_name=project_name,
+                    project_type=project_type_instance,
+                    project_category=project.project_data.get("project_category"),
+                    location=project.project_data.get("location"),
+                    client=client,
+                    estimated_cost=project.project_data.get("budget", 0) or project.project_data.get("estimated_cost", 0),
+                    approved_budget=0,  # No budget approved for rejected projects
+                    start_date=start_date,
+                    target_completion_date=target_completion_date,
+                    status="CN",  # Cancelled status for rejected projects
+                    project_source=project_source,
+                    created_by=project.created_by,
+                    # Employee assignments
+                    project_in_charge=project_in_charge,
+                    safety_officer=safety_officer,
+                    quality_assurance_officer=quality_assurance_officer,
+                    quality_officer=quality_officer,
+                    foreman=foreman,
+                    project_manager=project_manager,
+                    number_of_laborers=project.project_data.get("number_of_laborers", 0),
+                    # Additional fields
+                    site_engineer=project.project_data.get("site_engineer"),
+                    city_province=project.project_data.get("city_province"),
+                    gps_coordinates=project.project_data.get("gps_coordinates"),
+                    description=f"[REJECTED] {project.project_data.get('description', '')}\n\nRejection Reason: {rejection_reason}" if rejection_reason else f"[REJECTED] {project.project_data.get('description', '')}",
+                    subcontractors=project.project_data.get("subcontractors"),
+                    payment_terms=project.project_data.get("payment_terms"),
+                    lot_size=project.project_data.get("lot_size", 0),
+                    floor_area=project.project_data.get("floor_area", 0),
+                )
+                print(f"DEBUG: Created rejected ProjectProfile ID={rejected_profile.id} with status='CN'")
+
+                # Migrate documents from staging project to rejected project
+                documents_to_migrate = ProjectDocument.objects.filter(project_staging=project)
+                migrated_count = 0
+                for doc in documents_to_migrate:
+                    doc.project = rejected_profile
+                    doc.project_staging = None
+                    doc.save()
+                    migrated_count += 1
+                print(f"DEBUG: Migrated {migrated_count} document(s) from staging to rejected project")
+
+                # Delete staging project
+                project.delete()
+                print("DEBUG: Deleted staging project after rejection")
+
+                set_toast_message(request, f"⚠️ Project '{project_name}' (ID: {project_id_placeholder}) has been rejected and moved to discontinued projects.", "warning")
+
+                # Redirect to appropriate project list based on project source
+                if project_source == "GC":
+                    return redirect("project_list_general_contractor")
+                else:
+                    return redirect("project_list_direct_client")
+
+            except Exception as e:
+                print(f"ERROR during reject flow -> {e}")
+                import traceback
+                traceback.print_exc()
+                set_toast_message(request, f"❌ Critical error occurred while rejecting the project: {str(e)}. Please try again or contact support.", "error")
 
         else:
             print("DEBUG: Unknown action received")

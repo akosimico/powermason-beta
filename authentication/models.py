@@ -50,6 +50,7 @@ class UserProfile(models.Model):
         ("EG", "Engineer"),
     ]
     has_seen_welcome = models.BooleanField(default=False)
+    force_password_change = models.BooleanField(default=False, help_text="User must change password on next login")
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     role = models.CharField(max_length=2, choices=ROLE_CHOICES, default="VO")

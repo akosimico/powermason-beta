@@ -38,11 +38,15 @@
         
         <!-- Mobile Header -->
         <div class="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-30 h-16 flex items-center justify-between px-4">
+            {% if not user.userprofile.force_password_change %}
             <button onclick="toggleMobileSidebar()" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
             </button>
+            {% else %}
+            <div class="w-10"></div> <!-- Spacer when no menu button -->
+            {% endif %}
             <div class="flex items-center space-x-2">
                 <img src="{% static 'img/powermason_logo.png' %}" alt="PowerMason" class="w-8 h-8">
                 <span class="font-bold text-blue-600 text-lg">PowerMason</span>
@@ -51,6 +55,7 @@
         </div>
 
         <!-- Desktop Sidebar / Mobile Sidebar -->
+        {% if not user.userprofile.force_password_change %}
         <aside id="sidebar" class="fixed lg:relative inset-y-0 left-0 z-50 w-72 bg-white shadow-xl border-r border-gray-200 flex-shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out lg:block">
             <!-- Mobile Close Button -->
             <div class="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
@@ -70,6 +75,7 @@
                 {% include "partials/_sidebar.html" %}
             </div>
         </aside>
+        {% endif %}
 
         <!-- Main Content Area -->
         <main class="flex-1 h-full overflow-hidden flex flex-col pt-16 lg:pt-0">
@@ -180,6 +186,11 @@
 
     <!-- Welcome Popup Component -->
     {% include 'components/welcome_popup.html' %}
+
+    <!-- Force Password Change Modal -->
+    {% if user.is_authenticated and user.userprofile.force_password_change %}
+        {% include 'partials/force_password_modal.html' %}
+    {% endif %}
 
     <!-- Global Toast Notification System -->
     <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3 max-w-sm w-full sm:max-w-md">

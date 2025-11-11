@@ -345,17 +345,43 @@
           </div>
 
           <!-- Project Manager Alert -->
-          <div id="pm-info" class="bg-blue-50 border border-blue-200 rounded-md p-3 {% if not employee or employee.role != 'project_manager' %}hidden{% endif %}">
-            <div class="flex items-start space-x-2">
-              <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div class="text-sm">
-                <p class="font-medium text-blue-900">Project Manager Account</p>
+          <div id="pm-info" class="bg-blue-50 border-l-4 border-blue-500 rounded-md p-4 {% if not employee or employee.role != 'project_manager' %}hidden{% endif %}">
+            <div class="flex items-start space-x-3">
+              <div class="flex-shrink-0">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-blue-900 mb-2">
+                  <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  Project Manager Account Creation
+                </h4>
                 {% if employee %}
-                  <p class="text-blue-800">This employee has system access. Email changes will update their login credentials.</p>
+                  <div class="text-sm text-blue-800 space-y-1">
+                    <p class="font-medium">This employee has system access.</p>
+                    <p>Email changes will update their login credentials.</p>
+                  </div>
                 {% else %}
-                  <p class="text-blue-800">A user account will be created automatically. Email address is required.</p>
+                  <div class="text-sm text-blue-800 space-y-2">
+                    <p class="font-medium">A system account will be created automatically with the following details:</p>
+                    <ul class="list-disc list-inside space-y-1 ml-2">
+                      <li><strong>Email:</strong> Required (used as username)</li>
+                      <li><strong>Role:</strong> Project Manager</li>
+                      <li><strong>Default Password Format:</strong> <code class="bg-blue-100 px-2 py-0.5 rounded text-xs font-mono">{first_initial}.{lastname}{MMDDYYYY}</code></li>
+                      <li><strong>Example:</strong> Maria Santos hired on 03/20/2024 → <code class="bg-blue-100 px-2 py-0.5 rounded text-xs font-mono">m.santos03202024</code></li>
+                    </ul>
+                    <div class="mt-2 pt-2 border-t border-blue-200">
+                      <p class="flex items-start">
+                        <svg class="w-4 h-4 text-amber-600 mr-1.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-xs">The user will be required to change their password on first login for security.</span>
+                      </p>
+                    </div>
+                  </div>
                 {% endif %}
               </div>
             </div>
@@ -756,6 +782,8 @@ if (phoneField) {
             showNotification('Please fix the highlighted errors', 'error', 4000);
             return false;
         } else {
+            // Clear unsaved changes flag on successful submission
+            hasUnsavedChanges = false;
             handleSubmissionState();
             // Clear draft on successful submission
             sessionStorage.removeItem(draftKey);

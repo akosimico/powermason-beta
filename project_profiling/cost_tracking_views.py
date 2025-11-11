@@ -31,7 +31,15 @@ from .models import (
 @verified_email_required
 def subcontractor_list(request):
     """Display subcontractor management page"""
-    return render(request, 'project_profiling/subcontractor_list.html')
+    # Get the referring project if coming from project view
+    project_id = request.GET.get('project_id')
+    project_source = request.GET.get('project_source', 'active')
+
+    context = {
+        'project_id': project_id,
+        'project_source': project_source,
+    }
+    return render(request, 'project_profiling/subcontractor_list.html', context)
 
 
 @login_required
