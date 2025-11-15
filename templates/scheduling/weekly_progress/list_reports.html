@@ -89,7 +89,8 @@
 
         <!-- Filters -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-            <div class="flex items-center gap-3">
+            <!-- Status Filter -->
+            <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
                 <span class="text-sm font-medium text-gray-700">Filter by Status:</span>
                 <div class="flex gap-2">
                     <a href="?status=all"
@@ -112,6 +113,27 @@
                            {% if status_filter == 'R' %}bg-red-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                         Rejected
                     </a>
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <span class="text-sm font-medium text-gray-700">Filter by Date:</span>
+                <div class="flex flex-wrap gap-2" id="monthFilters">
+                    <!-- Month buttons will be dynamically generated here -->
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <input type="date" id="dateFilterInput"
+                           class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Search by date">
+                    <button onclick="filterByDate()"
+                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Search
+                    </button>
+                    <button onclick="clearDateFilter()"
+                            class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
+                        Clear
+                    </button>
                 </div>
             </div>
         </div>
@@ -483,12 +505,16 @@ async function generateProgressReport(event) {
 
         // Validate
         if (!period) {
-            alert('Please select a report period');
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Please select a report period to continue', 'warning');
+            }
             return;
         }
 
         if (!format) {
-            alert('Please select an export format');
+            if (typeof showProjectToast === 'function') {
+                showProjectToast('Please select an export format to continue', 'warning');
+            }
             return;
         }
 
@@ -524,7 +550,9 @@ async function generateProgressReport(event) {
 
     } catch (error) {
         console.error('Export error:', error);
-        alert(error.message || 'Failed to generate report. Please try again.');
+        if (typeof showProjectToast === 'function') {
+            showProjectToast(error.message || 'Failed to generate report. Please try again.', 'error');
+        }
     } finally {
         // Reset button
         generateBtn.disabled = false;
@@ -552,8 +580,16 @@ async function exportProgressToPDF(dateRange, status, includeOptions) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
-            throw new Error(errorData.error || 'Failed to generate PDF');
+            const errorData = await response.json().catch(() => ({
+                error: 'Failed to generate PDF report',
+                suggestion: 'Please try again or contact support if the issue persists.'
+            }));
+
+            // Show detailed error message with suggestion
+            const errorMessage = errorData.suggestion
+                ? `${errorData.error}\n\n💡 ${errorData.suggestion}`
+                : errorData.error;
+            throw new Error(errorMessage);
         }
 
         const blob = await response.blob();
@@ -599,8 +635,16 @@ async function exportProgressToExcel(dateRange, status, includeOptions) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || 'Failed to generate Excel file');
+            const errorData = await response.json().catch(() => ({
+                error: 'Failed to generate Excel report',
+                suggestion: 'Please verify your date range and status filters, then try again.'
+            }));
+
+            // Show detailed error message with suggestion
+            const errorMessage = errorData.suggestion
+                ? `${errorData.error}\n\n💡 ${errorData.suggestion}`
+                : errorData.error;
+            throw new Error(errorMessage);
         }
 
         const blob = await response.blob();
@@ -685,9 +729,95 @@ function checkProgressSubmitRestrictions() {
     }
 }
 
+// Generate month filter buttons based on available reports
+function generateMonthFilters() {
+    const monthFiltersDiv = document.getElementById('monthFilters');
+    if (!monthFiltersDiv) return;
+
+    // Get all report dates from the page
+    const reportDates = [];
+    {% for report in reports %}
+        reportDates.push({
+            start: '{{ report.week_start_date|date:"Y-m-d" }}',
+            end: '{{ report.week_end_date|date:"Y-m-d" }}'
+        });
+    {% endfor %}
+
+    if (reportDates.length === 0) {
+        monthFiltersDiv.innerHTML = '<span class="text-sm text-gray-500 italic">No reports available</span>';
+        return;
+    }
+
+    // Extract unique months
+    const monthsSet = new Set();
+    reportDates.forEach(report => {
+        const date = new Date(report.start);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        monthsSet.add(JSON.stringify({ key: monthKey, label: monthLabel }));
+    });
+
+    // Convert to array and sort
+    const months = Array.from(monthsSet).map(m => JSON.parse(m)).sort((a, b) => b.key.localeCompare(a.key));
+
+    // Generate buttons
+    monthFiltersDiv.innerHTML = months.map(month => {
+        return `<button onclick="filterByMonth('${month.key}')"
+                        class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors">
+                    ${month.label}
+                </button>`;
+    }).join('');
+}
+
+// Filter reports by month
+function filterByMonth(monthKey) {
+    const [year, month] = monthKey.split('-');
+    const startDate = `${year}-${month}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${month}-${lastDay}`;
+
+    // Use the existing status filter
+    const currentStatus = '{{ status_filter }}';
+    window.location.href = `?status=${currentStatus}&start_date=${startDate}&end_date=${endDate}`;
+}
+
+// Filter by specific date
+function filterByDate() {
+    const dateInput = document.getElementById('dateFilterInput');
+    const selectedDate = dateInput.value;
+
+    if (!selectedDate) {
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Please select a date to search', 'warning');
+        }
+        return;
+    }
+
+    const currentStatus = '{{ status_filter }}';
+    window.location.href = `?status=${currentStatus}&search_date=${selectedDate}`;
+}
+
+// Clear date filter
+function clearDateFilter() {
+    const currentStatus = '{{ status_filter }}';
+    window.location.href = `?status=${currentStatus}`;
+}
+
 // Run on page load
 document.addEventListener('DOMContentLoaded', function() {
     checkProgressSubmitRestrictions();
+    generateMonthFilters();
+
+    // Show info toast on first visit if no reports
+    const hasReports = {{ reports|length }};
+    const hasSeenInfo = sessionStorage.getItem('seenReportsInfo');
+
+    if (hasReports === 0 && !hasSeenInfo) {
+        if (typeof showProjectToast === 'function') {
+            showProjectToast('Start tracking your project progress by submitting your first weekly report', 'info');
+        }
+        sessionStorage.setItem('seenReportsInfo', 'true');
+    }
 });
 </script>
 

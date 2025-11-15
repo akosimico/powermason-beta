@@ -12,8 +12,8 @@ from .views import scope_budget_allocation
 from .weekly_progress_views import (
     submit_weekly_progress, enter_boq_progress, view_weekly_report,
     list_weekly_reports, review_weekly_reports, approve_weekly_report,
-    reject_weekly_report, export_report_excel, export_project_reports_excel,
-    export_project_reports_pdf, print_project_reports,
+    reject_weekly_report, download_report_excel, export_report_excel,
+    export_project_reports_excel, export_project_reports_pdf, print_project_reports,
     download_progress_template, upload_progress_excel
 )
 
@@ -108,6 +108,7 @@ urlpatterns = [
     path('progress/weekly/<int:report_id>/reject/', reject_weekly_report, name='reject_weekly_report'),
 
     # Export Options (Excel, PDF, Print)
+    path('progress/weekly/<int:report_id>/download-excel/', download_report_excel, name='download_report_excel'),
     path('progress/weekly/<int:report_id>/export/', export_report_excel, name='export_report_excel'),
     path('<int:project_id>/progress/weekly/export-all/', export_project_reports_excel, name='export_project_reports_excel'),
     path('<int:project_id>/progress/weekly/export-pdf/', export_project_reports_pdf, name='export_project_reports_pdf'),

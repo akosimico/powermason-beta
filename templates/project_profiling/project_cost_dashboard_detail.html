@@ -1395,9 +1395,11 @@ function calculateDateRange(period, customStart, customEnd) {
 
     switch(period) {
         case 'this_week':
-            const firstDay = today.getDate() - today.getDay();
-            startDate = new Date(today.setDate(firstDay));
-            endDate = new Date(today.setDate(firstDay + 6));
+            const dayOfWeek = today.getDay();
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - dayOfWeek);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
             break;
         case 'this_month':
             startDate = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1406,15 +1408,16 @@ function calculateDateRange(period, customStart, customEnd) {
         case 'this_quarter':
             const quarter = Math.floor(today.getMonth() / 3);
             startDate = new Date(today.getFullYear(), quarter * 3, 1);
-            endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+            endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
             break;
         case 'this_year':
             startDate = new Date(today.getFullYear(), 0, 1);
             endDate = new Date(today.getFullYear(), 11, 31);
             break;
         case 'last_30_days':
-            endDate = new Date();
-            startDate = new Date(today.setDate(today.getDate() - 30));
+            endDate = new Date(today);
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
             break;
         case 'custom':
             startDate = new Date(customStart);

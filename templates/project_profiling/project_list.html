@@ -121,13 +121,25 @@
                         </div>
                 
                         <div class="flex flex-wrap justify-center gap-2">
-    <a href="{% url 'submit_weekly_progress' project.id %}"
-       class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded-md shadow hover:bg-blue-700 transition">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Submit Report
-    </a>
+    {% if project.approved_schedule %}
+        <a href="{% url 'submit_weekly_progress' project.id %}"
+           class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded-md shadow hover:bg-blue-700 transition stop-row-click"
+           onclick="event.stopPropagation()">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Submit Report
+        </a>
+    {% else %}
+        <button disabled
+            class="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-300 text-gray-600 text-xs font-medium rounded-md shadow cursor-not-allowed stop-row-click"
+            title="No Approved Schedule - Cannot Submit Report">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Submit Report
+        </button>
+    {% endif %}
 </div>
 
                         

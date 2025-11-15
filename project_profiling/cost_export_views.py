@@ -215,6 +215,7 @@ def export_weekly_cost_pdf(request, project_id):
             'start_date': start_date or 'All',
             'end_date': end_date or 'All',
             'generated_date': ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)',
+            'generated_by': request.user.get_full_name() or request.user.username,
             'weekly_reports': reports,
             'monthly_summary': monthly_summary,
             'totals': totals,

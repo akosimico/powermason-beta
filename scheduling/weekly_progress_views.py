@@ -123,7 +123,7 @@ def submit_weekly_progress(request, project_id):
     # Get recent reports for this project
     recent_reports = WeeklyProgressReport.objects.filter(
         project=project
-    ).order_by('-week_start_date')[:5]
+    ).order_by('-week_start_date')[:3]
 
     context = {
         'project': project,
@@ -299,11 +299,43 @@ def list_weekly_reports(request, project_id):
 
     # Filter by status if provided
     status_filter = request.GET.get('status', 'all')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search_date = request.GET.get('search_date')
 
     reports = WeeklyProgressReport.objects.filter(project=project)
 
+    # Apply status filter
     if status_filter != 'all':
         reports = reports.filter(status=status_filter)
+
+    # Apply date range filter - check for overlap with the selected range
+    # A report overlaps if: report_start <= range_end AND report_end >= range_start
+    if start_date and end_date:
+        from datetime import datetime
+        from django.db.models import Q
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            reports = reports.filter(
+                Q(week_start_date__lte=end) & Q(week_end_date__gte=start)
+            )
+        except ValueError:
+            from authentication.utils.toast_helpers import set_toast_message
+            set_toast_message(request, "Invalid date format. Please use YYYY-MM-DD.", "error")
+
+    # Apply specific date search (report contains this date)
+    if search_date:
+        from datetime import datetime
+        try:
+            search = datetime.strptime(search_date, '%Y-%m-%d').date()
+            reports = reports.filter(
+                week_start_date__lte=search,
+                week_end_date__gte=search
+            )
+        except ValueError:
+            from authentication.utils.toast_helpers import set_toast_message
+            set_toast_message(request, "Invalid date format. Please use YYYY-MM-DD.", "error")
 
     reports = reports.order_by('-week_start_date')
 
@@ -311,6 +343,9 @@ def list_weekly_reports(request, project_id):
         'project': project,
         'reports': reports,
         'status_filter': status_filter,
+        'start_date': start_date,
+        'end_date': end_date,
+        'search_date': search_date,
     }
 
     return render(request, 'scheduling/weekly_progress/list_reports.html', context)
@@ -499,6 +534,40 @@ def reject_weekly_report(request, report_id):
 
 
 @login_required
+def download_report_excel(request, report_id):
+    """Download the submitted Excel file from a progress report"""
+    report = get_object_or_404(WeeklyProgressReport, id=report_id)
+
+    # Check if Excel file exists
+    if not report.excel_file or not report.excel_file.name:
+        messages.error(request, "No Excel file available for this report.")
+        return redirect('view_weekly_report', report_id=report.id)
+
+    try:
+        # Get the file
+        excel_file = report.excel_file
+
+        # Create response with file content
+        response = HttpResponse(
+            excel_file.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        # Extract filename from path or use default
+        import os
+        filename = os.path.basename(excel_file.name)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        logger.info(f"Downloaded Excel file for report #{report.report_number}")
+        return response
+
+    except Exception as e:
+        logger.error(f"Error downloading Excel file: {str(e)}")
+        messages.error(request, f"Error downloading Excel file: {str(e)}")
+        return redirect('view_weekly_report', report_id=report.id)
+
+
+@login_required
 def export_report_excel(request, report_id):
     """Export a single weekly progress report to Excel"""
     report = get_object_or_404(WeeklyProgressReport, id=report_id)
@@ -552,11 +621,12 @@ def export_project_reports_excel(request, project_id):
     # Get reports
     reports = WeeklyProgressReport.objects.filter(project=project)
 
-    # Apply date filter
+    # Apply date filter - check for overlap with the selected range
+    # A report overlaps if: report_start <= range_end AND report_end >= range_start
     if start_date and end_date:
+        from django.db.models import Q
         reports = reports.filter(
-            week_start_date__gte=start_date,
-            week_end_date__lte=end_date
+            Q(week_start_date__lte=end_date) & Q(week_end_date__gte=start_date)
         )
 
     # Apply status filter
@@ -566,9 +636,15 @@ def export_project_reports_excel(request, project_id):
     reports = reports.order_by('week_start_date')
 
     if not reports.exists():
+        error_msg = "No reports available to export for the selected criteria. Please adjust your filters or ensure reports have been submitted."
         if request.method == 'POST':
-            return HttpResponse("No reports found to export.", status=400)
-        messages.warning(request, "No reports found to export.")
+            return JsonResponse({
+                'error': error_msg,
+                'suggestion': 'Try changing your date range or status filter.'
+            }, status=404)
+
+        from authentication.utils.toast_helpers import set_toast_message
+        set_toast_message(request, error_msg, "warning")
         return redirect('list_weekly_reports', project_id=project.id)
 
     try:
@@ -641,13 +717,14 @@ def export_project_reports_pdf(request, project_id):
         reports = WeeklyProgressReport.objects.filter(project=project)
         logger.info(f"PDF Export - Total reports for project: {reports.count()}")
 
-        # Apply date filter
+        # Apply date filter - check for overlap with the selected range
+        # A report overlaps if: report_start <= range_end AND report_end >= range_start
         if start_date and end_date:
+            from django.db.models import Q
             reports = reports.filter(
-                week_start_date__gte=start_date,
-                week_end_date__lte=end_date
+                Q(week_start_date__lte=end_date) & Q(week_end_date__gte=start_date)
             )
-            logger.info(f"PDF Export - After date filter: {reports.count()}")
+            logger.info(f"PDF Export - After date filter ({start_date} to {end_date}): {reports.count()}")
 
         # Apply status filter
         if status_filter != 'all':
@@ -657,11 +734,27 @@ def export_project_reports_pdf(request, project_id):
         reports = reports.order_by('week_start_date')
 
         if not reports.exists():
-            error_msg = f"No reports found for the selected period (status={status_filter})"
+            # Create a helpful error message based on the filters
+            if status_filter == 'all':
+                error_msg = "No reports found for the selected date range. Try selecting a different time period or check if any reports have been submitted yet."
+            elif status_filter == 'A':
+                error_msg = "No approved reports found for the selected period. Try changing the status filter or check if reports need approval first."
+            elif status_filter == 'P':
+                error_msg = "No pending reports found for the selected period. All reports may have already been reviewed."
+            elif status_filter == 'R':
+                error_msg = "No rejected reports found for the selected period."
+            else:
+                error_msg = f"No reports found for the selected period (status={status_filter})"
+
             logger.warning(error_msg)
             if request.method == 'POST':
-                return JsonResponse({'error': error_msg}, status=400)
-            messages.warning(request, error_msg)
+                return JsonResponse({
+                    'error': error_msg,
+                    'suggestion': 'Try adjusting your date range or status filter to find reports.'
+                }, status=404)
+
+            from authentication.utils.toast_helpers import set_toast_message
+            set_toast_message(request, error_msg, "warning")
             return redirect('list_weekly_reports', project_id=project.id)
 
         # Calculate statistics
@@ -697,6 +790,7 @@ def export_project_reports_pdf(request, project_id):
             'latest_period_percent': latest_period_percent,
             'latest_cumulative_percent': latest_cumulative_percent,
             'generated_date': ph_time.strftime('%B %d, %Y %I:%M %p') + ' (PHT)',
+            'generated_by': request.user.get_full_name() or request.user.username,
             'logo_path': logo_url,
             'include_summary_table': include_options.get('summary_table', True),
             'include_project_header': include_options.get('project_header', True),
